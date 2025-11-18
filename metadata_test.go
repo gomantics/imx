@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"os"
 	"testing"
+
+	"imx/formats"
 )
 
 // TestDetectFormat tests format detection via magic bytes
@@ -52,7 +54,7 @@ func TestDetectFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := detectFormat(tt.magicBytes)
+			result := formats.Detect(tt.magicBytes)
 			if result != tt.expected {
 				t.Errorf("detectFormat() = %v, want %v", result, tt.expected)
 			}
@@ -202,12 +204,45 @@ func TestMetadata_JPEG(t *testing.T) {
 		t.Fatalf("Metadata() error = %v", err)
 	}
 
-	if md.Format != "JPEG" {
+	if md.Format != FormatJPEG {
 		t.Errorf("Format = %v, want JPEG", md.Format)
 	}
 
 	if md.Width != 100 || md.Height != 100 {
 		t.Errorf("Dimensions = %dx%d, want 100x100", md.Width, md.Height)
+	}
+}
+
+func TestMetadataFromBytes(t *testing.T) {
+	md, err := MetadataFromBytes(createMinimalJPEG())
+	if err != nil {
+		t.Fatalf("MetadataFromBytes() error = %v", err)
+	}
+	if md.Format != FormatJPEG {
+		t.Errorf("Format = %v, want %v", md.Format, FormatJPEG)
+	}
+}
+
+func TestMetadataFromReader(t *testing.T) {
+	reader := bytes.NewReader(createMinimalPNG())
+	md, err := MetadataFromReader(reader)
+	if err != nil {
+		t.Fatalf("MetadataFromReader() error = %v", err)
+	}
+	if md.Format != FormatPNG {
+		t.Errorf("Format = %v, want %v", md.Format, FormatPNG)
+	}
+}
+
+func TestMetadataFromReaderAt(t *testing.T) {
+	data := createMinimalGIF()
+	reader := bytes.NewReader(data)
+	md, err := MetadataFromReaderAt(reader, int64(len(data)))
+	if err != nil {
+		t.Fatalf("MetadataFromReaderAt() error = %v", err)
+	}
+	if md.Format != FormatGIF {
+		t.Errorf("Format = %v, want %v", md.Format, FormatGIF)
 	}
 }
 
@@ -229,7 +264,7 @@ func TestMetadata_PNG(t *testing.T) {
 		t.Fatalf("Metadata() error = %v", err)
 	}
 
-	if md.Format != "PNG" {
+	if md.Format != FormatPNG {
 		t.Errorf("Format = %v, want PNG", md.Format)
 	}
 
@@ -256,7 +291,7 @@ func TestMetadata_GIF(t *testing.T) {
 		t.Fatalf("Metadata() error = %v", err)
 	}
 
-	if md.Format != "GIF" {
+	if md.Format != FormatGIF {
 		t.Errorf("Format = %v, want GIF", md.Format)
 	}
 
@@ -285,7 +320,7 @@ func TestMetadata_WebP(t *testing.T) {
 		return
 	}
 
-	if md.Format != "WebP" {
+	if md.Format != FormatWebP {
 		t.Errorf("Format = %v, want WebP", md.Format)
 	}
 }
@@ -308,7 +343,7 @@ func TestMetadata_BMP(t *testing.T) {
 		t.Fatalf("Metadata() error = %v", err)
 	}
 
-	if md.Format != "BMP" {
+	if md.Format != FormatBMP {
 		t.Errorf("Format = %v, want BMP", md.Format)
 	}
 
@@ -331,7 +366,7 @@ func TestImageMetadata_Struct(t *testing.T) {
 		Additional:    make(map[string]interface{}),
 	}
 
-	if md.Format != "JPEG" {
+	if md.Format != FormatJPEG {
 		t.Errorf("Format = %v, want JPEG", md.Format)
 	}
 
@@ -360,17 +395,6 @@ func TestImageMetadata_Struct(t *testing.T) {
 func BenchmarkDetectFormat(b *testing.B) {
 	magicBytes := []byte{0xFF, 0xD8, 0xFF, 0xE0}
 	for i := 0; i < b.N; i++ {
-		detectFormat(magicBytes)
-	}
-}
-
-func BenchmarkMetadataJPEG(b *testing.B) {
-	data := createMinimalJPEG()
-	size := int64(len(data))
-	for i := 0; i < b.N; i++ {
-		reader := bytes.NewReader(data)
-		if _, err := MetadataFromReader(reader, size); err != nil {
-			b.Fatalf("MetadataFromReader() error = %v", err)
-		}
+		formats.Detect(magicBytes)
 	}
 }

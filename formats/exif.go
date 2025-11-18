@@ -1,4 +1,4 @@
-package imx
+package formats
 
 import (
 	"encoding/binary"
@@ -39,11 +39,6 @@ const (
 	exifTypeSRational = 10
 )
 
-const (
-	maxEXIFEntryBytes = 128 * 1024
-	maxEXIFEntryCount = 1024
-)
-
 // ParseEXIF extracts EXIF data from a JPEG or PNG file.
 // It searches for the EXIF APP1 segment and parses the TIFF structure.
 func ParseEXIF(r io.ReadSeeker) (map[string]interface{}, error) {
@@ -59,8 +54,9 @@ func ParseEXIF(r io.ReadSeeker) (map[string]interface{}, error) {
 		return exif, nil // Return empty, not an error
 	}
 
-	var buf [4]byte
-	if _, err = io.ReadFull(r, buf[:]); err != nil {
+	buf := make([]byte, 4)
+	_, err = r.Read(buf)
+	if err != nil {
 		return exif, nil
 	}
 
@@ -73,9 +69,9 @@ func ParseEXIF(r io.ReadSeeker) (map[string]interface{}, error) {
 		}
 
 		// Read segment data
-		segmentData := borrowBuffer(length - 2)
-		if _, err = io.ReadFull(r, segmentData); err != nil {
-			releaseBuffer(segmentData)
+		segmentData := make([]byte, length-2)
+		_, err = r.Read(segmentData)
+		if err != nil {
 			return exif, nil
 		}
 
@@ -89,7 +85,6 @@ func ParseEXIF(r io.ReadSeeker) (map[string]interface{}, error) {
 				}
 			}
 		}
-		releaseBuffer(segmentData)
 	}
 
 	// Reset position
@@ -155,15 +150,7 @@ func parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, exif map[stri
 
 		// Read tag value
 		var value interface{}
-		if count > maxEXIFEntryCount {
-			offset += 12
-			continue
-		}
 		valueSize := getDataTypeSize(dataType) * int(count)
-		if valueSize > maxEXIFEntryBytes {
-			offset += 12
-			continue
-		}
 
 		if valueSize <= 4 {
 			// Value is stored directly in the offset field
@@ -182,13 +169,10 @@ func parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, exif map[stri
 		}
 
 		// Handle IFD pointers
-		if valueSize <= 4 {
+		if tag == exifTagExifIFD && valueSize <= 4 {
 			ifdPtr := int(valueOffset)
 			if ifdPtr < len(data) {
-				switch tag {
-				case exifTagExifIFD, exifTagGPSIFD:
-					parseIFD(data, ifdPtr, byteOrder, exif, depth+1)
-				}
+				parseIFD(data, ifdPtr, byteOrder, exif, depth+1)
 			}
 		}
 

@@ -26,13 +26,12 @@ package main
 import (
     "fmt"
     "log"
-    "os"
     
     "imx"
 )
 
 func main() {
-    md, err := imx.Metadata("image.jpg")
+    md, err := imx.MetadataFromFile("image.jpg")
     if err != nil {
         log.Fatal(err)
     }
@@ -62,37 +61,34 @@ func main() {
 }
 ```
 
-### Reusing Existing Readers
+### Entry Points
 
-When an image is already available as an `io.ReadSeeker`, you can avoid another
-open/stat/seek cycle by calling `MetadataFromReader` directly:
+Choose the helper that best matches your data source:
 
-```go
-f, err := os.Open("image.jpg")
-if err != nil {
-    log.Fatal(err)
-}
-defer f.Close()
+- `MetadataFromFile(path string)` – work directly with files on disk
+- `MetadataFromBytes(data []byte)` – inspect in-memory data
+- `MetadataFromReader(r io.Reader)` – consume any stream (buffers internally)
+- `MetadataFromReaderAt(r io.ReaderAt, size int64)` – zero-copy for random-access sources
+- `MetadataFromURL(url string)` – download and inspect remote images
+- `Metadata(path string)` – legacy alias of `MetadataFromFile`
 
-info, _ := f.Stat()
-md, err := imx.MetadataFromReader(f, info.Size())
-```
+All helpers funnel into the same detection/extraction pipeline.
 
 ### ImageMetadata Structure
 
-The `ImageMetadata` struct contains the following fields:
+`ImageMetadata` uses stronger types for stricter APIs:
 
 ```go
 type ImageMetadata struct {
-    Format        string                 // Image format (JPEG, PNG, GIF, WebP, BMP)
-    Width         int                    // Image width in pixels
-    Height        int                    // Image height in pixels
-    FileSize      int64                  // File size in bytes
-    ColorDepth    int                    // Color depth in bits
-    ColorSpace    string                 // Color space (RGB, RGBA, CMYK, Grayscale, etc.)
-    HasICCProfile bool                   // Whether the image contains an ICC profile
-    EXIF          map[string]interface{} // EXIF metadata tags
-    Additional    map[string]interface{} // Format-specific additional metadata
+    Format        imx.Format             // Strongly-typed format (JPEG, PNG, ...)
+    Width         int                    // Width in pixels
+    Height        int                    // Height in pixels
+    FileSize      int64                  // Size in bytes
+    ColorDepth    int                    // Bits per pixel
+    ColorSpace    imx.ColorSpace         // RGB, RGBA, CMYK, etc.
+    HasICCProfile bool                   // ICC profile presence
+    EXIF          map[string]interface{} // Parsed EXIF tags
+    Additional    map[string]interface{} // Format-specific metadata
 }
 ```
 
@@ -156,25 +152,16 @@ The library returns descriptive errors for:
 Example error handling:
 
 ```go
-md, err := imx.Metadata("image.jpg")
+md, err := imx.MetadataFromFile("image.jpg")
 if err != nil {
-    if os.IsNotExist(err) {
-        log.Fatal("File does not exist")
+    if errors.Is(err, imx.ErrUnsupportedFormat) {
+        log.Fatal("Unsupported format")
     }
     log.Fatalf("Failed to extract metadata: %v", err)
 }
 ```
 
-## Performance Notes
-
-- Metadata maps are allocated lazily, so parsing lightweight assets avoids
-  unnecessary garbage collection work.
-- Large JPEG/PNG chunk buffers are recycled through a shared `sync.Pool`,
-  reducing per-file allocations when scanning directories.
-- `MetadataFromReader` lets you reuse an existing `io.ReadSeeker` to skip extra
-  `open/stat/seek` operations.
-- Benchmarks (e.g. `BenchmarkMetadataJPEG` in `metadata_test.go`) can be run via
-  `go test -bench=. ./...` to validate improvements on your machine.
+_Requires `import "errors"`._
 
 ## Testing
 

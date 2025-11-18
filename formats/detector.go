@@ -1,14 +1,8 @@
-package imx
+package formats
 
-var (
-	pngSignature  = [...]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
-	riffSignature = [...]byte{0x52, 0x49, 0x46, 0x46}
-	webpSignature = [...]byte{0x57, 0x45, 0x42, 0x50}
-)
-
-// detectFormat identifies the image format by examining the magic bytes.
+// Detect identifies the image format by examining the magic bytes.
 // It returns the format name as a string, or an empty string if the format is not recognized.
-func detectFormat(magicBytes []byte) string {
+func Detect(magicBytes []byte) string {
 	if len(magicBytes) < 2 {
 		return ""
 	}
@@ -19,8 +13,18 @@ func detectFormat(magicBytes []byte) string {
 	}
 
 	// PNG: 89 50 4E 47 0D 0A 1A 0A
-	if hasPrefix(magicBytes, pngSignature[:]) {
-		return "PNG"
+	if len(magicBytes) >= 8 {
+		pngSig := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+		match := true
+		for i := 0; i < 8; i++ {
+			if magicBytes[i] != pngSig[i] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return "PNG"
+		}
 	}
 
 	// GIF: 47 49 46 38 37 61 (GIF87a) or 47 49 46 38 39 61 (GIF89a)
@@ -33,10 +37,14 @@ func detectFormat(magicBytes []byte) string {
 	}
 
 	// WebP: RIFF (52 49 46 46) ... WEBP (57 45 42 50)
-	if len(magicBytes) >= 12 && hasPrefix(magicBytes, riffSignature[:]) &&
-		magicBytes[8] == webpSignature[0] && magicBytes[9] == webpSignature[1] &&
-		magicBytes[10] == webpSignature[2] && magicBytes[11] == webpSignature[3] {
-		return "WebP"
+	if len(magicBytes) >= 12 {
+		if magicBytes[0] == 0x52 && magicBytes[1] == 0x49 && magicBytes[2] == 0x46 && magicBytes[3] == 0x46 {
+			// Check for WEBP at offset 8
+			if len(magicBytes) >= 12 && magicBytes[8] == 0x57 && magicBytes[9] == 0x45 &&
+				magicBytes[10] == 0x42 && magicBytes[11] == 0x50 {
+				return "WebP"
+			}
+		}
 	}
 
 	// BMP: 42 4D (BM)
@@ -45,16 +53,4 @@ func detectFormat(magicBytes []byte) string {
 	}
 
 	return ""
-}
-
-func hasPrefix(buf, prefix []byte) bool {
-	if len(buf) < len(prefix) {
-		return false
-	}
-	for i, b := range prefix {
-		if buf[i] != b {
-			return false
-		}
-	}
-	return true
 }

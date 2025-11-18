@@ -1,4 +1,4 @@
-package imx
+package formats
 
 import (
 	"encoding/binary"
@@ -6,30 +6,33 @@ import (
 	"io"
 )
 
-// ExtractJPEGMetadata extracts metadata from a JPEG file.
-func ExtractJPEGMetadata(r io.ReadSeeker, md *ImageMetadata) error {
+// ExtractJPEG extracts metadata from a JPEG file.
+func ExtractJPEG(r io.ReadSeeker) (*Result, error) {
 	// Reset to beginning
 	_, err := r.Seek(0, io.SeekStart)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var header [2]byte
-	if _, err = io.ReadFull(r, header[:]); err != nil {
-		return fmt.Errorf("failed to read JPEG header: %w", err)
+	buf := make([]byte, 2)
+	_, err = r.Read(buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read JPEG header: %w", err)
 	}
 
 	// Verify JPEG SOI marker
-	if header[0] != 0xFF || header[1] != 0xD8 {
-		return fmt.Errorf("invalid JPEG file")
+	if buf[0] != 0xFF || buf[1] != 0xD8 {
+		return nil, fmt.Errorf("%w: invalid JPEG file", ErrInvalidData)
 	}
 
+	result := newResult()
 	hasICC := false
 
 	// Read through JPEG segments
 	for {
-		var marker [2]byte
-		if _, err = io.ReadFull(r, marker[:]); err != nil {
+		marker := make([]byte, 2)
+		_, err = r.Read(marker)
+		if err != nil {
 			break
 		}
 
@@ -42,8 +45,9 @@ func ExtractJPEGMetadata(r io.ReadSeeker, md *ImageMetadata) error {
 
 		// Skip padding bytes (0xFF)
 		for markerType == 0xFF {
-			if _, err = io.ReadFull(r, marker[:]); err != nil {
-				return nil
+			_, err = r.Read(marker)
+			if err != nil {
+				return nil, err
 			}
 			markerType = marker[1]
 		}
@@ -59,11 +63,12 @@ func ExtractJPEGMetadata(r io.ReadSeeker, md *ImageMetadata) error {
 		}
 
 		// Read segment length
-		var lengthBytes [2]byte
-		if _, err = io.ReadFull(r, lengthBytes[:]); err != nil {
+		lengthBytes := make([]byte, 2)
+		_, err = r.Read(lengthBytes)
+		if err != nil {
 			break
 		}
-		length := int(binary.BigEndian.Uint16(lengthBytes[:])) - 2
+		length := int(binary.BigEndian.Uint16(lengthBytes)) - 2
 
 		// Handle different segment types
 		switch markerType {
@@ -72,9 +77,9 @@ func ExtractJPEGMetadata(r io.ReadSeeker, md *ImageMetadata) error {
 			r.Seek(int64(length), io.SeekCurrent)
 
 		case 0xE1: // APP1 (EXIF)
-			segmentData := borrowBuffer(length)
-			if _, err = io.ReadFull(r, segmentData); err != nil {
-				releaseBuffer(segmentData)
+			segmentData := make([]byte, length)
+			_, err = r.Read(segmentData)
+			if err != nil {
 				continue
 			}
 			// Check for EXIF identifier
@@ -82,65 +87,65 @@ func ExtractJPEGMetadata(r io.ReadSeeker, md *ImageMetadata) error {
 				// Parse EXIF from segment data
 				exifData, err := parseTIFF(segmentData[6:])
 				if err == nil {
-					md.mergeEXIF(exifData)
+					for k, v := range exifData {
+						result.EXIF[k] = v
+					}
 				}
 			}
-			releaseBuffer(segmentData)
 
 		case 0xE2: // APP2 (ICC Profile)
-			segmentData := borrowBuffer(length)
-			if _, err = io.ReadFull(r, segmentData); err != nil {
-				releaseBuffer(segmentData)
+			segmentData := make([]byte, length)
+			_, err = r.Read(segmentData)
+			if err != nil {
 				continue
 			}
 			// Check for ICC profile identifier
 			if len(segmentData) >= 11 && string(segmentData[0:11]) == "ICC_PROFILE" {
 				hasICC = true
 			}
-			releaseBuffer(segmentData)
 
 		case 0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF:
 			// SOF (Start of Frame) segments - contain image dimensions
-			readLen := 9
-			if length < readLen {
-				readLen = length
+			readLen := length
+			if readLen > 9 {
+				readLen = 9
 			}
-			var sofBuf [9]byte
-			if _, err = io.ReadFull(r, sofBuf[:readLen]); err != nil {
+			sofData := make([]byte, readLen)
+			_, err = r.Read(sofData)
+			if err != nil {
 				continue
 			}
-			sofData := sofBuf[:readLen]
 			if len(sofData) >= 5 {
 				// Precision (bits per sample)
 				precision := int(sofData[0])
-				md.ColorDepth = precision * 3 // Assuming RGB
-				md.setAdditional("BitsPerSample", precision)
+				result.ColorDepth = precision * 3 // Assuming RGB
+				result.Additional["BitsPerSample"] = precision
 
 				// Height and Width (big-endian)
 				height := int(binary.BigEndian.Uint16(sofData[1:3]))
 				width := int(binary.BigEndian.Uint16(sofData[3:5]))
-				md.Height = height
-				md.Width = width
+				result.Height = height
+				result.Width = width
 
 				// Number of components
 				if len(sofData) >= 6 {
 					numComponents := int(sofData[5])
-					md.setAdditional("Components", numComponents)
+					result.Additional["Components"] = numComponents
 					switch numComponents {
 					case 1:
-						md.ColorSpace = "Grayscale"
+						result.ColorSpace = "Grayscale"
 					case 3:
-						md.ColorSpace = "RGB"
+						result.ColorSpace = "RGB"
 					case 4:
-						md.ColorSpace = "CMYK"
+						result.ColorSpace = "CMYK"
 					default:
-						md.ColorSpace = "Unknown"
+						result.ColorSpace = "Unknown"
 					}
 				}
 			}
 			// Skip remaining segment data
-			if length > readLen {
-				r.Seek(int64(length-readLen), io.SeekCurrent)
+			if length > 9 {
+				r.Seek(int64(length-9), io.SeekCurrent)
 			}
 
 		default:
@@ -149,12 +154,12 @@ func ExtractJPEGMetadata(r io.ReadSeeker, md *ImageMetadata) error {
 		}
 	}
 
-	md.HasICCProfile = hasICC
+	result.HasICCProfile = hasICC
 
 	// Set default color space if not set
-	if md.ColorSpace == "" {
-		md.ColorSpace = "RGB"
+	if result.ColorSpace == "" {
+		result.ColorSpace = "RGB"
 	}
 
-	return nil
+	return result, nil
 }
