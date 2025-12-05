@@ -85,10 +85,10 @@ func (m *Metadata) GetAll(ids ...TagID) map[TagID]any {
 
 // Each iterates over all tags, calling fn for each tag.
 // If fn returns false, iteration stops.
-func (m *Metadata) Each(fn func(Tag) bool) {
+func (m *Metadata) Each(fn func(Directory, Tag) bool) {
 	for _, dir := range m.Directories {
 		for _, tag := range dir.Tags {
-			if !fn(tag) {
+			if !fn(dir, tag) {
 				return
 			}
 		}
