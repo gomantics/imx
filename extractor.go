@@ -2,8 +2,11 @@ package imx
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"net/http"
+	"os"
 
 	"github.com/gomantics/imx/internal/format"
 	"github.com/gomantics/imx/internal/format/jpeg"
@@ -11,74 +14,16 @@ import (
 	"github.com/gomantics/imx/internal/meta/exif"
 )
 
-// Format represents an image container format (JPEG, PNG, WebP, etc.)
-type Format = format.Format
-
-const (
-	FormatJPEG = format.FormatJPEG
-	FormatPNG  = format.FormatPNG
-	FormatWebP = format.FormatWebP
-	FormatTIFF = format.FormatTIFF
-	FormatHEIF = format.FormatHEIF
-)
-
-// ExtractorConfig holds configuration options for metadata extraction
-type ExtractorConfig struct {
-	MaxBytes       int64        // Maximum bytes to read (0 = no limit)
-	BufferSize     int          // Buffer size for reading (0 = default 64KB)
-	Specs          []Spec       // Metadata specs to extract (nil/empty = all)
-	Formats        []Format     // Formats to detect (nil/empty = all registered)
-	StopOnFirstErr bool         // Stop on first error vs. continue with partial results
-}
-
-// Option is a functional option for configuring an Extractor
-type Option func(*ExtractorConfig)
-
-// WithMaxBytes sets the maximum number of bytes to read
-func WithMaxBytes(n int64) Option {
-	return func(cfg *ExtractorConfig) {
-		cfg.MaxBytes = n
-	}
-}
-
-// WithBufferSize sets the buffer size for reading
-func WithBufferSize(n int) Option {
-	return func(cfg *ExtractorConfig) {
-		cfg.BufferSize = n
-	}
-}
-
-// WithSpecs sets the metadata specs to extract
-func WithSpecs(specs ...Spec) Option {
-	return func(cfg *ExtractorConfig) {
-		cfg.Specs = specs
-	}
-}
-
-// WithFormats sets the formats to detect
-func WithFormats(fs ...Format) Option {
-	return func(cfg *ExtractorConfig) {
-		cfg.Formats = fs
-	}
-}
-
-// WithStopOnFirstError configures the extractor to stop on first error
-func WithStopOnFirstError() Option {
-	return func(cfg *ExtractorConfig) {
-		cfg.StopOnFirstErr = true
-	}
-}
-
 // Extractor is a reusable metadata extractor, safe for concurrent use
 type Extractor struct {
-	cfg           ExtractorConfig
+	cfg           Config
 	formatParsers []format.Parser
 	metaParsers   []meta.Parser
 }
 
 // New creates a new Extractor with the given options
 func New(opts ...Option) *Extractor {
-	cfg := ExtractorConfig{
+	cfg := Config{
 		BufferSize: 64 * 1024, // 64KB default
 	}
 	for _, opt := range opts {
@@ -171,6 +116,37 @@ func (e *Extractor) Metadata(r io.Reader, opts ...Option) (Metadata, error) {
 	result.BuildIndex()
 
 	return result, nil
+}
+
+// ExtractFromFile extracts metadata from a file path using this extractor
+func (e *Extractor) ExtractFromFile(path string, opts ...Option) (Metadata, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return Metadata{}, fmt.Errorf("imx: open file: %w", err)
+	}
+	defer f.Close()
+
+	return e.Metadata(f, opts...)
+}
+
+// ExtractFromBytes extracts metadata from a byte slice using this extractor
+func (e *Extractor) ExtractFromBytes(data []byte, opts ...Option) (Metadata, error) {
+	return e.Metadata(bytes.NewReader(data), opts...)
+}
+
+// ExtractFromURL extracts metadata from an HTTP/HTTPS URL using this extractor
+func (e *Extractor) ExtractFromURL(url string, opts ...Option) (Metadata, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return Metadata{}, fmt.Errorf("imx: fetch url: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return Metadata{}, fmt.Errorf("imx: http status %d", resp.StatusCode)
+	}
+
+	return e.Metadata(resp.Body, opts...)
 }
 
 // Helper functions

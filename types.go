@@ -3,7 +3,19 @@ package imx
 import (
 	"time"
 
+	"github.com/gomantics/imx/internal/format"
 	"github.com/gomantics/imx/internal/meta"
+)
+
+// Format represents an image container format (JPEG, PNG, WebP, etc.)
+type Format = format.Format
+
+const (
+	FormatJPEG = format.FormatJPEG
+	FormatPNG  = format.FormatPNG
+	FormatWebP = format.FormatWebP
+	FormatTIFF = format.FormatTIFF
+	FormatHEIF = format.FormatHEIF
 )
 
 // Spec represents a metadata specification (EXIF, IPTC, XMP, ICC, etc.)

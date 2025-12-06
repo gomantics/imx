@@ -77,59 +77,6 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestWithMaxBytes(t *testing.T) {
-	cfg := ExtractorConfig{}
-	opt := WithMaxBytes(1024)
-	opt(&cfg)
-
-	if cfg.MaxBytes != 1024 {
-		t.Errorf("WithMaxBytes() MaxBytes = %d, want 1024", cfg.MaxBytes)
-	}
-}
-
-func TestWithBufferSize(t *testing.T) {
-	cfg := ExtractorConfig{}
-	opt := WithBufferSize(32768)
-	opt(&cfg)
-
-	if cfg.BufferSize != 32768 {
-		t.Errorf("WithBufferSize() BufferSize = %d, want 32768", cfg.BufferSize)
-	}
-}
-
-func TestWithSpecs(t *testing.T) {
-	cfg := ExtractorConfig{}
-	opt := WithSpecs(SpecEXIF, SpecXMP)
-	opt(&cfg)
-
-	if len(cfg.Specs) != 2 {
-		t.Errorf("WithSpecs() len(Specs) = %d, want 2", len(cfg.Specs))
-	}
-	if cfg.Specs[0] != SpecEXIF || cfg.Specs[1] != SpecXMP {
-		t.Error("WithSpecs() Specs not set correctly")
-	}
-}
-
-func TestWithFormats(t *testing.T) {
-	cfg := ExtractorConfig{}
-	opt := WithFormats(FormatJPEG, FormatPNG)
-	opt(&cfg)
-
-	if len(cfg.Formats) != 2 {
-		t.Errorf("WithFormats() len(Formats) = %d, want 2", len(cfg.Formats))
-	}
-}
-
-func TestWithStopOnFirstError(t *testing.T) {
-	cfg := ExtractorConfig{}
-	opt := WithStopOnFirstError()
-	opt(&cfg)
-
-	if !cfg.StopOnFirstErr {
-		t.Error("WithStopOnFirstError() StopOnFirstErr should be true")
-	}
-}
-
 func TestExtractor_Metadata(t *testing.T) {
 	validJPEG := loadTestJPEG(t)
 
@@ -248,44 +195,28 @@ func TestExtractor_Metadata_StopOnFirstError(t *testing.T) {
 
 func TestFilterBlocksForSpec(t *testing.T) {
 	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecEXIF), Payload: []byte("exif1")},
-		{Spec: int(meta.SpecXMP), Payload: []byte("xmp1")},
-		{Spec: int(meta.SpecEXIF), Payload: []byte("exif2")},
-		{Spec: int(meta.SpecICC), Payload: []byte("icc1")},
+		{Spec: int(meta.SpecEXIF), Payload: []byte{1}},
+		{Spec: int(meta.SpecXMP), Payload: []byte{2}},
+		{Spec: int(meta.SpecEXIF), Payload: []byte{3}},
+		{Spec: int(meta.SpecICC), Payload: []byte{4}},
 	}
 
 	tests := []struct {
-		name string
-		spec Spec
-		want int
+		name      string
+		spec      Spec
+		wantCount int
 	}{
-		{
-			name: "filter EXIF",
-			spec: SpecEXIF,
-			want: 2,
-		},
-		{
-			name: "filter XMP",
-			spec: SpecXMP,
-			want: 1,
-		},
-		{
-			name: "filter ICC",
-			spec: SpecICC,
-			want: 1,
-		},
-		{
-			name: "filter IPTC (none)",
-			spec: SpecIPTC,
-			want: 0,
-		},
+		{"filter EXIF", SpecEXIF, 2},
+		{"filter XMP", SpecXMP, 1},
+		{"filter ICC", SpecICC, 1},
+		{"filter IPTC (none)", SpecIPTC, 0},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := filterBlocksForSpec(blocks, tt.spec)
-			if len(result) != tt.want {
-				t.Errorf("filterBlocksForSpec() = %d blocks, want %d", len(result), tt.want)
+			if len(result) != tt.wantCount {
+				t.Errorf("filterBlocksForSpec() returned %d blocks, want %d", len(result), tt.wantCount)
 			}
 		})
 	}
@@ -299,15 +230,15 @@ func TestContains(t *testing.T) {
 		want  bool
 	}{
 		{
-			name:  "item present",
+			name:  "item in slice",
 			slice: []Spec{SpecEXIF, SpecXMP, SpecICC},
 			item:  SpecXMP,
 			want:  true,
 		},
 		{
-			name:  "item not present",
+			name:  "item not in slice",
 			slice: []Spec{SpecEXIF, SpecXMP},
-			item:  SpecIPTC,
+			item:  SpecICC,
 			want:  false,
 		},
 		{
@@ -329,29 +260,6 @@ func TestContains(t *testing.T) {
 			result := contains(tt.slice, tt.item)
 			if result != tt.want {
 				t.Errorf("contains() = %v, want %v", result, tt.want)
-			}
-		})
-	}
-}
-
-func TestFormat_Constants(t *testing.T) {
-	// Verify Format constants are exported correctly
-	tests := []struct {
-		name   string
-		format Format
-		want   int
-	}{
-		{"FormatJPEG", FormatJPEG, int(format.FormatJPEG)},
-		{"FormatPNG", FormatPNG, int(format.FormatPNG)},
-		{"FormatWebP", FormatWebP, int(format.FormatWebP)},
-		{"FormatTIFF", FormatTIFF, int(format.FormatTIFF)},
-		{"FormatHEIF", FormatHEIF, int(format.FormatHEIF)},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if int(tt.format) != tt.want {
-				t.Errorf("%s = %d, want %d", tt.name, tt.format, tt.want)
 			}
 		})
 	}
