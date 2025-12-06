@@ -334,16 +334,24 @@ func TestExtractMetadataContent(t *testing.T) {
 	}
 
 	// Verify we can get the Make tag (should be "NIKON CORPORATION" for a Nikon DSC file)
-	make := metadata.Make()
-	if make == "" {
-		t.Error("Expected Make to be non-empty for real JPEG file")
+	if tag, ok := metadata.Tag(SpecEXIF, TagMake); ok {
+		if make, ok := tag.Value.(string); ok && make != "" {
+			t.Logf("Camera Make: %s", make)
+		} else {
+			t.Error("Expected Make to be non-empty for real JPEG file")
+		}
+	} else {
+		t.Error("Expected Make tag to exist for real JPEG file")
 	}
-	t.Logf("Camera Make: %s", make)
 
 	// Verify we can get the Model tag
-	model := metadata.Model()
-	if model == "" {
-		t.Error("Expected Model to be non-empty for real JPEG file")
+	if tag, ok := metadata.Tag(SpecEXIF, TagModel); ok {
+		if model, ok := tag.Value.(string); ok && model != "" {
+			t.Logf("Camera Model: %s", model)
+		} else {
+			t.Error("Expected Model to be non-empty for real JPEG file")
+		}
+	} else {
+		t.Error("Expected Model tag to exist for real JPEG file")
 	}
-	t.Logf("Camera Model: %s", model)
 }

@@ -9,16 +9,17 @@ import (
 
 func TestPartialError_Error(t *testing.T) {
 	tests := []struct {
-		name    string
-		err     *PartialError
-		wantMsg string
+		name        string
+		err         *PartialError
+		wantMsg     string
+		wantContain []string
 	}{
 		{
 			name: "format error only",
 			err: &PartialError{
 				FormatErr: errors.New("invalid format"),
 			},
-			wantMsg: "imx: format error: invalid format",
+			wantMsg: "imx: format: invalid format",
 		},
 		{
 			name: "spec errors only",
@@ -27,7 +28,7 @@ func TestPartialError_Error(t *testing.T) {
 					meta.SpecEXIF: errors.New("exif parse error"),
 				},
 			},
-			wantMsg: "imx: spec errors: map[exif:exif parse error]",
+			wantMsg: "imx: exif: exif parse error",
 		},
 		{
 			name:    "empty error (neither format nor spec)",
@@ -35,42 +36,63 @@ func TestPartialError_Error(t *testing.T) {
 			wantMsg: "imx: partial error",
 		},
 		{
-			name: "format error takes precedence over spec errors",
+			name: "multiple errors",
 			err: &PartialError{
 				FormatErr: errors.New("format first"),
 				SpecErrs: map[meta.Spec]error{
 					meta.SpecEXIF: errors.New("exif error"),
 				},
 			},
-			wantMsg: "imx: format error: format first",
+			wantContain: []string{"format: format first", "exif: exif error", "multiple errors"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.err.Error()
-			if got != tt.wantMsg {
-				t.Errorf("Error() = %q, want %q", got, tt.wantMsg)
+			if tt.wantMsg != "" {
+				if got != tt.wantMsg {
+					t.Errorf("Error() = %q, want %q", got, tt.wantMsg)
+				}
+			}
+			if tt.wantContain != nil {
+				for _, substr := range tt.wantContain {
+					if !containsSubstring(got, substr) {
+						t.Errorf("Error() = %q, want to contain %q", got, substr)
+					}
+				}
 			}
 		})
 	}
 }
 
+func containsSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
 func TestPartialError_Unwrap(t *testing.T) {
 	formatErr := errors.New("format error")
 	exifErr := errors.New("exif error")
+	iptcErr := errors.New("iptc error")
 
 	tests := []struct {
-		name    string
-		err     *PartialError
-		wantErr error
+		name      string
+		err       *PartialError
+		wantErrs  []error
+		wantCount int
 	}{
 		{
 			name: "unwrap format error",
 			err: &PartialError{
 				FormatErr: formatErr,
 			},
-			wantErr: formatErr,
+			wantErrs:  []error{formatErr},
+			wantCount: 1,
 		},
 		{
 			name: "unwrap spec error when no format error",
@@ -79,30 +101,48 @@ func TestPartialError_Unwrap(t *testing.T) {
 					meta.SpecEXIF: exifErr,
 				},
 			},
-			wantErr: exifErr,
+			wantErrs:  []error{exifErr},
+			wantCount: 1,
 		},
 		{
-			name:    "unwrap nil when empty",
-			err:     &PartialError{},
-			wantErr: nil,
+			name:      "unwrap empty when empty",
+			err:       &PartialError{},
+			wantErrs:  []error{},
+			wantCount: 0,
 		},
 		{
-			name: "format error takes precedence",
+			name: "unwrap all errors",
 			err: &PartialError{
 				FormatErr: formatErr,
 				SpecErrs: map[meta.Spec]error{
 					meta.SpecEXIF: exifErr,
+					meta.SpecIPTC: iptcErr,
 				},
 			},
-			wantErr: formatErr,
+			wantErrs:  []error{formatErr, exifErr, iptcErr},
+			wantCount: 3,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.err.Unwrap()
-			if got != tt.wantErr {
-				t.Errorf("Unwrap() = %v, want %v", got, tt.wantErr)
+			if len(got) != tt.wantCount {
+				t.Errorf("Unwrap() returned %d errors, want %d", len(got), tt.wantCount)
+			}
+
+			// Verify all expected errors are present using errors.Is
+			for _, wantErr := range tt.wantErrs {
+				found := false
+				for _, gotErr := range got {
+					if errors.Is(gotErr, wantErr) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Unwrap() missing expected error: %v", wantErr)
+				}
 			}
 		})
 	}
