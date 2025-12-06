@@ -7,14 +7,14 @@ import (
 	"github.com/gomantics/imx/internal/types"
 )
 
-// Namespace represents a metadata namespace (EXIF, IPTC, XMP, ICC, etc.)
-type Namespace = types.Namespace
+// Spec represents a metadata specification (EXIF, IPTC, XMP, ICC, etc.)
+type Spec = types.Spec
 
 const (
-	NamespaceEXIF = types.NamespaceEXIF
-	NamespaceIPTC = types.NamespaceIPTC
-	NamespaceXMP  = types.NamespaceXMP
-	NamespaceICC  = types.NamespaceICC
+	SpecEXIF = types.SpecEXIF
+	SpecIPTC = types.SpecIPTC
+	SpecXMP  = types.SpecXMP
+	SpecICC  = types.SpecICC
 )
 
 // TagID is a unique identifier for a metadata tag (e.g. "Exif:DateTimeOriginal")
@@ -23,7 +23,7 @@ type TagID = meta.TagID
 // Tag represents a single metadata attribute
 type Tag = meta.Tag
 
-// Directory is a logical collection of tags for a given namespace and grouping
+// Directory is a logical collection of tags for a given kind and grouping
 type Directory = meta.Directory
 
 // Metadata is the top-level container for all parsed metadata
@@ -32,28 +32,28 @@ type Metadata struct {
 	index       map[TagID]*Tag // Internal index for fast lookup
 }
 
-// Directory returns the directory with the given namespace and name
-func (m *Metadata) Directory(namespace Namespace, name string) (Directory, bool) {
+// Directory returns the directory with the given spec and name
+func (m *Metadata) Directory(spec Spec, name string) (Directory, bool) {
 	for _, dir := range m.Directories {
-		if dir.Namespace == namespace && dir.Name == name {
+		if dir.Spec == spec && dir.Name == name {
 			return dir, true
 		}
 	}
 	return Directory{}, false
 }
 
-// Tag returns the tag with the given namespace and ID
-func (m *Metadata) Tag(namespace Namespace, id TagID) (Tag, bool) {
+// Tag returns the tag with the given spec and ID
+func (m *Metadata) Tag(spec Spec, id TagID) (Tag, bool) {
 	// Use index if available
 	if m.index != nil {
-		if tag, ok := m.index[id]; ok && tag.Namespace == namespace {
+		if tag, ok := m.index[id]; ok && tag.Spec == spec {
 			return *tag, true
 		}
 	}
 
 	// Fallback: scan directories
 	for _, dir := range m.Directories {
-		if dir.Namespace == namespace {
+		if dir.Spec == spec {
 			if tag, ok := dir.Tags[id]; ok {
 				return tag, true
 			}
@@ -95,11 +95,11 @@ func (m *Metadata) Each(fn func(Directory, Tag) bool) {
 	}
 }
 
-// EachInNamespace iterates over tags in the given namespace.
+// EachInSpec iterates over tags in the given spec.
 // If fn returns false, iteration stops.
-func (m *Metadata) EachInNamespace(namespace Namespace, fn func(Tag) bool) {
+func (m *Metadata) EachInSpec(spec Spec, fn func(Tag) bool) {
 	for _, dir := range m.Directories {
-		if dir.Namespace == namespace {
+		if dir.Spec == spec {
 			for _, tag := range dir.Tags {
 				if !fn(tag) {
 					return
@@ -113,7 +113,7 @@ func (m *Metadata) EachInNamespace(namespace Namespace, fn func(Tag) bool) {
 
 // DateTimeOriginal returns the EXIF DateTimeOriginal as time.Time (zero value if missing)
 func (m *Metadata) DateTimeOriginal() time.Time {
-	if tag, ok := m.Tag(NamespaceEXIF, "Exif:DateTimeOriginal"); ok {
+	if tag, ok := m.Tag(SpecEXIF, "Exif:DateTimeOriginal"); ok {
 		if t, ok := tag.Value.(time.Time); ok {
 			return t
 		}
@@ -123,7 +123,7 @@ func (m *Metadata) DateTimeOriginal() time.Time {
 
 // Orientation returns the EXIF Orientation (0 if missing)
 func (m *Metadata) Orientation() int {
-	if tag, ok := m.Tag(NamespaceEXIF, "Exif:Orientation"); ok {
+	if tag, ok := m.Tag(SpecEXIF, "Exif:Orientation"); ok {
 		if i, ok := tag.Value.(int); ok {
 			return i
 		}
@@ -133,7 +133,7 @@ func (m *Metadata) Orientation() int {
 
 // Make returns the camera make (empty string if missing)
 func (m *Metadata) Make() string {
-	if tag, ok := m.Tag(NamespaceEXIF, "Exif:Make"); ok {
+	if tag, ok := m.Tag(SpecEXIF, "Exif:Make"); ok {
 		if s, ok := tag.Value.(string); ok {
 			return s
 		}
@@ -143,7 +143,7 @@ func (m *Metadata) Make() string {
 
 // Model returns the camera model (empty string if missing)
 func (m *Metadata) Model() string {
-	if tag, ok := m.Tag(NamespaceEXIF, "Exif:Model"); ok {
+	if tag, ok := m.Tag(SpecEXIF, "Exif:Model"); ok {
 		if s, ok := tag.Value.(string); ok {
 			return s
 		}
@@ -160,7 +160,7 @@ type GPSCoord struct {
 
 // GPSCoordinates returns the GPS coordinates (nil if missing)
 func (m *Metadata) GPSCoordinates() *GPSCoord {
-	if tag, ok := m.Tag(NamespaceEXIF, "Exif:GPSCoordinates"); ok {
+	if tag, ok := m.Tag(SpecEXIF, "Exif:GPSCoordinates"); ok {
 		if gps, ok := tag.Value.(*GPSCoord); ok {
 			return gps
 		}
@@ -170,7 +170,7 @@ func (m *Metadata) GPSCoordinates() *GPSCoord {
 
 // ISO returns the ISO speed (0 if missing)
 func (m *Metadata) ISO() int {
-	if tag, ok := m.Tag(NamespaceEXIF, "Exif:ISO"); ok {
+	if tag, ok := m.Tag(SpecEXIF, "Exif:ISO"); ok {
 		if i, ok := tag.Value.(int); ok {
 			return i
 		}

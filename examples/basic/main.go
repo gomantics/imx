@@ -37,13 +37,13 @@ func main() {
 	// Print all EXIF tags using iterator
 	fmt.Println("\n=== All EXIF Tags ===")
 	meta.Each(func(dir imx.Directory, tag imx.Tag) bool {
-		fmt.Printf("%s:%s = %v (%s)\n", dir.Name, tag.Name, tag.Value, tag.Type)
+		fmt.Printf("%s:%s = %v (%s)\n", dir.Name, tag.Name, tag.Value, tag.DataType)
 		return true
 	})
 
 	// Print directories
 	fmt.Println("\n=== Directories ===")
 	for _, dir := range meta.Directories {
-		fmt.Printf("%s:%s - %d tags\n", dir.Namespace, dir.Name, len(dir.Tags))
+		fmt.Printf("%s:%s - %d tags\n", dir.Spec, dir.Name, len(dir.Tags))
 	}
 }

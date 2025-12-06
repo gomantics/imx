@@ -8,11 +8,11 @@ import (
 
 // RawBlock is a raw metadata payload extracted from an image format
 type RawBlock struct {
-	Kind    types.MetaKind
+	Spec    types.Spec
 	Payload []byte
 	Origin  string       // e.g. "APP1 Exif", "eXIf chunk"
 	Format  types.Format
-	Index   int          // sequence number for multiple blocks of same type
+	Index   int // sequence number for multiple blocks of same type
 }
 
 // Parser is the interface for format parsers

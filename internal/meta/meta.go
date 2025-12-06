@@ -5,14 +5,11 @@ import (
 	"github.com/gomantics/imx/internal/types"
 )
 
-// Namespace is a metadata namespace identifier
-type Namespace = types.Namespace
-
-// Directory is a logical collection of tags for a given namespace and grouping
+// Directory is a logical collection of tags for a given metadata spec
 type Directory struct {
-	Namespace Namespace
-	Name      string
-	Tags      map[TagID]Tag
+	Spec types.Spec
+	Name string
+	Tags map[TagID]Tag
 }
 
 // TagID is a unique identifier for a metadata tag
@@ -20,18 +17,18 @@ type TagID string
 
 // Tag represents a single metadata attribute
 type Tag struct {
-	Namespace Namespace
-	ID        TagID
-	Name      string
-	Type      string
-	Value     any
-	Raw       []byte
+	Spec     types.Spec
+	ID       TagID
+	Name     string
+	DataType string
+	Value    any
+	Raw      []byte
 }
 
-// Parser is the interface for namespace parsers
+// Parser is the interface for metadata parsers
 type Parser interface {
-	// Namespace returns the namespace this parser handles
-	Namespace() Namespace
+	// Spec returns the metadata spec this parser handles
+	Spec() types.Spec
 
 	// Parse consumes relevant RawBlocks and returns Directories
 	Parse(blocks []format.RawBlock) ([]Directory, error)

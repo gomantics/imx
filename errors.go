@@ -15,16 +15,16 @@ var (
 // PartialError represents errors that occurred during metadata extraction
 // while still producing partial results
 type PartialError struct {
-	FormatErr     error
-	NamespaceErrs map[Namespace]error
+	FormatErr error
+	SpecErrs  map[Spec]error
 }
 
 func (e *PartialError) Error() string {
 	if e.FormatErr != nil {
 		return fmt.Sprintf("imx: format error: %v", e.FormatErr)
 	}
-	if len(e.NamespaceErrs) > 0 {
-		return fmt.Sprintf("imx: namespace errors: %v", e.NamespaceErrs)
+	if len(e.SpecErrs) > 0 {
+		return fmt.Sprintf("imx: spec errors: %v", e.SpecErrs)
 	}
 	return "imx: partial error"
 }
@@ -33,8 +33,8 @@ func (e *PartialError) Unwrap() error {
 	if e.FormatErr != nil {
 		return e.FormatErr
 	}
-	// Return first namespace error
-	for _, err := range e.NamespaceErrs {
+	// Return first spec error
+	for _, err := range e.SpecErrs {
 		return err
 	}
 	return nil

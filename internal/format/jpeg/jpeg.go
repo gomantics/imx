@@ -99,7 +99,7 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 			// APP1 can contain EXIF or XMP
 			if bytes.HasPrefix(data, exifMagic) {
 				blocks = append(blocks, format.RawBlock{
-					Kind:    types.MetaKindEXIF,
+					Spec:    types.SpecEXIF,
 					Payload: data[len(exifMagic):], // Skip "Exif\x00\x00"
 					Origin:  "APP1 Exif",
 					Format:  types.FormatJPEG,
@@ -108,7 +108,7 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 				exifIndex++
 			} else if bytes.HasPrefix(data, xmpMagic) {
 				blocks = append(blocks, format.RawBlock{
-					Kind:    types.MetaKindXMP,
+					Spec:    types.SpecXMP,
 					Payload: data[len(xmpMagic):], // Skip XMP namespace
 					Origin:  "APP1 XMP",
 					Format:  types.FormatJPEG,
@@ -121,7 +121,7 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 			// APP2 can contain ICC profiles
 			if bytes.HasPrefix(data, iccMagic) {
 				blocks = append(blocks, format.RawBlock{
-					Kind:    types.MetaKindICC,
+					Spec:    types.SpecICC,
 					Payload: data[len(iccMagic):], // Skip "ICC_PROFILE\x00"
 					Origin:  "APP2 ICC",
 					Format:  types.FormatJPEG,
@@ -134,7 +134,7 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 			// APP13 contains IPTC/Photoshop data
 			if bytes.HasPrefix(data, iptcMagic) {
 				blocks = append(blocks, format.RawBlock{
-					Kind:    types.MetaKindIPTC,
+					Spec:    types.SpecIPTC,
 					Payload: data[len(iptcMagic):], // Skip "Photoshop 3.0\x00"
 					Origin:  "APP13 IPTC",
 					Format:  types.FormatJPEG,

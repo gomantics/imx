@@ -43,10 +43,10 @@ func WithBufferSize(n int) Option {
 	}
 }
 
-// WithNamespaces sets the namespaces to extract
-func WithNamespaces(ns ...Namespace) Option {
+// WithSpecs sets the metadata specs to extract
+func WithSpecs(specs ...Spec) Option {
 	return func(cfg *types.ExtractorConfig) {
-		cfg.Namespaces = ns
+		cfg.Specs = specs
 	}
 }
 
@@ -136,15 +136,15 @@ func (e *Extractor) Metadata(r io.Reader, opts ...Option) (Metadata, error) {
 	var allDirs []meta.Directory
 
 	for _, metaParser := range e.metaParsers {
-		ns := metaParser.Namespace()
+		spec := metaParser.Spec()
 
-		// Apply namespace filter
-		if len(cfg.Namespaces) > 0 && !contains(cfg.Namespaces, ns) {
+		// Apply spec filter
+		if len(cfg.Specs) > 0 && !contains(cfg.Specs, spec) {
 			continue
 		}
 
-		// Filter blocks for this namespace
-		relevantBlocks := filterBlocksForNamespace(blocks, ns)
+		// Filter blocks for this spec
+		relevantBlocks := filterBlocksForSpec(blocks, spec)
 		if len(relevantBlocks) == 0 {
 			continue
 		}
@@ -153,7 +153,7 @@ func (e *Extractor) Metadata(r io.Reader, opts ...Option) (Metadata, error) {
 		dirs, err := metaParser.Parse(relevantBlocks)
 		if err != nil {
 			if cfg.StopOnFirstErr {
-				return Metadata{}, fmt.Errorf("imx: parse %s: %w", ns, err)
+				return Metadata{}, fmt.Errorf("imx: parse %s: %w", spec, err)
 			}
 			continue
 		}
@@ -170,33 +170,17 @@ func (e *Extractor) Metadata(r io.Reader, opts ...Option) (Metadata, error) {
 
 // Helper functions
 
-func filterBlocksForNamespace(blocks []format.RawBlock, ns types.Namespace) []format.RawBlock {
-	kind := namespaceToMetaKind(ns)
+func filterBlocksForSpec(blocks []format.RawBlock, spec types.Spec) []format.RawBlock {
 	var filtered []format.RawBlock
 	for _, b := range blocks {
-		if b.Kind == kind {
+		if b.Spec == spec {
 			filtered = append(filtered, b)
 		}
 	}
 	return filtered
 }
 
-func namespaceToMetaKind(ns types.Namespace) types.MetaKind {
-	switch ns {
-	case types.NamespaceEXIF:
-		return types.MetaKindEXIF
-	case types.NamespaceIPTC:
-		return types.MetaKindIPTC
-	case types.NamespaceXMP:
-		return types.MetaKindXMP
-	case types.NamespaceICC:
-		return types.MetaKindICC
-	default:
-		return -1
-	}
-}
-
-func contains(slice []types.Namespace, item types.Namespace) bool {
+func contains(slice []types.Spec, item types.Spec) bool {
 	for _, s := range slice {
 		if s == item {
 			return true

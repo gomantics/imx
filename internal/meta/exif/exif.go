@@ -18,9 +18,9 @@ func New() *Parser {
 	return &Parser{}
 }
 
-// Namespace returns the EXIF namespace
-func (p *Parser) Namespace() meta.Namespace {
-	return "exif"
+// Spec returns the EXIF metadata spec
+func (p *Parser) Spec() types.Spec {
+	return types.SpecEXIF
 }
 
 // Parse extracts EXIF data from raw blocks
@@ -28,7 +28,7 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 	var dirs []meta.Directory
 
 	for _, block := range blocks {
-		if block.Kind != types.MetaKindEXIF {
+		if block.Spec != types.SpecEXIF {
 			continue
 		}
 
@@ -122,9 +122,9 @@ func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, n
 	offset += 2
 
 	dir := meta.Directory{
-		Namespace: "exif",
-		Name:      name,
-		Tags:      make(map[meta.TagID]meta.Tag),
+		Spec: types.SpecEXIF,
+		Name: name,
+		Tags: make(map[meta.TagID]meta.Tag),
 	}
 
 	// Parse each entry (12 bytes each)
@@ -158,7 +158,7 @@ func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder,
 	valueOffset := offset + 8 // Last 4 bytes contain value or offset
 
 	tag := meta.Tag{
-		Namespace: "exif",
+		Spec: types.SpecEXIF,
 	}
 
 	// Get tag name and ID based on IFD
@@ -182,7 +182,7 @@ func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder,
 	// Parse value based on type
 	value, typeName := p.parseValue(data, tagType, count, valueOffset, byteOrder)
 	tag.Value = value
-	tag.Type = typeName
+	tag.DataType = typeName
 
 	// Store raw bytes (4 bytes of value/offset)
 	tag.Raw = make([]byte, 4)
