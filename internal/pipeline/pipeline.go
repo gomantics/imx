@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gomantics/imx/internal/container"
+	"github.com/gomantics/imx/internal/container/jpeg"
 	"github.com/gomantics/imx/internal/meta"
 	"github.com/gomantics/imx/internal/meta/exif"
 	"github.com/gomantics/imx/internal/types"
@@ -31,13 +32,20 @@ func (p *Pipeline) Extract(r *bufio.Reader, cfg types.ExtractorConfig) (Metadata
 		return Metadata{}, fmt.Errorf("imx: peek failed: %w", err)
 	}
 
-	parser := container.Detect(peek)
+	// Temporary: Create parser on the spot
+	// TODO: This will be refactored when we move orchestration to extractor
+	var parser container.Parser
+	jpegParser := jpeg.New()
+	if jpegParser.Detect(peek) {
+		parser = jpegParser
+	}
+
 	if parser == nil {
 		return Metadata{}, fmt.Errorf("imx: unknown format")
 	}
 
 	// Step 2: Container parsing - extract raw blocks
-	blocks, err := parser.Parse(r, cfg)
+	blocks, err := parser.Parse(r)
 	if err != nil {
 		return Metadata{}, fmt.Errorf("imx: parse container: %w", err)
 	}

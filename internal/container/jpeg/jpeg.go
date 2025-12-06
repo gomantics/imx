@@ -13,12 +13,12 @@ import (
 
 // JPEG marker constants
 const (
-	markerSOI  = 0xD8 // Start of Image
-	markerEOI  = 0xD9 // End of Image
-	markerSOS  = 0xDA // Start of Scan
-	markerAPP0 = 0xE0 // APP0
-	markerAPP1 = 0xE1 // APP1 (EXIF, XMP)
-	markerAPP2 = 0xE2 // APP2 (ICC, FlashPix)
+	markerSOI   = 0xD8 // Start of Image
+	markerEOI   = 0xD9 // End of Image
+	markerSOS   = 0xDA // Start of Scan
+	markerAPP0  = 0xE0 // APP0
+	markerAPP1  = 0xE1 // APP1 (EXIF, XMP)
+	markerAPP2  = 0xE2 // APP2 (ICC, FlashPix)
 	markerAPP13 = 0xED // APP13 (IPTC, Photoshop)
 )
 
@@ -33,6 +33,11 @@ var (
 // Parser implements container.Parser for JPEG
 type Parser struct{}
 
+// New creates a JPEG parser
+func New() *Parser {
+	return &Parser{}
+}
+
 // Detect checks if the data is a JPEG file
 func (p *Parser) Detect(peek []byte) bool {
 	// JPEG starts with SOI marker: 0xFF 0xD8
@@ -40,7 +45,7 @@ func (p *Parser) Detect(peek []byte) bool {
 }
 
 // Parse extracts metadata blocks from a JPEG file
-func (p *Parser) Parse(r *bufio.Reader, cfg types.ExtractorConfig) ([]container.RawBlock, error) {
+func (p *Parser) Parse(r *bufio.Reader) ([]container.RawBlock, error) {
 	var blocks []container.RawBlock
 	exifIndex := 0
 	xmpIndex := 0
@@ -160,8 +165,4 @@ func readMarker(r *bufio.Reader) (byte, error) {
 	}
 
 	return b, nil
-}
-
-func init() {
-	container.Register(&Parser{})
 }
