@@ -2,13 +2,17 @@ package imx
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 
-	"github.com/gomantics/imx/internal/pipeline"
+	"github.com/gomantics/imx/internal/format"
+	"github.com/gomantics/imx/internal/format/jpeg"
+	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/meta/exif"
 	"github.com/gomantics/imx/internal/types"
 )
 
-// Format represents a container format (JPEG, PNG, WebP, etc.)
+// Format represents an image container format (JPEG, PNG, WebP, etc.)
 type Format = types.Format
 
 const (
@@ -62,8 +66,9 @@ func WithStopOnFirstError() Option {
 
 // Extractor is a reusable metadata extractor, safe for concurrent use
 type Extractor struct {
-	cfg      types.ExtractorConfig
-	pipeline *pipeline.Pipeline
+	cfg           types.ExtractorConfig
+	formatParsers []format.Parser
+	metaParsers   []meta.Parser
 }
 
 // New creates a new Extractor with the given options
@@ -75,10 +80,17 @@ func New(opts ...Option) *Extractor {
 		opt(&cfg)
 	}
 
-	return &Extractor{
-		cfg:      cfg,
-		pipeline: pipeline.New(),
+	e := &Extractor{
+		cfg: cfg,
+		formatParsers: []format.Parser{
+			jpeg.New(),
+		},
+		metaParsers: []meta.Parser{
+			exif.New(),
+		},
 	}
+
+	return e
 }
 
 // Metadata extracts metadata from an io.Reader
@@ -97,19 +109,100 @@ func (e *Extractor) Metadata(r io.Reader, opts ...Option) (Metadata, error) {
 	// Wrap with buffered reader
 	br := bufio.NewReaderSize(r, cfg.BufferSize)
 
-	// Execute pipeline
-	pipelineResult, err := e.pipeline.Extract(br, cfg)
+	// Step 1: Format detection
+	peek, err := br.Peek(64)
 	if err != nil {
-		return Metadata{}, err
+		return Metadata{}, fmt.Errorf("imx: peek failed: %w", err)
 	}
 
-	// Convert pipeline.Metadata to imx.Metadata
-	result := Metadata{
-		Directories: pipelineResult.Directories,
+	var formatParser format.Parser
+	for _, p := range e.formatParsers {
+		if p.Detect(peek) {
+			formatParser = p
+			break
+		}
 	}
+	if formatParser == nil {
+		return Metadata{}, ErrUnknownFormat
+	}
+
+	// Step 2: Extract raw blocks from format
+	blocks, err := formatParser.Parse(br)
+	if err != nil {
+		return Metadata{}, fmt.Errorf("imx: parse format: %w", err)
+	}
+
+	// Step 3: Parse metadata from blocks
+	var allDirs []meta.Directory
+
+	for _, metaParser := range e.metaParsers {
+		ns := metaParser.Namespace()
+
+		// Apply namespace filter
+		if len(cfg.Namespaces) > 0 && !contains(cfg.Namespaces, ns) {
+			continue
+		}
+
+		// Filter blocks for this namespace
+		relevantBlocks := filterBlocksForNamespace(blocks, ns)
+		if len(relevantBlocks) == 0 {
+			continue
+		}
+
+		// Parse
+		dirs, err := metaParser.Parse(relevantBlocks)
+		if err != nil {
+			if cfg.StopOnFirstErr {
+				return Metadata{}, fmt.Errorf("imx: parse %s: %w", ns, err)
+			}
+			continue
+		}
+
+		allDirs = append(allDirs, dirs...)
+	}
+
+	// Step 4: Build result
+	result := Metadata{Directories: allDirs}
 	result.BuildIndex()
 
 	return result, nil
+}
+
+// Helper functions
+
+func filterBlocksForNamespace(blocks []format.RawBlock, ns types.Namespace) []format.RawBlock {
+	kind := namespaceToMetaKind(ns)
+	var filtered []format.RawBlock
+	for _, b := range blocks {
+		if b.Kind == kind {
+			filtered = append(filtered, b)
+		}
+	}
+	return filtered
+}
+
+func namespaceToMetaKind(ns types.Namespace) types.MetaKind {
+	switch ns {
+	case types.NamespaceEXIF:
+		return types.MetaKindEXIF
+	case types.NamespaceIPTC:
+		return types.MetaKindIPTC
+	case types.NamespaceXMP:
+		return types.MetaKindXMP
+	case types.NamespaceICC:
+		return types.MetaKindICC
+	default:
+		return -1
+	}
+}
+
+func contains(slice []types.Namespace, item types.Namespace) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 // Default extractor instance

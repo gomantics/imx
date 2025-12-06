@@ -1,6 +1,6 @@
 package types
 
-// Format represents a container format (JPEG, PNG, WebP, etc.)
+// Format represents an image container format (JPEG, PNG, WebP, etc.)
 type Format string
 
 const (
@@ -19,6 +19,16 @@ const (
 	NamespaceIPTC Namespace = "iptc"
 	NamespaceXMP  Namespace = "xmp"
 	NamespaceICC  Namespace = "icc"
+)
+
+// MetaKind represents the type of metadata block (bridge between format and meta layers)
+type MetaKind int
+
+const (
+	MetaKindEXIF MetaKind = iota
+	MetaKindIPTC
+	MetaKindXMP
+	MetaKindICC
 )
 
 // ExtractorConfig holds configuration options for metadata extraction

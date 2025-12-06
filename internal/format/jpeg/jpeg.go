@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/gomantics/imx/internal/container"
+	"github.com/gomantics/imx/internal/format"
 	"github.com/gomantics/imx/internal/types"
 )
 
@@ -30,7 +30,7 @@ var (
 	iptcMagic = []byte("Photoshop 3.0\x00")
 )
 
-// Parser implements container.Parser for JPEG
+// Parser implements format.Parser for JPEG
 type Parser struct{}
 
 // New creates a JPEG parser
@@ -45,8 +45,8 @@ func (p *Parser) Detect(peek []byte) bool {
 }
 
 // Parse extracts metadata blocks from a JPEG file
-func (p *Parser) Parse(r *bufio.Reader) ([]container.RawBlock, error) {
-	var blocks []container.RawBlock
+func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
+	var blocks []format.RawBlock
 	exifIndex := 0
 	xmpIndex := 0
 	iccIndex := 0
@@ -98,8 +98,8 @@ func (p *Parser) Parse(r *bufio.Reader) ([]container.RawBlock, error) {
 		case markerAPP1:
 			// APP1 can contain EXIF or XMP
 			if bytes.HasPrefix(data, exifMagic) {
-				blocks = append(blocks, container.RawBlock{
-					Kind:    container.MetaKindEXIF,
+				blocks = append(blocks, format.RawBlock{
+					Kind:    types.MetaKindEXIF,
 					Payload: data[len(exifMagic):], // Skip "Exif\x00\x00"
 					Origin:  "APP1 Exif",
 					Format:  types.FormatJPEG,
@@ -107,8 +107,8 @@ func (p *Parser) Parse(r *bufio.Reader) ([]container.RawBlock, error) {
 				})
 				exifIndex++
 			} else if bytes.HasPrefix(data, xmpMagic) {
-				blocks = append(blocks, container.RawBlock{
-					Kind:    container.MetaKindXMP,
+				blocks = append(blocks, format.RawBlock{
+					Kind:    types.MetaKindXMP,
 					Payload: data[len(xmpMagic):], // Skip XMP namespace
 					Origin:  "APP1 XMP",
 					Format:  types.FormatJPEG,
@@ -120,8 +120,8 @@ func (p *Parser) Parse(r *bufio.Reader) ([]container.RawBlock, error) {
 		case markerAPP2:
 			// APP2 can contain ICC profiles
 			if bytes.HasPrefix(data, iccMagic) {
-				blocks = append(blocks, container.RawBlock{
-					Kind:    container.MetaKindICC,
+				blocks = append(blocks, format.RawBlock{
+					Kind:    types.MetaKindICC,
 					Payload: data[len(iccMagic):], // Skip "ICC_PROFILE\x00"
 					Origin:  "APP2 ICC",
 					Format:  types.FormatJPEG,
@@ -133,8 +133,8 @@ func (p *Parser) Parse(r *bufio.Reader) ([]container.RawBlock, error) {
 		case markerAPP13:
 			// APP13 contains IPTC/Photoshop data
 			if bytes.HasPrefix(data, iptcMagic) {
-				blocks = append(blocks, container.RawBlock{
-					Kind:    container.MetaKindIPTC,
+				blocks = append(blocks, format.RawBlock{
+					Kind:    types.MetaKindIPTC,
 					Payload: data[len(iptcMagic):], // Skip "Photoshop 3.0\x00"
 					Origin:  "APP13 IPTC",
 					Format:  types.FormatJPEG,

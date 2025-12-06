@@ -1,4 +1,4 @@
-package container
+package format
 
 import (
 	"bufio"
@@ -6,26 +6,16 @@ import (
 	"github.com/gomantics/imx/internal/types"
 )
 
-// MetaKind represents the type of metadata block
-type MetaKind int
-
-const (
-	MetaKindEXIF MetaKind = iota
-	MetaKindIPTC
-	MetaKindXMP
-	MetaKindICC
-)
-
-// RawBlock is a raw metadata payload extracted from a container
+// RawBlock is a raw metadata payload extracted from an image format
 type RawBlock struct {
-	Kind    MetaKind
+	Kind    types.MetaKind
 	Payload []byte
-	Origin  string       // e.g. "APP1 Exif", "APP13 IPTC"
+	Origin  string       // e.g. "APP1 Exif", "eXIf chunk"
 	Format  types.Format
 	Index   int          // sequence number for multiple blocks of same type
 }
 
-// Parser is the interface for container format parsers
+// Parser is the interface for format parsers
 type Parser interface {
 	// Detect returns true if this parser supports the given initial bytes
 	Detect(peek []byte) bool

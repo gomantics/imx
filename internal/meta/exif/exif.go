@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/gomantics/imx/internal/container"
+	"github.com/gomantics/imx/internal/format"
 	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/types"
 )
 
 // Parser implements meta.Parser for EXIF
@@ -23,11 +24,11 @@ func (p *Parser) Namespace() meta.Namespace {
 }
 
 // Parse extracts EXIF data from raw blocks
-func (p *Parser) Parse(blocks []container.RawBlock) ([]meta.Directory, error) {
+func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 	var dirs []meta.Directory
 
 	for _, block := range blocks {
-		if block.Kind != container.MetaKindEXIF {
+		if block.Kind != types.MetaKindEXIF {
 			continue
 		}
 

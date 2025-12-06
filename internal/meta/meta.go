@@ -1,7 +1,7 @@
 package meta
 
 import (
-	"github.com/gomantics/imx/internal/container"
+	"github.com/gomantics/imx/internal/format"
 	"github.com/gomantics/imx/internal/types"
 )
 
@@ -34,5 +34,5 @@ type Parser interface {
 	Namespace() Namespace
 
 	// Parse consumes relevant RawBlocks and returns Directories
-	Parse(blocks []container.RawBlock) ([]Directory, error)
+	Parse(blocks []format.RawBlock) ([]Directory, error)
 }
