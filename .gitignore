@@ -2,3 +2,4 @@ testdata/
 bin/
 tmp/
 coverage.*
+.DS_Store
