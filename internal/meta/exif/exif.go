@@ -4,23 +4,26 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"time"
 
 	"github.com/gomantics/imx/internal/container"
 	"github.com/gomantics/imx/internal/meta"
-	"github.com/gomantics/imx/internal/types"
 )
 
 // Parser implements meta.Parser for EXIF
 type Parser struct{}
 
+// New creates an EXIF parser
+func New() *Parser {
+	return &Parser{}
+}
+
 // Namespace returns the EXIF namespace
-func (p *Parser) Namespace() types.Namespace {
-	return types.NamespaceEXIF
+func (p *Parser) Namespace() meta.Namespace {
+	return "exif"
 }
 
 // Parse extracts EXIF data from raw blocks
-func (p *Parser) Parse(blocks []container.RawBlock, cfg types.ExtractorConfig) ([]meta.Directory, error) {
+func (p *Parser) Parse(blocks []container.RawBlock) ([]meta.Directory, error) {
 	var dirs []meta.Directory
 
 	for _, block := range blocks {
@@ -118,7 +121,7 @@ func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, n
 	offset += 2
 
 	dir := meta.Directory{
-		Namespace: types.NamespaceEXIF,
+		Namespace: "exif",
 		Name:      name,
 		Tags:      make(map[meta.TagID]meta.Tag),
 	}
@@ -154,7 +157,7 @@ func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder,
 	valueOffset := offset + 8 // Last 4 bytes contain value or offset
 
 	tag := meta.Tag{
-		Namespace: types.NamespaceEXIF,
+		Namespace: "exif",
 	}
 
 	// Get tag name and ID based on IFD
@@ -285,50 +288,3 @@ func (p *Parser) parseValue(data []byte, tagType uint16, count uint32, offset in
 	}
 }
 
-// Post-process specific tags (called after all parsing is done)
-func postProcessTags(dirs []meta.Directory) {
-	for i := range dirs {
-		dir := &dirs[i]
-
-		// Parse DateTimeOriginal into time.Time
-		if tag, ok := dir.Tags["Exif:DateTimeOriginal"]; ok {
-			if str, ok := tag.Value.(string); ok {
-				// EXIF datetime format: "YYYY:MM:DD HH:MM:SS"
-				t, err := time.Parse("2006:01:02 15:04:05", str)
-				if err == nil {
-					tag.Value = t
-					tag.Type = "time"
-					dir.Tags["Exif:DateTimeOriginal"] = tag
-				}
-			}
-		}
-
-		// Parse DateTime into time.Time
-		if tag, ok := dir.Tags["Exif:DateTime"]; ok {
-			if str, ok := tag.Value.(string); ok {
-				t, err := time.Parse("2006:01:02 15:04:05", str)
-				if err == nil {
-					tag.Value = t
-					tag.Type = "time"
-					dir.Tags["Exif:DateTime"] = tag
-				}
-			}
-		}
-	}
-}
-
-// Parse with post-processing
-func (p *Parser) ParseWithPostProcessing(blocks []container.RawBlock, cfg types.ExtractorConfig) ([]meta.Directory, error) {
-	dirs, err := p.Parse(blocks, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	postProcessTags(dirs)
-	return dirs, nil
-}
-
-func init() {
-	parser := &Parser{}
-	meta.Register(parser)
-}

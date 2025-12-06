@@ -6,6 +6,7 @@ import (
 
 	"github.com/gomantics/imx/internal/container"
 	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/meta/exif"
 	"github.com/gomantics/imx/internal/types"
 )
 
@@ -43,10 +44,16 @@ func (p *Pipeline) Extract(r *bufio.Reader, cfg types.ExtractorConfig) (Metadata
 
 	// Step 3: Namespace parsing - decode blocks into directories
 	var allDirs []meta.Directory
-	nsRegistry := meta.GetRegistry()
-	nsErrs := make(map[types.Namespace]error)
 
-	for ns, nsParser := range nsRegistry.All() {
+	// Temporary: Create parsers on the spot
+	// TODO: This will be refactored when we move orchestration to extractor
+	parsers := []meta.Parser{
+		exif.New(),
+	}
+
+	for _, nsParser := range parsers {
+		ns := nsParser.Namespace()
+
 		// Filter blocks for this namespace
 		var relevantBlocks []container.RawBlock
 		for _, block := range blocks {
@@ -60,9 +67,8 @@ func (p *Pipeline) Extract(r *bufio.Reader, cfg types.ExtractorConfig) (Metadata
 		}
 
 		// Parse blocks
-		dirs, err := nsParser.Parse(relevantBlocks, cfg)
+		dirs, err := nsParser.Parse(relevantBlocks)
 		if err != nil {
-			nsErrs[ns] = err
 			if cfg.StopOnFirstErr {
 				return Metadata{}, fmt.Errorf("imx: parse namespace %s: %w", ns, err)
 			}
