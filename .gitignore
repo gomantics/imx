@@ -1,4 +1,4 @@
 testdata/
 bin/
 tmp/
-coverage.out
+coverage.*
