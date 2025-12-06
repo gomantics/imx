@@ -204,11 +204,3 @@ func contains(slice []types.Namespace, item types.Namespace) bool {
 	}
 	return false
 }
-
-// Default extractor instance
-var defaultExtractor = New()
-
-// Extract extracts metadata from an io.Reader using the default extractor
-func Extract(r io.Reader, opts ...Option) (Metadata, error) {
-	return defaultExtractor.Metadata(r, opts...)
-}

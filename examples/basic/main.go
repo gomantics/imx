@@ -17,7 +17,7 @@ func main() {
 	filename := os.Args[1]
 
 	// Extract metadata
-	meta, err := imx.MetadataFromFile(filename)
+	meta, err := imx.ExtractFromFile(filename)
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
