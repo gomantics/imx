@@ -22,16 +22,28 @@ func main() {
 		log.Fatalf("Error: %v", err)
 	}
 
-	// Print using convenience helpers
-	fmt.Println("=== Convenience Helpers ===")
-	fmt.Printf("Make: %s\n", meta.Make())
-	fmt.Printf("Model: %s\n", meta.Model())
-	fmt.Printf("DateTime: %v\n", meta.DateTimeOriginal())
-	fmt.Printf("Orientation: %d\n", meta.Orientation())
-	fmt.Printf("ISO: %d\n", meta.ISO())
-
-	if gps := meta.GPSCoordinates(); gps != nil {
-		fmt.Printf("GPS: %.6f, %.6f (altitude: %.2fm)\n", gps.Lat, gps.Lon, gps.Altitude)
+	// Print common EXIF tags using tag constants
+	fmt.Println("=== Common EXIF Tags ===")
+	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagMake); ok {
+		fmt.Printf("Make: %v\n", tag.Value)
+	}
+	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagModel); ok {
+		fmt.Printf("Model: %v\n", tag.Value)
+	}
+	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagDateTimeOriginal); ok {
+		fmt.Printf("DateTime: %v\n", tag.Value)
+	}
+	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagOrientation); ok {
+		fmt.Printf("Orientation: %v\n", tag.Value)
+	}
+	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagISO); ok {
+		fmt.Printf("ISO: %v\n", tag.Value)
+	}
+	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagGPSLatitude); ok {
+		fmt.Printf("GPS Latitude: %v\n", tag.Value)
+	}
+	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagGPSLongitude); ok {
+		fmt.Printf("GPS Longitude: %v\n", tag.Value)
 	}
 
 	// Print all EXIF tags using iterator

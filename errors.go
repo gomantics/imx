@@ -21,24 +21,30 @@ type PartialError struct {
 	SpecErrs  map[meta.Spec]error
 }
 
-// TODO: Both Error and Unwrap return incomplete error messages. We should improve this.
 func (e *PartialError) Error() string {
+	var msgs []string
 	if e.FormatErr != nil {
-		return fmt.Sprintf("imx: format error: %v", e.FormatErr)
+		msgs = append(msgs, fmt.Sprintf("format: %v", e.FormatErr))
 	}
-	if len(e.SpecErrs) > 0 {
-		return fmt.Sprintf("imx: spec errors: %v", e.SpecErrs)
+	for spec, err := range e.SpecErrs {
+		msgs = append(msgs, fmt.Sprintf("%s: %v", spec, err))
 	}
-	return "imx: partial error"
+	if len(msgs) == 0 {
+		return "imx: partial error"
+	}
+	if len(msgs) == 1 {
+		return fmt.Sprintf("imx: %s", msgs[0])
+	}
+	return fmt.Sprintf("imx: multiple errors: %v", msgs)
 }
 
-func (e *PartialError) Unwrap() error {
+func (e *PartialError) Unwrap() []error {
+	var errs []error
 	if e.FormatErr != nil {
-		return e.FormatErr
+		errs = append(errs, e.FormatErr)
 	}
-	// Return first spec error
 	for _, err := range e.SpecErrs {
-		return err
+		errs = append(errs, err)
 	}
-	return nil
+	return errs
 }

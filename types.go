@@ -1,8 +1,6 @@
 package imx
 
 import (
-	"time"
-
 	"github.com/gomantics/imx/internal/format"
 	"github.com/gomantics/imx/internal/meta"
 )
@@ -118,75 +116,6 @@ func (m *Metadata) EachInSpec(spec Spec, fn func(Tag) bool) {
 			}
 		}
 	}
-}
-
-// Convenience helpers for common EXIF fields
-
-// DateTimeOriginal returns the EXIF DateTimeOriginal as time.Time (zero value if missing)
-func (m *Metadata) DateTimeOriginal() time.Time {
-	if tag, ok := m.Tag(SpecEXIF, "Exif:DateTimeOriginal"); ok {
-		if t, ok := tag.Value.(time.Time); ok {
-			return t
-		}
-	}
-	return time.Time{}
-}
-
-// Orientation returns the EXIF Orientation (0 if missing)
-func (m *Metadata) Orientation() int {
-	if tag, ok := m.Tag(SpecEXIF, "Exif:Orientation"); ok {
-		if i, ok := tag.Value.(int); ok {
-			return i
-		}
-	}
-	return 0
-}
-
-// Make returns the camera make (empty string if missing)
-func (m *Metadata) Make() string {
-	if tag, ok := m.Tag(SpecEXIF, "Exif:Make"); ok {
-		if s, ok := tag.Value.(string); ok {
-			return s
-		}
-	}
-	return ""
-}
-
-// Model returns the camera model (empty string if missing)
-func (m *Metadata) Model() string {
-	if tag, ok := m.Tag(SpecEXIF, "Exif:Model"); ok {
-		if s, ok := tag.Value.(string); ok {
-			return s
-		}
-	}
-	return ""
-}
-
-// GPSCoord represents a GPS coordinate
-type GPSCoord struct {
-	Lat      float64
-	Lon      float64
-	Altitude float64
-}
-
-// GPSCoordinates returns the GPS coordinates (nil if missing)
-func (m *Metadata) GPSCoordinates() *GPSCoord {
-	if tag, ok := m.Tag(SpecEXIF, "Exif:GPSCoordinates"); ok {
-		if gps, ok := tag.Value.(*GPSCoord); ok {
-			return gps
-		}
-	}
-	return nil
-}
-
-// ISO returns the ISO speed (0 if missing)
-func (m *Metadata) ISO() int {
-	if tag, ok := m.Tag(SpecEXIF, "Exif:ISO"); ok {
-		if i, ok := tag.Value.(int); ok {
-			return i
-		}
-	}
-	return 0
 }
 
 // BuildIndex builds an internal index for fast tag lookup
