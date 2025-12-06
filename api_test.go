@@ -218,8 +218,8 @@ func TestExtractFromURL(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "invalid URL",
-			url:     "http://invalid-host-that-does-not-exist.local/image.jpg",
+			name:    "invalid URL format",
+			url:     "://invalid-url",
 			opts:    nil,
 			wantErr: true,
 		},
@@ -305,10 +305,10 @@ func TestExtractor_ExtractFromURL(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid host", func(t *testing.T) {
-		_, err := e.ExtractFromURL("http://invalid-host.local/img.jpg")
+	t.Run("invalid URL format", func(t *testing.T) {
+		_, err := e.ExtractFromURL("://invalid-url")
 		if err == nil {
-			t.Error("ExtractFromURL() expected error for invalid host")
+			t.Error("ExtractFromURL() expected error for invalid URL format")
 		}
 	})
 }
