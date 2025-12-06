@@ -22,14 +22,6 @@ const (
 	markerAPP13 = 0xED // APP13 (IPTC, Photoshop)
 )
 
-// Magic bytes for identifying metadata types
-var (
-	exifMagic = []byte("Exif\x00\x00")
-	xmpMagic  = []byte("http://ns.adobe.com/xap/1.0/\x00")
-	iccMagic  = []byte("ICC_PROFILE\x00")
-	iptcMagic = []byte("Photoshop 3.0\x00")
-)
-
 // Parser implements format.Parser for JPEG
 type Parser struct{}
 
@@ -97,19 +89,19 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 		switch marker {
 		case markerAPP1:
 			// APP1 can contain EXIF or XMP
-			if bytes.HasPrefix(data, exifMagic) {
+			if bytes.HasPrefix(data, meta.MagicEXIF) {
 				blocks = append(blocks, format.RawBlock{
 					Spec:    int(meta.SpecEXIF),
-					Payload: data[len(exifMagic):], // Skip "Exif\x00\x00"
+					Payload: data[len(meta.MagicEXIF):], // Skip "Exif\x00\x00"
 					Origin:  "APP1 Exif",
 					Format:  format.FormatJPEG,
 					Index:   exifIndex,
 				})
 				exifIndex++
-			} else if bytes.HasPrefix(data, xmpMagic) {
+			} else if bytes.HasPrefix(data, meta.MagicXMP) {
 				blocks = append(blocks, format.RawBlock{
 					Spec:    int(meta.SpecXMP),
-					Payload: data[len(xmpMagic):], // Skip XMP namespace
+					Payload: data[len(meta.MagicXMP):], // Skip XMP namespace
 					Origin:  "APP1 XMP",
 					Format:  format.FormatJPEG,
 					Index:   xmpIndex,
@@ -119,10 +111,10 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 
 		case markerAPP2:
 			// APP2 can contain ICC profiles
-			if bytes.HasPrefix(data, iccMagic) {
+			if bytes.HasPrefix(data, meta.MagicICC) {
 				blocks = append(blocks, format.RawBlock{
 					Spec:    int(meta.SpecICC),
-					Payload: data[len(iccMagic):], // Skip "ICC_PROFILE\x00"
+					Payload: data[len(meta.MagicICC):], // Skip "ICC_PROFILE\x00"
 					Origin:  "APP2 ICC",
 					Format:  format.FormatJPEG,
 					Index:   iccIndex,
@@ -132,10 +124,10 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 
 		case markerAPP13:
 			// APP13 contains IPTC/Photoshop data
-			if bytes.HasPrefix(data, iptcMagic) {
+			if bytes.HasPrefix(data, meta.MagicIPTC) {
 				blocks = append(blocks, format.RawBlock{
 					Spec:    int(meta.SpecIPTC),
-					Payload: data[len(iptcMagic):], // Skip "Photoshop 3.0\x00"
+					Payload: data[len(meta.MagicIPTC):], // Skip "Photoshop 3.0\x00"
 					Origin:  "APP13 IPTC",
 					Format:  format.FormatJPEG,
 					Index:   iptcIndex,
