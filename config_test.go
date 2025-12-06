@@ -61,18 +61,95 @@ func TestConfig_Defaults(t *testing.T) {
 	cfg := Config{}
 
 	if cfg.MaxBytes != 0 {
-		t.Error("Default MaxBytes should be 0")
+		t.Errorf("Default MaxBytes = %d, want 0", cfg.MaxBytes)
 	}
 	if cfg.BufferSize != 0 {
-		t.Error("Default BufferSize should be 0")
+		t.Errorf("Default BufferSize = %d, want 0", cfg.BufferSize)
 	}
 	if cfg.StopOnFirstErr {
-		t.Error("Default StopOnFirstErr should be false")
+		t.Errorf("Default StopOnFirstErr = %v, want false", cfg.StopOnFirstErr)
 	}
 	if cfg.Specs != nil {
-		t.Error("Default Specs should be nil")
+		t.Errorf("Default Specs = %v, want nil", cfg.Specs)
 	}
 	if cfg.Formats != nil {
-		t.Error("Default Formats should be nil")
+		t.Errorf("Default Formats = %v, want nil", cfg.Formats)
+	}
+}
+
+func TestConfig_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name  string
+		opt   Option
+		check func(t *testing.T, cfg Config)
+	}{
+		{
+			name: "WithMaxBytes zero",
+			opt:  WithMaxBytes(0),
+			check: func(t *testing.T, cfg Config) {
+				if cfg.MaxBytes != 0 {
+					t.Errorf("MaxBytes = %d, want 0", cfg.MaxBytes)
+				}
+			},
+		},
+		{
+			name: "WithBufferSize very large",
+			opt:  WithBufferSize(1 << 30), // 1GB
+			check: func(t *testing.T, cfg Config) {
+				if cfg.BufferSize != 1<<30 {
+					t.Errorf("BufferSize = %d, want %d", cfg.BufferSize, 1<<30)
+				}
+			},
+		},
+		{
+			name: "WithSpecs empty slice",
+			opt:  WithSpecs(),
+			check: func(t *testing.T, cfg Config) {
+				if len(cfg.Specs) != 0 {
+					t.Errorf("len(Specs) = %d, want 0", len(cfg.Specs))
+				}
+			},
+		},
+		{
+			name: "WithFormats empty slice",
+			opt:  WithFormats(),
+			check: func(t *testing.T, cfg Config) {
+				if len(cfg.Formats) != 0 {
+					t.Errorf("len(Formats) = %d, want 0", len(cfg.Formats))
+				}
+			},
+		},
+		{
+			name: "WithSpecs single spec",
+			opt:  WithSpecs(SpecEXIF),
+			check: func(t *testing.T, cfg Config) {
+				if len(cfg.Specs) != 1 {
+					t.Errorf("len(Specs) = %d, want 1", len(cfg.Specs))
+				}
+				if len(cfg.Specs) > 0 && cfg.Specs[0] != SpecEXIF {
+					t.Errorf("Specs[0] = %v, want %v", cfg.Specs[0], SpecEXIF)
+				}
+			},
+		},
+		{
+			name: "WithFormats single format",
+			opt:  WithFormats(FormatJPEG),
+			check: func(t *testing.T, cfg Config) {
+				if len(cfg.Formats) != 1 {
+					t.Errorf("len(Formats) = %d, want 1", len(cfg.Formats))
+				}
+				if len(cfg.Formats) > 0 && cfg.Formats[0] != FormatJPEG {
+					t.Errorf("Formats[0] = %v, want %v", cfg.Formats[0], FormatJPEG)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{}
+			tt.opt(&cfg)
+			tt.check(t, cfg)
+		})
 	}
 }

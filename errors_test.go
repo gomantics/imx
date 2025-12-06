@@ -2,6 +2,8 @@ package imx
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/gomantics/imx/internal/meta"
@@ -57,7 +59,7 @@ func TestPartialError_Error(t *testing.T) {
 			}
 			if tt.wantContain != nil {
 				for _, substr := range tt.wantContain {
-					if !containsSubstring(got, substr) {
+					if !strings.Contains(got, substr) {
 						t.Errorf("Error() = %q, want to contain %q", got, substr)
 					}
 				}
@@ -66,14 +68,6 @@ func TestPartialError_Error(t *testing.T) {
 	}
 }
 
-func containsSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
 
 func TestPartialError_Unwrap(t *testing.T) {
 	formatErr := errors.New("format error")
@@ -178,5 +172,71 @@ func TestSentinelErrors(t *testing.T) {
 				t.Errorf("%s.Error() = %q, want %q", tt.name, tt.err.Error(), tt.want)
 			}
 		})
+	}
+}
+
+func TestPartialError_Wrapping(t *testing.T) {
+	baseErr := errors.New("base error")
+	partialErr := &PartialError{
+		FormatErr: baseErr,
+	}
+
+	// Test wrapping with fmt.Errorf
+	wrappedErr := fmt.Errorf("context: %w", partialErr)
+
+	// Verify errors.Is works through wrapping
+	if !errors.Is(wrappedErr, partialErr) {
+		t.Error("errors.Is should find PartialError through wrapping")
+	}
+
+	// Verify errors.As works
+	var pe *PartialError
+	if !errors.As(wrappedErr, &pe) {
+		t.Error("errors.As should extract PartialError through wrapping")
+	}
+
+	if pe == nil {
+		t.Fatal("errors.As returned nil PartialError")
+	}
+
+	// Verify we can unwrap to find base error
+	if !errors.Is(wrappedErr, baseErr) {
+		t.Error("errors.Is should find base error through multiple layers")
+	}
+}
+
+func TestPartialError_MultipleWrapping(t *testing.T) {
+	exifErr := errors.New("exif parse error")
+	iptcErr := errors.New("iptc parse error")
+
+	partialErr := &PartialError{
+		SpecErrs: map[meta.Spec]error{
+			meta.SpecEXIF: exifErr,
+			meta.SpecIPTC: iptcErr,
+		},
+	}
+
+	// Wrap multiple times
+	wrapped1 := fmt.Errorf("layer 1: %w", partialErr)
+	wrapped2 := fmt.Errorf("layer 2: %w", wrapped1)
+
+	// Should be able to extract PartialError through multiple layers
+	var pe *PartialError
+	if !errors.As(wrapped2, &pe) {
+		t.Fatal("errors.As should extract PartialError through multiple wrapping layers")
+	}
+
+	// Verify the unwrapped errors are accessible
+	unwrapped := pe.Unwrap()
+	if len(unwrapped) != 2 {
+		t.Errorf("Unwrap() returned %d errors, want 2", len(unwrapped))
+	}
+
+	// Verify we can find the original errors
+	if !errors.Is(wrapped2, exifErr) {
+		t.Error("errors.Is should find exifErr through multiple layers")
+	}
+	if !errors.Is(wrapped2, iptcErr) {
+		t.Error("errors.Is should find iptcErr through multiple layers")
 	}
 }

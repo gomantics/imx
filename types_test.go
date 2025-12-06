@@ -351,3 +351,96 @@ func TestTypeAliases(t *testing.T) {
 		t.Error("Directory alias not working correctly")
 	}
 }
+
+func TestMetadata_BuildIndex_EdgeCases(t *testing.T) {
+	t.Run("empty directories", func(t *testing.T) {
+		m := Metadata{Directories: []Directory{}}
+		m.BuildIndex()
+		// Should not panic and create empty index
+		if m.index != nil && len(m.index) != 0 {
+			t.Error("BuildIndex() on empty directories should create empty or nil index")
+		}
+	})
+
+	t.Run("nil directories", func(t *testing.T) {
+		m := Metadata{Directories: nil}
+		m.BuildIndex()
+		// Should not panic
+	})
+
+	t.Run("directory with nil tags map", func(t *testing.T) {
+		m := Metadata{
+			Directories: []Directory{
+				{Spec: SpecEXIF, Name: "IFD0", Tags: nil},
+			},
+		}
+		m.BuildIndex()
+		// Should not panic
+	})
+
+	t.Run("directory with empty tags map", func(t *testing.T) {
+		m := Metadata{
+			Directories: []Directory{
+				{Spec: SpecEXIF, Name: "IFD0", Tags: map[TagID]Tag{}},
+			},
+		}
+		m.BuildIndex()
+		// Should not panic
+		if m.index != nil && len(m.index) != 0 {
+			t.Error("BuildIndex() on empty tags should create empty index")
+		}
+	})
+
+	t.Run("multiple builds are idempotent", func(t *testing.T) {
+		m := Metadata{
+			Directories: []Directory{
+				{
+					Spec: SpecEXIF,
+					Name: "IFD0",
+					Tags: map[TagID]Tag{
+						"Exif:Make": {ID: "Exif:Make", Value: "Canon"},
+					},
+				},
+			},
+		}
+		m.BuildIndex()
+		m.BuildIndex()
+		m.BuildIndex()
+		tag, ok := m.Tag(SpecEXIF, "Exif:Make")
+		if !ok || tag.Value != "Canon" {
+			t.Error("Multiple BuildIndex() calls should be idempotent")
+		}
+	})
+
+	t.Run("duplicate tag IDs across directories", func(t *testing.T) {
+		m := Metadata{
+			Directories: []Directory{
+				{
+					Spec: SpecEXIF,
+					Name: "IFD0",
+					Tags: map[TagID]Tag{
+						"Exif:Make": {ID: "Exif:Make", Value: "Canon"},
+					},
+				},
+				{
+					Spec: SpecEXIF,
+					Name: "ExifIFD",
+					Tags: map[TagID]Tag{
+						"Exif:Make": {ID: "Exif:Make", Value: "Nikon"},
+					},
+				},
+			},
+		}
+		m.BuildIndex()
+		// Should find one of them (first one encountered)
+		tag, ok := m.Tag(SpecEXIF, "Exif:Make")
+		if !ok {
+			t.Error("Should find at least one Exif:Make tag")
+		}
+		// Value should be from one of the directories
+		val, ok := tag.Value.(string)
+		if !ok || (val != "Canon" && val != "Nikon") {
+			t.Errorf("Tag value = %v, want Canon or Nikon", tag.Value)
+		}
+	})
+}

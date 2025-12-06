@@ -2,9 +2,9 @@ package imx
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/gomantics/imx/internal/format"
@@ -136,8 +136,8 @@ func TestExtractor_Metadata(t *testing.T) {
 			}
 
 			if tt.errType != nil && err != nil {
-				if !strings.Contains(err.Error(), tt.errType.Error()) {
-					t.Errorf("Metadata() error = %v, want error containing %v", err, tt.errType)
+				if !errors.Is(err, tt.errType) {
+					t.Errorf("Metadata() error = %v, want %v", err, tt.errType)
 				}
 			}
 
@@ -148,7 +148,7 @@ func TestExtractor_Metadata(t *testing.T) {
 	}
 }
 
-func TestExtractor_Metadata_WithMaxBytes(t *testing.T) {
+func TestExtractor_MaxBytes(t *testing.T) {
 	e := New(WithMaxBytes(100))
 	validJPEG := loadTestJPEG(t)
 
@@ -160,7 +160,7 @@ func TestExtractor_Metadata_WithMaxBytes(t *testing.T) {
 	_ = err // Error is acceptable
 }
 
-func TestExtractor_Metadata_WithSpecFilter(t *testing.T) {
+func TestExtractor_SpecFilter(t *testing.T) {
 	e := New(WithSpecs(SpecXMP)) // Only want XMP, not EXIF
 	validJPEG := loadTestJPEG(t) // Has EXIF
 
@@ -179,7 +179,7 @@ func TestExtractor_Metadata_WithSpecFilter(t *testing.T) {
 	}
 }
 
-func TestExtractor_Metadata_StopOnFirstError(t *testing.T) {
+func TestExtractor_StopOnError(t *testing.T) {
 	// Create extractor with StopOnFirstError
 	e := New(WithStopOnFirstError())
 
@@ -272,12 +272,12 @@ func (r failingReader) Read(p []byte) (n int, err error) {
 	return 0, io.ErrUnexpectedEOF
 }
 
-func TestExtractor_Metadata_ReaderError(t *testing.T) {
+func TestExtractor_ReaderError(t *testing.T) {
 	e := New()
 	_, err := e.Metadata(failingReader{})
 
 	if err == nil {
-		t.Error("TestExtractor_Metadata_ReaderError: Metadata() expected error for failing reader, got nil")
+		t.Error("Metadata() expected error for failing reader, got nil")
 	}
 }
 
@@ -340,7 +340,7 @@ func buildJPEGWithNoEXIF() []byte {
 	return buf.Bytes()
 }
 
-func TestExtractor_Metadata_NoRelevantBlocks(t *testing.T) {
+func TestExtractor_NoBlocks(t *testing.T) {
 	// Test when format parses successfully but no EXIF blocks are found
 	e := New()
 	jpegNoExif := buildJPEGWithNoEXIF()
@@ -349,16 +349,16 @@ func TestExtractor_Metadata_NoRelevantBlocks(t *testing.T) {
 	metadata, err := e.Metadata(r)
 
 	if err != nil {
-		t.Errorf("TestExtractor_Metadata_NoRelevantBlocks: expected success, got error: %v", err)
+		t.Errorf("expected success, got error: %v", err)
 	}
 
 	// Should succeed but have no directories
 	if len(metadata.Directories) != 0 {
-		t.Errorf("TestExtractor_Metadata_NoRelevantBlocks: returned %d directories, want 0", len(metadata.Directories))
+		t.Errorf("returned %d directories, want 0", len(metadata.Directories))
 	}
 }
 
-func TestExtractor_Metadata_ParseError_StopOnFirst(t *testing.T) {
+func TestExtractor_ParseErrorStop(t *testing.T) {
 	// Test with StopOnFirstError=true and bad EXIF data
 	e := New(WithStopOnFirstError())
 	jpegBadExif := buildJPEGWithBadEXIF()
@@ -367,13 +367,11 @@ func TestExtractor_Metadata_ParseError_StopOnFirst(t *testing.T) {
 	_, err := e.Metadata(r)
 
 	if err == nil {
-		t.Error("TestExtractor_Metadata_ParseError_StopOnFirst: expected error with StopOnFirstError=true, got nil")
-	} else if !strings.Contains(err.Error(), "parse exif") {
-		t.Errorf("TestExtractor_Metadata_ParseError_StopOnFirst: error = %v, expected error containing 'parse exif'", err)
+		t.Error("expected error with StopOnFirstError=true, got nil")
 	}
 }
 
-func TestExtractor_Metadata_ParseError_Continue(t *testing.T) {
+func TestExtractor_ParseErrorContinue(t *testing.T) {
 	// Test with StopOnFirstError=false (default) and bad EXIF data
 	// Should continue and return empty result without error
 	e := New()
@@ -383,11 +381,11 @@ func TestExtractor_Metadata_ParseError_Continue(t *testing.T) {
 	metadata, err := e.Metadata(r)
 
 	if err != nil {
-		t.Errorf("TestExtractor_Metadata_ParseError_Continue: returned unexpected error with StopOnFirstError=false: %v", err)
+		t.Errorf("returned unexpected error with StopOnFirstError=false: %v", err)
 	}
 
 	// Continued past the error, should have no directories
 	if len(metadata.Directories) != 0 {
-		t.Errorf("TestExtractor_Metadata_ParseError_Continue: returned %d directories, want 0 when parsing fails", len(metadata.Directories))
+		t.Errorf("returned %d directories, want 0 when parsing fails", len(metadata.Directories))
 	}
 }

@@ -69,10 +69,10 @@ func buildTIFF(bigEndian bool, entries []ifdEntry) []byte {
 }
 
 type ifdEntry struct {
-	tagID         uint16
-	dataType      uint16
-	count         uint32
-	valueOrOffset []byte
+	tagID         uint16 // TIFF tag identifier
+	dataType      uint16 // TIFF data type (1=BYTE, 2=ASCII, 3=SHORT, 4=LONG, 5=RATIONAL, etc.)
+	count         uint32 // Number of values
+	valueOrOffset []byte // Value (if ≤4 bytes) or offset to value data
 }
 
 func TestParser_Parse(t *testing.T) {
@@ -587,12 +587,12 @@ func TestParser_ParseWithExifSubIFD(t *testing.T) {
 	byteOrder.PutUint16(tmp[:2], 1) // 1 entry
 	buf = append(buf, tmp[:2]...)
 
-	// ExifOffset entry (tag 0x8769)
+	// ExifOffset entry (tag 0x8769 = ExifOffset)
 	entry := make([]byte, 12)
-	byteOrder.PutUint16(entry[0:2], 0x8769)
-	byteOrder.PutUint16(entry[2:4], 4) // LONG
-	byteOrder.PutUint32(entry[4:8], 1)
-	byteOrder.PutUint32(entry[8:12], 26) // Offset to ExifIFD
+	byteOrder.PutUint16(entry[0:2], 0x8769) // ExifOffset tag
+	byteOrder.PutUint16(entry[2:4], 4)      // LONG type
+	byteOrder.PutUint32(entry[4:8], 1)      // count = 1
+	byteOrder.PutUint32(entry[8:12], 26)    // Offset to ExifIFD
 	buf = append(buf, entry...)
 
 	// Next IFD offset = 0
@@ -639,12 +639,12 @@ func TestParser_ParseWithGPSSubIFD(t *testing.T) {
 	byteOrder.PutUint16(tmp[:2], 1)
 	buf = append(buf, tmp[:2]...)
 
-	// GPSInfo entry (tag 0x8825)
+	// GPSInfo entry (tag 0x8825 = GPSInfo)
 	entry := make([]byte, 12)
-	byteOrder.PutUint16(entry[0:2], 0x8825)
-	byteOrder.PutUint16(entry[2:4], 4) // LONG
-	byteOrder.PutUint32(entry[4:8], 1)
-	byteOrder.PutUint32(entry[8:12], 26) // Offset to GPS IFD
+	byteOrder.PutUint16(entry[0:2], 0x8825) // GPSInfo tag
+	byteOrder.PutUint16(entry[2:4], 4)      // LONG type
+	byteOrder.PutUint32(entry[4:8], 1)      // count = 1
+	byteOrder.PutUint32(entry[8:12], 26)    // Offset to GPS IFD
 	buf = append(buf, entry...)
 
 	// Next IFD offset = 0
@@ -654,11 +654,11 @@ func TestParser_ParseWithGPSSubIFD(t *testing.T) {
 	byteOrder.PutUint16(tmp[:2], 1) // 1 entry
 	buf = append(buf, tmp[:2]...)
 
-	// GPS tag entry (GPSLatitudeRef = 0x0001)
+	// GPS tag entry (0x0001 = GPSLatitudeRef)
 	gpsEntry := make([]byte, 12)
-	byteOrder.PutUint16(gpsEntry[0:2], 0x0001) // GPSLatitudeRef
-	byteOrder.PutUint16(gpsEntry[2:4], 2)      // ASCII
-	byteOrder.PutUint32(gpsEntry[4:8], 2)      // count
+	byteOrder.PutUint16(gpsEntry[0:2], 0x0001) // GPSLatitudeRef tag
+	byteOrder.PutUint16(gpsEntry[2:4], 2)      // ASCII type
+	byteOrder.PutUint32(gpsEntry[4:8], 2)      // count = 2 (includes null terminator)
 	copy(gpsEntry[8:12], []byte("N\x00\x00\x00"))
 	buf = append(buf, gpsEntry...)
 
@@ -751,10 +751,10 @@ func TestParser_ParseEntry_UnknownTag(t *testing.T) {
 	// Create entry with unknown tag ID
 	data := make([]byte, 12)
 	byteOrder := binary.LittleEndian
-	byteOrder.PutUint16(data[0:2], 0xFFFF) // Unknown tag
-	byteOrder.PutUint16(data[2:4], 3)      // SHORT
-	byteOrder.PutUint32(data[4:8], 1)
-	byteOrder.PutUint16(data[8:10], 42)
+	byteOrder.PutUint16(data[0:2], 0xFFFF) // Unknown/undefined tag ID
+	byteOrder.PutUint16(data[2:4], 3)      // SHORT type
+	byteOrder.PutUint32(data[4:8], 1)      // count = 1
+	byteOrder.PutUint16(data[8:10], 42)    // value = 42
 
 	tag := p.parseEntry(data, 0, byteOrder, "IFD0")
 
@@ -769,9 +769,9 @@ func TestParser_ParseEntry_GPSTags(t *testing.T) {
 	// Create entry with GPS tag
 	data := make([]byte, 12)
 	byteOrder := binary.LittleEndian
-	byteOrder.PutUint16(data[0:2], 0x0001) // GPSLatitudeRef
-	byteOrder.PutUint16(data[2:4], 2)      // ASCII
-	byteOrder.PutUint32(data[4:8], 2)
+	byteOrder.PutUint16(data[0:2], 0x0001) // 0x0001 = GPSLatitudeRef tag
+	byteOrder.PutUint16(data[2:4], 2)      // ASCII type
+	byteOrder.PutUint32(data[4:8], 2)      // count = 2 (includes null terminator)
 	copy(data[8:12], []byte("N\x00\x00\x00"))
 
 	tag := p.parseEntry(data, 0, byteOrder, "GPS")
@@ -801,7 +801,7 @@ func TestParser_Parse_IFD0ParseError(t *testing.T) {
 
 	_, err := p.Parse(blocks)
 	if err == nil {
-		t.Errorf("TestParser_Parse_IFD0ParseError: expected error when parseIFD fails due to truncated entry count, got nil")
+		t.Error("expected error when parseIFD fails due to truncated entry count, got nil")
 	}
 }
 
