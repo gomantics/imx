@@ -780,3 +780,48 @@ func TestParser_ParseEntry_GPSTags(t *testing.T) {
 		t.Errorf("GPS tag name = %q, want %q", tag.Name, "GPSLatitudeRef")
 	}
 }
+
+func TestParser_Parse_IFD0ParseError(t *testing.T) {
+	p := New()
+
+	// Create TIFF header where IFD0 offset passes check but parseIFD fails
+	// We need: ifd0Offset < len(data) to enter the block
+	// Then parseIFD needs offset+2 > len(data) to fail
+	// With offset=8 and len=9, check passes (8<9) but parseIFD fails (8+2=10>9)
+	data := []byte{
+		'I', 'I', // Little-endian
+		0x2A, 0x00, // TIFF magic
+		0x08, 0x00, 0x00, 0x00, // IFD0 offset = 8
+		0x00, // Only 1 byte after offset, need 2 for entry count
+	}
+
+	blocks := []format.RawBlock{
+		{Spec: int(meta.SpecEXIF), Payload: data},
+	}
+
+	_, err := p.Parse(blocks)
+	if err == nil {
+		t.Errorf("TestParser_Parse_IFD0ParseError: expected error when parseIFD fails due to truncated entry count, got nil")
+	}
+}
+
+func TestParser_ParseValue_UnknownType_WithFormat(t *testing.T) {
+	p := New()
+
+	// Type 6 (SBYTE) is in typeSizes but not handled in switch -> triggers default case
+	data := make([]byte, 20)
+	byteOrder := binary.LittleEndian
+
+	// Put value data at offset 0
+	copy(data[0:4], []byte{0x01, 0x02, 0x03, 0x04})
+
+	// Type 6 is in typeSizes (size=1) but NOT in switch -> triggers default with fmt.Sprintf
+	value, typeName := p.parseValue(data, 6, 1, 0, byteOrder)
+
+	if typeName != "type_6" {
+		t.Errorf("parseValue() typeName = %q, want %q", typeName, "type_6")
+	}
+	if value == nil {
+		t.Error("parseValue() value should not be nil")
+	}
+}

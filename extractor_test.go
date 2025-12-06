@@ -277,6 +277,117 @@ func TestExtractor_Metadata_ReaderError(t *testing.T) {
 	_, err := e.Metadata(failingReader{})
 
 	if err == nil {
-		t.Error("Metadata() expected error for failing reader")
+		t.Error("TestExtractor_Metadata_ReaderError: Metadata() expected error for failing reader, got nil")
+	}
+}
+
+// buildJPEGWithBadEXIF creates a JPEG with malformed EXIF data that will fail to parse
+func buildJPEGWithBadEXIF() []byte {
+	var buf bytes.Buffer
+
+	// SOI
+	buf.Write([]byte{0xFF, 0xD8})
+
+	// APP1 with bad EXIF - valid header but truncated IFD
+	// We make it large enough (80 bytes) to satisfy Peek(64)
+	// And set offset to 79, so 79 < 80 (valid checks)
+	// But 79+2 > 80 (entry count read failure)
+	badExif := make([]byte, 80)
+	copy(badExif[0:2], []byte{'I', 'I'})               // Little-endian
+	copy(badExif[2:4], []byte{0x2A, 0x00})             // TIFF magic
+	copy(badExif[4:8], []byte{0x4F, 0x00, 0x00, 0x00}) // IFD0 offset = 79
+
+	buf.WriteByte(0xFF)
+	buf.WriteByte(0xE1)
+	length := uint16(len(badExif) + 2 + 6)
+	buf.WriteByte(byte(length >> 8))
+	buf.WriteByte(byte(length))
+	buf.Write([]byte("Exif\x00\x00"))
+	buf.Write(badExif)
+
+	// SOS to end metadata
+	buf.Write([]byte{0xFF, 0xDA, 0x00, 0x08, 0x00, 0x01, 0x00, 0x00, 0x3F, 0x00})
+
+	// EOI
+	buf.Write([]byte{0xFF, 0xD9})
+
+	return buf.Bytes()
+}
+
+// buildJPEGWithNoEXIF creates a valid JPEG without any EXIF data
+// Must be at least 64 bytes for Peek to succeed
+func buildJPEGWithNoEXIF() []byte {
+	var buf bytes.Buffer
+
+	// SOI
+	buf.Write([]byte{0xFF, 0xD8})
+
+	// APP0 (JFIF) instead of APP1 (EXIF) - make it large enough
+	buf.Write([]byte{0xFF, 0xE0})
+	buf.Write([]byte{0x00, 0x40}) // length 64
+	buf.Write([]byte("JFIF\x00"))
+	buf.Write([]byte{0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00})
+	// Pad to fill 64-2=62 bytes of data
+	padding := make([]byte, 62-14) // 62 - (5+9) already written
+	buf.Write(padding)
+
+	// SOS
+	buf.Write([]byte{0xFF, 0xDA, 0x00, 0x08, 0x00, 0x01, 0x00, 0x00, 0x3F, 0x00})
+
+	// EOI
+	buf.Write([]byte{0xFF, 0xD9})
+
+	return buf.Bytes()
+}
+
+func TestExtractor_Metadata_NoRelevantBlocks(t *testing.T) {
+	// Test when format parses successfully but no EXIF blocks are found
+	e := New()
+	jpegNoExif := buildJPEGWithNoEXIF()
+
+	r := bytes.NewReader(jpegNoExif)
+	metadata, err := e.Metadata(r)
+
+	if err != nil {
+		t.Errorf("TestExtractor_Metadata_NoRelevantBlocks: expected success, got error: %v", err)
+	}
+
+	// Should succeed but have no directories
+	if len(metadata.Directories) != 0 {
+		t.Errorf("TestExtractor_Metadata_NoRelevantBlocks: returned %d directories, want 0", len(metadata.Directories))
+	}
+}
+
+func TestExtractor_Metadata_ParseError_StopOnFirst(t *testing.T) {
+	// Test with StopOnFirstError=true and bad EXIF data
+	e := New(WithStopOnFirstError())
+	jpegBadExif := buildJPEGWithBadEXIF()
+
+	r := bytes.NewReader(jpegBadExif)
+	_, err := e.Metadata(r)
+
+	if err == nil {
+		t.Error("TestExtractor_Metadata_ParseError_StopOnFirst: expected error with StopOnFirstError=true, got nil")
+	} else if !strings.Contains(err.Error(), "parse exif") {
+		t.Errorf("TestExtractor_Metadata_ParseError_StopOnFirst: error = %v, expected error containing 'parse exif'", err)
+	}
+}
+
+func TestExtractor_Metadata_ParseError_Continue(t *testing.T) {
+	// Test with StopOnFirstError=false (default) and bad EXIF data
+	// Should continue and return empty result without error
+	e := New()
+	jpegBadExif := buildJPEGWithBadEXIF()
+
+	r := bytes.NewReader(jpegBadExif)
+	metadata, err := e.Metadata(r)
+
+	if err != nil {
+		t.Errorf("TestExtractor_Metadata_ParseError_Continue: returned unexpected error with StopOnFirstError=false: %v", err)
+	}
+
+	// Continued past the error, should have no directories
+	if len(metadata.Directories) != 0 {
+		t.Errorf("TestExtractor_Metadata_ParseError_Continue: returned %d directories, want 0 when parsing fails", len(metadata.Directories))
 	}
 }

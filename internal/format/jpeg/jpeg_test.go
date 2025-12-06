@@ -327,3 +327,30 @@ func TestParser_Parse_EmptyReader(t *testing.T) {
 		t.Error("Parse() expected error for empty reader, got nil")
 	}
 }
+
+// Custom reader that returns an error after SOI
+type errorAfterSOIReader struct {
+	pos int
+}
+
+func (r *errorAfterSOIReader) Read(p []byte) (n int, err error) {
+	// Return SOI first, then error
+	data := []byte{0xFF, 0xD8, 0xFF}
+	if r.pos >= len(data) {
+		return 0, io.ErrUnexpectedEOF // Non-EOF error
+	}
+	n = copy(p, data[r.pos:])
+	r.pos += n
+	return n, nil
+}
+
+func TestParser_Parse_MarkerReadError(t *testing.T) {
+	// Test error when reading marker fails with non-EOF error
+	p := New()
+	r := bufio.NewReader(&errorAfterSOIReader{})
+	_, err := p.Parse(r)
+	// Should return error for unexpected EOF (not treated as clean EOF)
+	if err == nil {
+		t.Error("Parse() expected error for marker read failure")
+	}
+}
