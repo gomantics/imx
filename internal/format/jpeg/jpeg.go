@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/types"
+	"github.com/gomantics/imx/internal/meta"
 )
 
 // JPEG marker constants
@@ -99,19 +99,19 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 			// APP1 can contain EXIF or XMP
 			if bytes.HasPrefix(data, exifMagic) {
 				blocks = append(blocks, format.RawBlock{
-					Spec:    types.SpecEXIF,
+					Spec:    int(meta.SpecEXIF),
 					Payload: data[len(exifMagic):], // Skip "Exif\x00\x00"
 					Origin:  "APP1 Exif",
-					Format:  types.FormatJPEG,
+					Format:  format.FormatJPEG,
 					Index:   exifIndex,
 				})
 				exifIndex++
 			} else if bytes.HasPrefix(data, xmpMagic) {
 				blocks = append(blocks, format.RawBlock{
-					Spec:    types.SpecXMP,
+					Spec:    int(meta.SpecXMP),
 					Payload: data[len(xmpMagic):], // Skip XMP namespace
 					Origin:  "APP1 XMP",
-					Format:  types.FormatJPEG,
+					Format:  format.FormatJPEG,
 					Index:   xmpIndex,
 				})
 				xmpIndex++
@@ -121,10 +121,10 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 			// APP2 can contain ICC profiles
 			if bytes.HasPrefix(data, iccMagic) {
 				blocks = append(blocks, format.RawBlock{
-					Spec:    types.SpecICC,
+					Spec:    int(meta.SpecICC),
 					Payload: data[len(iccMagic):], // Skip "ICC_PROFILE\x00"
 					Origin:  "APP2 ICC",
-					Format:  types.FormatJPEG,
+					Format:  format.FormatJPEG,
 					Index:   iccIndex,
 				})
 				iccIndex++
@@ -134,10 +134,10 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 			// APP13 contains IPTC/Photoshop data
 			if bytes.HasPrefix(data, iptcMagic) {
 				blocks = append(blocks, format.RawBlock{
-					Spec:    types.SpecIPTC,
+					Spec:    int(meta.SpecIPTC),
 					Payload: data[len(iptcMagic):], // Skip "Photoshop 3.0\x00"
 					Origin:  "APP13 IPTC",
-					Format:  types.FormatJPEG,
+					Format:  format.FormatJPEG,
 					Index:   iptcIndex,
 				})
 				iptcIndex++

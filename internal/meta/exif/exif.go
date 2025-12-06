@@ -7,7 +7,6 @@ import (
 
 	"github.com/gomantics/imx/internal/format"
 	"github.com/gomantics/imx/internal/meta"
-	"github.com/gomantics/imx/internal/types"
 )
 
 // Parser implements meta.Parser for EXIF
@@ -19,8 +18,8 @@ func New() *Parser {
 }
 
 // Spec returns the EXIF metadata spec
-func (p *Parser) Spec() types.Spec {
-	return types.SpecEXIF
+func (p *Parser) Spec() meta.Spec {
+	return meta.SpecEXIF
 }
 
 // Parse extracts EXIF data from raw blocks
@@ -28,7 +27,7 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 	var dirs []meta.Directory
 
 	for _, block := range blocks {
-		if block.Spec != types.SpecEXIF {
+		if meta.Spec(block.Spec) != meta.SpecEXIF {
 			continue
 		}
 
@@ -122,7 +121,7 @@ func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, n
 	offset += 2
 
 	dir := meta.Directory{
-		Spec: types.SpecEXIF,
+		Spec: meta.SpecEXIF,
 		Name: name,
 		Tags: make(map[meta.TagID]meta.Tag),
 	}
@@ -158,7 +157,7 @@ func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder,
 	valueOffset := offset + 8 // Last 4 bytes contain value or offset
 
 	tag := meta.Tag{
-		Spec: types.SpecEXIF,
+		Spec: meta.SpecEXIF,
 	}
 
 	// Get tag name and ID based on IFD

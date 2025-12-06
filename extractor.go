@@ -9,71 +9,76 @@ import (
 	"github.com/gomantics/imx/internal/format/jpeg"
 	"github.com/gomantics/imx/internal/meta"
 	"github.com/gomantics/imx/internal/meta/exif"
-	"github.com/gomantics/imx/internal/types"
 )
 
 // Format represents an image container format (JPEG, PNG, WebP, etc.)
-type Format = types.Format
+type Format = format.Format
 
 const (
-	FormatJPEG = types.FormatJPEG
-	FormatPNG  = types.FormatPNG
-	FormatWebP = types.FormatWebP
-	FormatTIFF = types.FormatTIFF
-	FormatHEIF = types.FormatHEIF
+	FormatJPEG = format.FormatJPEG
+	FormatPNG  = format.FormatPNG
+	FormatWebP = format.FormatWebP
+	FormatTIFF = format.FormatTIFF
+	FormatHEIF = format.FormatHEIF
 )
 
 // ExtractorConfig holds configuration options for metadata extraction
-type ExtractorConfig = types.ExtractorConfig
+type ExtractorConfig struct {
+	MaxBytes       int64        // Maximum bytes to read (0 = no limit)
+	BufferSize     int          // Buffer size for reading (0 = default 64KB)
+	Specs          []Spec       // Metadata specs to extract (nil/empty = all)
+	Formats        []Format     // Formats to detect (nil/empty = all registered)
+	StopOnFirstErr bool         // Stop on first error vs. continue with partial results
+}
 
 // Option is a functional option for configuring an Extractor
-type Option func(*types.ExtractorConfig)
+type Option func(*ExtractorConfig)
 
 // WithMaxBytes sets the maximum number of bytes to read
 func WithMaxBytes(n int64) Option {
-	return func(cfg *types.ExtractorConfig) {
+	return func(cfg *ExtractorConfig) {
 		cfg.MaxBytes = n
 	}
 }
 
 // WithBufferSize sets the buffer size for reading
 func WithBufferSize(n int) Option {
-	return func(cfg *types.ExtractorConfig) {
+	return func(cfg *ExtractorConfig) {
 		cfg.BufferSize = n
 	}
 }
 
 // WithSpecs sets the metadata specs to extract
 func WithSpecs(specs ...Spec) Option {
-	return func(cfg *types.ExtractorConfig) {
+	return func(cfg *ExtractorConfig) {
 		cfg.Specs = specs
 	}
 }
 
 // WithFormats sets the formats to detect
 func WithFormats(fs ...Format) Option {
-	return func(cfg *types.ExtractorConfig) {
+	return func(cfg *ExtractorConfig) {
 		cfg.Formats = fs
 	}
 }
 
 // WithStopOnFirstError configures the extractor to stop on first error
 func WithStopOnFirstError() Option {
-	return func(cfg *types.ExtractorConfig) {
+	return func(cfg *ExtractorConfig) {
 		cfg.StopOnFirstErr = true
 	}
 }
 
 // Extractor is a reusable metadata extractor, safe for concurrent use
 type Extractor struct {
-	cfg           types.ExtractorConfig
+	cfg           ExtractorConfig
 	formatParsers []format.Parser
 	metaParsers   []meta.Parser
 }
 
 // New creates a new Extractor with the given options
 func New(opts ...Option) *Extractor {
-	cfg := types.ExtractorConfig{
+	cfg := ExtractorConfig{
 		BufferSize: 64 * 1024, // 64KB default
 	}
 	for _, opt := range opts {
@@ -170,17 +175,17 @@ func (e *Extractor) Metadata(r io.Reader, opts ...Option) (Metadata, error) {
 
 // Helper functions
 
-func filterBlocksForSpec(blocks []format.RawBlock, spec types.Spec) []format.RawBlock {
+func filterBlocksForSpec(blocks []format.RawBlock, spec Spec) []format.RawBlock {
 	var filtered []format.RawBlock
 	for _, b := range blocks {
-		if b.Spec == spec {
+		if Spec(b.Spec) == spec {
 			filtered = append(filtered, b)
 		}
 	}
 	return filtered
 }
 
-func contains(slice []types.Spec, item types.Spec) bool {
+func contains(slice []Spec, item Spec) bool {
 	for _, s := range slice {
 		if s == item {
 			return true

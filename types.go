@@ -4,17 +4,16 @@ import (
 	"time"
 
 	"github.com/gomantics/imx/internal/meta"
-	"github.com/gomantics/imx/internal/types"
 )
 
 // Spec represents a metadata specification (EXIF, IPTC, XMP, ICC, etc.)
-type Spec = types.Spec
+type Spec = meta.Spec
 
 const (
-	SpecEXIF = types.SpecEXIF
-	SpecIPTC = types.SpecIPTC
-	SpecXMP  = types.SpecXMP
-	SpecICC  = types.SpecICC
+	SpecEXIF = meta.SpecEXIF
+	SpecIPTC = meta.SpecIPTC
+	SpecXMP  = meta.SpecXMP
+	SpecICC  = meta.SpecICC
 )
 
 // TagID is a unique identifier for a metadata tag (e.g. "Exif:DateTimeOriginal")
