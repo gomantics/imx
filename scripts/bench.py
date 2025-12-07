@@ -35,11 +35,8 @@ class BenchmarkMetrics:
     package: str  # Go package name
     iterations: int
     ns_per_op: float
-    ops_per_sec: float  # Calculated from ns_per_op
     bytes_per_op: int
-    mb_per_sec: float  # Throughput (if applicable)
     allocs_per_op: int
-    total_time_sec: float
 
 
 @dataclass
@@ -63,7 +60,7 @@ class BenchmarkRunner:
         """Run benchmarks on current commit"""
         try:
             result = subprocess.run(
-                ["go", "test", "-bench=.", "-benchmem", "-run=^$",
+                ["go", "test", "-bench=.", "-benchmem", "-benchtime=2s", "-run=^$",
                  ".", "./internal/meta/...", "./internal/format/..."],
                 cwd=self.repo_path,
                 capture_output=True,
@@ -89,13 +86,6 @@ class BenchmarkRunner:
         # Pattern: BenchmarkName-12    1000000    1234 ns/op    5678 B/op    90 allocs/op
         pattern = r'Benchmark(\S+)-\d+\s+(\d+)\s+([\d.]+)\s+ns/op\s+([\d.]+)\s+B/op\s+([\d.]+)\s+allocs/op'
 
-        # Extract total time from "ok" line
-        time_pattern = r'ok\s+\S+\s+([\d.]+)s'
-        total_time = 0
-        time_match = re.search(time_pattern, output)
-        if time_match:
-            total_time = float(time_match.group(1))
-
         # Parse benchmarks line by line to track current package
         current_pkg = "unknown"
         for line in output.split("\n"):
@@ -110,20 +100,13 @@ class BenchmarkRunner:
                     bytes_per_op = int(float(match.group(4)))
                     allocs_per_op = int(float(match.group(5)))
 
-                    # Calculate derived metrics
-                    ops_per_sec = 1_000_000_000 / ns_per_op if ns_per_op > 0 else 0
-                    mb_per_sec = (bytes_per_op * ops_per_sec) / (1024 * 1024) if bytes_per_op > 0 else 0
-
                     metrics.append(BenchmarkMetrics(
                         name=name,
                         package=current_pkg,
                         iterations=iterations,
                         ns_per_op=ns_per_op,
-                        ops_per_sec=ops_per_sec,
                         bytes_per_op=bytes_per_op,
-                        mb_per_sec=mb_per_sec,
-                        allocs_per_op=allocs_per_op,
-                        total_time_sec=total_time
+                        allocs_per_op=allocs_per_op
                     ))
 
         return metrics
@@ -139,15 +122,30 @@ class ReportFormatter:
             return "-"
 
         if n >= 1_000_000_000:
-            return f"{n/1_000_000_000:.1f}B"
+            return f"{n/1_000_000_000:.2f}B"
         elif n >= 1_000_000:
-            return f"{n/1_000_000:.1f}M"
+            return f"{n/1_000_000:.2f}M"
         elif n >= 1_000:
-            return f"{n/1_000:.1f}K"
+            return f"{n/1_000:.2f}K"
         elif n >= 1:
-            return f"{n:.1f}"
+            return f"{n:.2f}"
         else:
-            return f"{n:.2e}"
+            return f"{n:.2f}"
+
+    @staticmethod
+    def format_time(ns: float) -> str:
+        """Format time with appropriate unit (ns, μs, ms, s)"""
+        if ns == 0:
+            return "-"
+
+        if ns >= 1_000_000_000:  # >= 1 second
+            return f"{ns/1_000_000_000:.2f}s"
+        elif ns >= 1_000_000:  # >= 1 millisecond
+            return f"{ns/1_000_000:.2f}ms"
+        elif ns >= 1_000:  # >= 1 microsecond
+            return f"{ns/1_000:.2f}µs"
+        else:  # nanoseconds
+            return f"{ns:.2f}ns"
 
     @staticmethod
     def format_bytes(b: int) -> str:
@@ -156,9 +154,9 @@ class ReportFormatter:
             return "-"
 
         if b >= 1024*1024:
-            return f"{b/(1024*1024):.1f}MB"
+            return f"{b/(1024*1024):.2f}MB"
         elif b >= 1024:
-            return f"{b/1024:.1f}KB"
+            return f"{b/1024:.2f}KB"
         else:
             return f"{b}B"
 
@@ -201,17 +199,16 @@ class ReportFormatter:
 
             lines.append(f"\n{category}")
             lines.append("-" * 100)
-            lines.append(f"{'Benchmark':<50} {'Ops/Sec':>12} {'ns/op':>12} {'MB/s':>12} {'B/op':>12} {'allocs/op':>12}")
+            lines.append(f"{'Benchmark':<50} {'Iterations':>12} {'Latency/op':>12} {'B/op':>12} {'allocs/op':>12}")
             lines.append("-" * 100)
 
             for m in cat_metrics:
-                ops_str = ReportFormatter.format_number(m.ops_per_sec)
-                ns_str = ReportFormatter.format_number(m.ns_per_op)
-                mb_str = f"{ReportFormatter.format_number(m.mb_per_sec)}/s" if m.mb_per_sec > 0 else "-"
+                iters_str = ReportFormatter.format_number(m.iterations)
+                latency_str = ReportFormatter.format_time(m.ns_per_op)
                 bytes_str = ReportFormatter.format_bytes(m.bytes_per_op)
                 allocs_str = ReportFormatter.format_number(m.allocs_per_op) if m.allocs_per_op > 0 else "-"
 
-                lines.append(f"{m.name:<50} {ops_str:>12} {ns_str:>12} {mb_str:>12} {bytes_str:>12} {allocs_str:>12}")
+                lines.append(f"{m.name:<50} {iters_str:>12} {latency_str:>12} {bytes_str:>12} {allocs_str:>12}")
 
         lines.append("")
         lines.append("=" * 100)
@@ -226,12 +223,12 @@ class ReportFormatter:
         slowest = max(metrics, key=lambda m: m.ns_per_op) if metrics else None
 
         lines.append(f"Total Benchmarks: {total_benchmarks}")
-        lines.append(f"Average Time: {ReportFormatter.format_number(avg_ns)} ns/op")
+        lines.append(f"Average Latency: {ReportFormatter.format_time(avg_ns)}/op")
         lines.append(f"Total Memory Allocated: {ReportFormatter.format_bytes(total_allocs)} across all benchmarks")
         if fastest:
-            lines.append(f"Fastest: {fastest.name} ({ReportFormatter.format_number(fastest.ns_per_op)} ns/op)")
+            lines.append(f"Fastest: {fastest.name} ({ReportFormatter.format_time(fastest.ns_per_op)}/op)")
         if slowest:
-            lines.append(f"Slowest: {slowest.name} ({ReportFormatter.format_number(slowest.ns_per_op)} ns/op)")
+            lines.append(f"Slowest: {slowest.name} ({ReportFormatter.format_time(slowest.ns_per_op)}/op)")
         lines.append("")
 
         return "\n".join(lines)
