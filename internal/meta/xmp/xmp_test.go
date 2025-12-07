@@ -155,6 +155,24 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestParser_AllBlocksFail(t *testing.T) {
+	parser := New()
+
+	// All blocks are malformed XML
+	blocks := []format.RawBlock{
+		{Spec: int(meta.SpecXMP), Payload: []byte("<bad>xml</broken>")},
+		{Spec: int(meta.SpecXMP), Payload: []byte("<another><bad>")},
+	}
+
+	dirs, err := parser.Parse(blocks)
+	if err == nil {
+		t.Error("Expected error when all blocks fail to parse")
+	}
+	if len(dirs) != 0 {
+		t.Errorf("Expected no directories when all parsing fails, got %d", len(dirs))
+	}
+}
+
 func TestParser_Robustness(t *testing.T) {
 	parser := New()
 
@@ -182,17 +200,139 @@ func TestParser_Robustness(t *testing.T) {
 }
 
 func TestStripXPacket(t *testing.T) {
-	raw := `<?xpacket begin="?" id="W5M0MpCehiHzreSzNTczkc9d"?><root>data</root><?xpacket end="w"?>`
-	got := stripXPacket([]byte(raw))
-	want := `<root>data</root>`
-	if string(got) != want {
-		t.Errorf("stripXPacket failed. Got %q, want %q", got, want)
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "Full wrapper",
+			input: `<?xpacket begin="?" id="W5M0MpCehiHzreSzNTczkc9d"?><root>data</root><?xpacket end="w"?>`,
+			want:  `<root>data</root>`,
+		},
+		{
+			name:  "No wrapper",
+			input: `<root>data</root>`,
+			want:  `<root>data</root>`,
+		},
+		{
+			name:  "Only begin",
+			input: `<?xpacket begin="?"?><data/>`,
+			want:  `<data/>`,
+		},
+		{
+			name:  "Only end",
+			input: `<data/><?xpacket end="w"?>`,
+			want:  `<data/>`,
+		},
+		{
+			name:  "With whitespace",
+			input: `<?xpacket begin="?"?>  <data/>  <?xpacket end="w"?>`,
+			want:  `<data/>`,
+		},
 	}
 
-	// Test without wrappers
-	raw2 := `<root>data</root>`
-	got2 := stripXPacket([]byte(raw2))
-	if string(got2) != raw2 {
-		t.Errorf("stripXPacket messed up unwrapped data. Got %q", got2)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := string(stripXPacket([]byte(tt.input)))
+			if got != tt.want {
+				t.Errorf("stripXPacket() = %q, want %q", got, tt.want)
+			}
+		})
 	}
+}
+
+// TestSpec tests the Spec() method
+func TestSpec(t *testing.T) {
+	parser := New()
+	if got := parser.Spec(); got != meta.SpecXMP {
+		t.Errorf("Spec() = %v, want %v", got, meta.SpecXMP)
+	}
+}
+
+// TestParse_EdgeCases tests Parse with various edge cases
+func TestParse_EdgeCases(t *testing.T) {
+	parser := New()
+
+	t.Run("Empty blocks", func(t *testing.T) {
+		dirs, err := parser.Parse([]format.RawBlock{})
+		if err != nil {
+			t.Errorf("Parse(empty) error: %v", err)
+		}
+		if len(dirs) != 0 {
+			t.Errorf("Parse(empty) returned %d dirs, want 0", len(dirs))
+		}
+	})
+
+	t.Run("Non-XMP blocks", func(t *testing.T) {
+		dirs, err := parser.Parse([]format.RawBlock{
+			{Spec: int(meta.SpecEXIF), Payload: []byte("not xmp")},
+		})
+		if err != nil {
+			t.Errorf("Parse(non-xmp) error: %v", err)
+		}
+		if len(dirs) != 0 {
+			t.Errorf("Parse(non-xmp) returned %d dirs, want 0", len(dirs))
+		}
+	})
+
+	t.Run("Empty payload", func(t *testing.T) {
+		dirs, err := parser.Parse([]format.RawBlock{
+			{Spec: int(meta.SpecXMP), Payload: []byte("")},
+		})
+		if err != nil {
+			t.Errorf("Parse(empty payload) error: %v", err)
+		}
+		if len(dirs) != 0 {
+			t.Errorf("Parse(empty payload) returned %d dirs, want 0", len(dirs))
+		}
+	})
+
+	t.Run("Whitespace only", func(t *testing.T) {
+		dirs, err := parser.Parse([]format.RawBlock{
+			{Spec: int(meta.SpecXMP), Payload: []byte("   \n\t  ")},
+		})
+		if err != nil {
+			t.Errorf("Parse(whitespace) error: %v", err)
+		}
+		if len(dirs) != 0 {
+			t.Errorf("Parse(whitespace) returned %d dirs, want 0", len(dirs))
+		}
+	})
+
+	t.Run("Multiple blocks", func(t *testing.T) {
+		blocks := []format.RawBlock{
+			{
+				Spec: int(meta.SpecXMP),
+				Payload: []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+ <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" dc:format="jpeg"/>
+</rdf:RDF></x:xmpmeta>`),
+			},
+			{
+				Spec: int(meta.SpecXMP),
+				Payload: []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+ <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:Rating="3"/>
+</rdf:RDF></x:xmpmeta>`),
+			},
+		}
+
+		dirs, err := parser.Parse(blocks)
+		if err != nil {
+			t.Fatalf("Parse error: %v", err)
+		}
+
+		if len(dirs) != 1 {
+			t.Fatalf("Expected 1 directory, got %d", len(dirs))
+		}
+
+		// Should have both properties
+		if _, ok := dirs[0].Tags["XMP-dc:format"]; !ok {
+			t.Error("Missing dc:format from first block")
+		}
+		if _, ok := dirs[0].Tags["XMP-xmp:Rating"]; !ok {
+			t.Error("Missing xmp:Rating from second block")
+		}
+	})
 }
