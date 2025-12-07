@@ -23,7 +23,27 @@ func TestGetDatasetInfo(t *testing.T) {
 		{"App Byline", RecordApplication, 80, "Byline", true},
 		{"App City", RecordApplication, 90, "City", false},
 		{"App Caption", RecordApplication, 120, "Caption-Abstract", false},
+		{"App Prefs", RecordApplication, 221, "Prefs", false},
+		{"App SceneCode", RecordApplication, 240, "SceneCode", true},
 		{"App Unknown", RecordApplication, 255, "", false},
+
+		// NewsPhoto record
+		{"NewsPhoto RecordVersion", RecordNewsPhoto, 0, "RecordVersion", false},
+		{"NewsPhoto PictureNumber", RecordNewsPhoto, 5, "PictureNumber", false},
+		{"NewsPhoto PixelsPerLine", RecordNewsPhoto, 10, "PixelsPerLine", false},
+		{"NewsPhoto Unknown", RecordNewsPhoto, 255, "", false},
+
+		// PreObjectData record
+		{"PreObject SizeMode", RecordPreObjectData, 10, "SizeMode", false},
+		{"PreObject Unknown", RecordPreObjectData, 255, "", false},
+
+		// ObjectData record
+		{"ObjectData SubFile", RecordObjectData, 10, "SubFile", true},
+		{"ObjectData Unknown", RecordObjectData, 255, "", false},
+
+		// PostObjectData record
+		{"PostObject ConfirmedSize", RecordPostObjectData, 10, "ConfirmedObjectDataSize", false},
+		{"PostObject Unknown", RecordPostObjectData, 255, "", false},
 
 		// Unknown record
 		{"Unknown Record", Record(99), 0, "", false},
