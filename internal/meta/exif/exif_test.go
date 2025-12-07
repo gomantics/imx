@@ -804,23 +804,45 @@ func TestParser_Parse_IFD0ParseError(t *testing.T) {
 	}
 }
 
-func TestParser_ParseValue_UnknownType_WithFormat(t *testing.T) {
+func TestParser_ParseValue_SBYTE(t *testing.T) {
 	p := New()
 
-	// Type 6 (SBYTE) is in typeSizes but not handled in switch -> triggers default case
+	// Type 6 (SBYTE) is now properly handled by SByteParser
 	data := make([]byte, 20)
 	byteOrder := binary.LittleEndian
 
-	// Put value data at offset 0
-	copy(data[0:4], []byte{0x01, 0x02, 0x03, 0x04})
+	// Put value data at offset 0 (signed byte value: -1)
+	copy(data[0:4], []byte{0xFF, 0x00, 0x00, 0x00})
 
-	// Type 6 is in typeSizes (size=1) but NOT in switch -> triggers default with fmt.Sprintf
+	// Type 6 is SBYTE - should be parsed correctly now
 	value, typeName := p.parseValue(data, 6, 1, 0, byteOrder)
 
-	if typeName != "type_6" {
-		t.Errorf("parseValue() typeName = %q, want %q", typeName, "type_6")
+	if typeName != "sbyte" {
+		t.Errorf("parseValue() typeName = %q, want %q", typeName, "sbyte")
 	}
-	if value == nil {
-		t.Error("parseValue() value should not be nil")
+	if value != -1 {
+		t.Errorf("parseValue() value = %v, want -1", value)
+	}
+}
+
+func TestParser_ParseValue_TrulyUnknownType(t *testing.T) {
+	p := New()
+
+	// Type 99 doesn't exist in TIFF spec - not in TIFFTypeSizes
+	data := make([]byte, 20)
+	byteOrder := binary.LittleEndian
+
+	// Put some data at offset 0
+	copy(data[0:4], []byte{0x01, 0x02, 0x03, 0x04})
+
+	// Type 99 is unknown - should return nil and "unknown"
+	value, typeName := p.parseValue(data, 99, 4, 0, byteOrder)
+
+	if typeName != "unknown" {
+		t.Errorf("parseValue() typeName = %q, want %q", typeName, "unknown")
+	}
+
+	if value != nil {
+		t.Errorf("parseValue() value = %v, want nil for unknown type", value)
 	}
 }

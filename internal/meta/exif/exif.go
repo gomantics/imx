@@ -196,21 +196,8 @@ func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder,
 
 // parseValue parses a tag value based on its type
 func (p *Parser) parseValue(data []byte, tagType uint16, count uint32, offset int, byteOrder binary.ByteOrder) (any, string) {
-	// Type sizes in bytes
-	typeSizes := map[uint16]int{
-		1:  1, // BYTE
-		2:  1, // ASCII
-		3:  2, // SHORT
-		4:  4, // LONG
-		5:  8, // RATIONAL
-		6:  1, // SBYTE
-		7:  1, // UNDEFINED
-		8:  2, // SSHORT
-		9:  4, // SLONG
-		10: 8, // SRATIONAL
-	}
-
-	typeSize, ok := typeSizes[tagType]
+	// Get TIFF type size
+	typeSize, ok := common.TIFFTypeSizes[tagType]
 	if !ok {
 		return nil, "unknown"
 	}
@@ -236,70 +223,7 @@ func (p *Parser) parseValue(data []byte, tagType uint16, count uint32, offset in
 		valueData = slice
 	}
 
-	switch tagType {
-	case 1: // BYTE
-		if count == 1 {
-			return int(valueData[0]), "byte"
-		}
-		return valueData[:count], "bytes"
-
-	case 2: // ASCII string
-		// Remove trailing null bytes
-		slice, _ := common.SafeSlice(valueData, 0, int(count))
-		str := common.TrimNullBytesFromSlice(slice)
-		return str, "string"
-
-	case 3: // SHORT (uint16)
-		if count == 1 {
-			val, _ := common.ReadUint16(valueData, 0, byteOrder)
-			return int(val), "short"
-		}
-		vals := make([]int, count)
-		for i := uint32(0); i < count; i++ {
-			val, _ := common.ReadUint16(valueData, int(i*2), byteOrder)
-			vals[i] = int(val)
-		}
-		return vals, "shorts"
-
-	case 4: // LONG (uint32)
-		if count == 1 {
-			val, _ := common.ReadUint32(valueData, 0, byteOrder)
-			return int(val), "long"
-		}
-		vals := make([]int, count)
-		for i := uint32(0); i < count; i++ {
-			val, _ := common.ReadUint32(valueData, int(i*4), byteOrder)
-			vals[i] = int(val)
-		}
-		return vals, "longs"
-
-	case 5: // RATIONAL (num/denom as uint32)
-		if count == 1 {
-			num, _ := common.ReadUint32(valueData, 0, byteOrder)
-			denom, _ := common.ReadUint32(valueData, 4, byteOrder)
-			if denom == 0 {
-				return 0.0, "rational"
-			}
-			return float64(num) / float64(denom), "rational"
-		}
-		vals := make([]float64, count)
-		for i := uint32(0); i < count; i++ {
-			num, _ := common.ReadUint32(valueData, int(i*8), byteOrder)
-			denom, _ := common.ReadUint32(valueData, int(i*8+4), byteOrder)
-			if denom == 0 {
-				vals[i] = 0
-			} else {
-				vals[i] = float64(num) / float64(denom)
-			}
-		}
-		return vals, "rationals"
-
-	case 7: // UNDEFINED (raw bytes)
-		slice, _ := common.SafeSlice(valueData, 0, int(count))
-		return slice, "undefined"
-
-	default:
-		slice, _ := common.SafeSlice(valueData, 0, int(count))
-		return slice, fmt.Sprintf("type_%d", tagType)
-	}
+	// Use TIFF type parser (guaranteed to exist since typeSize was found)
+	parser := common.TIFFTypeParsers[tagType]
+	return parser.Parse(valueData, count, byteOrder)
 }
