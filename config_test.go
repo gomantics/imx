@@ -2,6 +2,7 @@ package imx
 
 import (
 	"testing"
+	"time"
 )
 
 func TestWithMaxBytes(t *testing.T) {
@@ -54,6 +55,16 @@ func TestWithStopOnFirstError(t *testing.T) {
 
 	if !cfg.StopOnFirstErr {
 		t.Error("WithStopOnFirstError() StopOnFirstErr should be true")
+	}
+}
+
+func TestWithHTTPTimeout(t *testing.T) {
+	cfg := Config{}
+	opt := WithHTTPTimeout(60 * time.Second)
+	opt(&cfg)
+
+	if cfg.HTTPTimeout != 60*time.Second {
+		t.Errorf("WithHTTPTimeout() HTTPTimeout = %v, want 60s", cfg.HTTPTimeout)
 	}
 }
 

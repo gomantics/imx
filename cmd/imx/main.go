@@ -5,12 +5,9 @@
 package main
 
 import (
-	"bufio"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -304,19 +301,8 @@ func (a *App) printHelp() {
 }
 
 func (a *App) runStdin() int {
-	// Read all data from stdin
-	data, err := io.ReadAll(bufio.NewReader(os.Stdin))
-	if err != nil {
-		a.printError(fmt.Sprintf("reading stdin: %v", err))
-		return 1
-	}
-
-	if len(data) == 0 {
-		a.printError("no data received from stdin")
-		return 1
-	}
-
-	meta, err := a.extractor.MetadataFromBytes(data)
+	// Use MetadataFromReader directly with stdin
+	meta, err := a.extractor.MetadataFromReader(os.Stdin)
 	if err != nil {
 		a.printError(fmt.Sprintf("parsing stdin: %v", err))
 		return 1
@@ -461,75 +447,28 @@ func isURL(path string) bool {
 	return strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://")
 }
 
-func (a *App) fetchURL(url string) (*imx.Metadata, error) {
-	client := &http.Client{
-		Timeout: time.Duration(a.opts.Timeout) * time.Second,
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating request: %w", err)
-	}
-
-	// Set a reasonable User-Agent
-	req.Header.Set("User-Agent", "imx/"+version)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("fetching URL: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
-	}
-
-	// Check content type
-	contentType := resp.Header.Get("Content-Type")
-	if contentType != "" && !strings.HasPrefix(contentType, "image/") {
-		// Still try to parse it, but warn if not quiet
-		if !a.opts.Quiet {
-			fmt.Fprintf(os.Stderr, "Warning: Content-Type is %s (not an image)\n", contentType)
-		}
-	}
-
-	// Read body with size limit (100MB)
-	const maxSize = 100 * 1024 * 1024
-	limitReader := io.LimitReader(resp.Body, maxSize)
-	data, err := io.ReadAll(limitReader)
-	if err != nil {
-		return nil, fmt.Errorf("reading response: %w", err)
-	}
-
-	meta, err := a.extractor.MetadataFromBytes(data)
-	if err != nil {
-		return nil, err
-	}
-	return &meta, nil
-}
-
 type ProcessResult struct {
 	Meta     *imx.Metadata
 	TagCount int
 }
 
 func (a *App) processFile(path string) (*ProcessResult, error) {
-	var meta *imx.Metadata
+	var m imx.Metadata
 	var err error
 
+	// Use library's built-in URL and file handling with timeout option
+	timeout := imx.WithHTTPTimeout(time.Duration(a.opts.Timeout) * time.Second)
+
 	if isURL(path) {
-		meta, err = a.fetchURL(path)
+		m, err = a.extractor.MetadataFromURL(path, timeout)
 	} else {
-		m, e := a.extractor.MetadataFromFile(path)
-		if e != nil {
-			return nil, e
-		}
-		meta = &m
-		err = nil
+		m, err = a.extractor.MetadataFromFile(path)
 	}
 	if err != nil {
 		return nil, err
 	}
+
+	meta := &m
 
 	result := &ProcessResult{Meta: meta}
 
