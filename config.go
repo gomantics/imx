@@ -15,15 +15,26 @@ type Config struct {
 // Option is a functional option for configuring an Extractor
 type Option func(*Config)
 
-// WithMaxBytes sets the maximum number of bytes to read
+// WithMaxBytes sets the maximum number of bytes to read.
+// Panics if n is negative.
 func WithMaxBytes(n int64) Option {
+	if n < 0 {
+		panic("imx: MaxBytes must be non-negative")
+	}
 	return func(cfg *Config) {
 		cfg.MaxBytes = n
 	}
 }
 
-// WithBufferSize sets the buffer size for reading
+// WithBufferSize sets the buffer size for reading.
+// Panics if n is negative or if n is positive but less than 1KB.
 func WithBufferSize(n int) Option {
+	if n < 0 {
+		panic("imx: BufferSize must be non-negative")
+	}
+	if n > 0 && n < 1024 {
+		panic("imx: BufferSize should be at least 1KB (1024 bytes)")
+	}
 	return func(cfg *Config) {
 		cfg.BufferSize = n
 	}
@@ -50,8 +61,12 @@ func WithStopOnFirstError() Option {
 	}
 }
 
-// WithHTTPTimeout sets the HTTP request timeout for URL fetching
+// WithHTTPTimeout sets the HTTP request timeout for URL fetching.
+// Panics if d is negative.
 func WithHTTPTimeout(d time.Duration) Option {
+	if d < 0 {
+		panic("imx: HTTPTimeout must be non-negative")
+	}
 	return func(cfg *Config) {
 		cfg.HTTPTimeout = d
 	}

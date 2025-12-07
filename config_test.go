@@ -164,3 +164,89 @@ func TestConfig_EdgeCases(t *testing.T) {
 		})
 	}
 }
+
+// Validation tests - panics on invalid inputs
+
+func TestWithMaxBytes_Negative(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected panic for negative MaxBytes")
+		} else if msg, ok := r.(string); ok {
+			if msg != "imx: MaxBytes must be non-negative" {
+				t.Errorf("Expected panic message about MaxBytes, got: %s", msg)
+			}
+		}
+	}()
+	WithMaxBytes(-1)
+}
+
+func TestWithBufferSize_Negative(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected panic for negative BufferSize")
+		} else if msg, ok := r.(string); ok {
+			if msg != "imx: BufferSize must be non-negative" {
+				t.Errorf("Expected panic message about BufferSize non-negative, got: %s", msg)
+			}
+		}
+	}()
+	WithBufferSize(-100)
+}
+
+func TestWithBufferSize_TooSmall(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected panic for buffer size < 1KB")
+		} else if msg, ok := r.(string); ok {
+			if msg != "imx: BufferSize should be at least 1KB (1024 bytes)" {
+				t.Errorf("Expected panic message about BufferSize minimum, got: %s", msg)
+			}
+		}
+	}()
+	WithBufferSize(512)
+}
+
+func TestWithHTTPTimeout_Negative(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected panic for negative HTTPTimeout")
+		} else if msg, ok := r.(string); ok {
+			if msg != "imx: HTTPTimeout must be non-negative" {
+				t.Errorf("Expected panic message about HTTPTimeout, got: %s", msg)
+			}
+		}
+	}()
+	WithHTTPTimeout(-1 * time.Second)
+}
+
+// Test that zero values are allowed
+
+func TestWithBufferSize_Zero(t *testing.T) {
+	// Zero should not panic (uses default)
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Did not expect panic for BufferSize=0, got: %v", r)
+		}
+	}()
+	cfg := Config{}
+	opt := WithBufferSize(0)
+	opt(&cfg)
+	if cfg.BufferSize != 0 {
+		t.Errorf("BufferSize = %d, want 0", cfg.BufferSize)
+	}
+}
+
+func TestWithHTTPTimeout_Zero(t *testing.T) {
+	// Zero should not panic (uses default)
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Did not expect panic for HTTPTimeout=0, got: %v", r)
+		}
+	}()
+	cfg := Config{}
+	opt := WithHTTPTimeout(0)
+	opt(&cfg)
+	if cfg.HTTPTimeout != 0 {
+		t.Errorf("HTTPTimeout = %v, want 0", cfg.HTTPTimeout)
+	}
+}
