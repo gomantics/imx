@@ -20,9 +20,9 @@ type Config struct {
 // defaultConfig returns a Config with reasonable defaults
 func defaultConfig() Config {
 	return Config{
-		MaxBytes:       0,              // No limit
-		BufferSize:     64 * 1024,      // 64KB
-		StopOnFirstErr: false,          // Continue on errors for partial results
+		MaxBytes:       0,                // No limit
+		BufferSize:     64 * 1024,        // 64KB
+		StopOnFirstErr: false,            // Continue on errors for partial results
 		HTTPTimeout:    30 * time.Second, // 30 second timeout
 	}
 }

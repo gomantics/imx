@@ -57,7 +57,7 @@ class BenchmarkRunner:
         self.repo_path = repo_path
 
     def run_current_benchmarks(self) -> Tuple[bool, List[BenchmarkMetrics], str]:
-        """Run benchmarks on current commit"""
+        """Run benchmarks and return metrics (for historical analysis)"""
         try:
             result = subprocess.run(
                 ["go", "test", "-bench=.", "-benchmem", "-benchtime=2s", "-run=^$",
@@ -68,11 +68,162 @@ class BenchmarkRunner:
                 timeout=300
             )
 
-            if "Benchmark" in result.stdout:
+            if result.returncode == 0:
                 metrics = self._parse_benchmark_output(result.stdout)
-                return True, metrics, result.stdout
+                if metrics:
+                    return True, metrics, result.stdout
+                else:
+                    return False, [], "No benchmark output"
             else:
-                return False, [], result.stderr or "No benchmark output"
+                return False, [], result.stderr or "Benchmark failed"
+
+        except subprocess.TimeoutExpired:
+            return False, [], "Benchmark timeout (>5min)"
+        except Exception as e:
+            return False, [], f"Error: {e}"
+
+    def run_current_benchmarks_streaming(self) -> Tuple[bool, List[BenchmarkMetrics], str]:
+        """Run benchmarks with streaming formatted output"""
+        try:
+            process = subprocess.Popen(
+                ["go", "test", "-bench=.", "-benchmem", "-benchtime=10x", "-run=^$",
+                # ".", "./internal/meta/...", "./internal/format/..."],
+                "./internal/format/..."],
+                cwd=self.repo_path,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1
+            )
+
+            output_lines = []
+            current_pkg = "unknown"
+            metrics = []
+            pattern = r'Benchmark(\S+)-\d+\s+(\d+)\s+([\d.]+)\s+ns/op\s+([\d.]+)\s+B/op\s+([\d.]+)\s+allocs/op'
+
+            # Track current category for streaming display
+            current_category = None
+            category_started = False
+
+            # Stream output line by line
+            for line in process.stdout:
+                output_lines.append(line)
+
+                # Parse package changes
+                if line.startswith("pkg: "):
+                    current_pkg = line.split("pkg: ")[1].strip()
+
+                    # Determine category from package
+                    if "internal/meta/exif" in current_pkg:
+                        new_category = "EXIF Parser"
+                    elif "internal/meta/iptc" in current_pkg:
+                        new_category = "IPTC Parser"
+                    elif "internal/meta/xmp" in current_pkg:
+                        new_category = "XMP Parser"
+                    elif "internal/meta/icc" in current_pkg:
+                        new_category = "ICC Parser"
+                    elif "internal/format/jpeg" in current_pkg:
+                        new_category = "JPEG Format"
+                    elif current_pkg.endswith("/imx") or current_pkg == "github.com/gomantics/imx":
+                        new_category = "High-Level API"
+                    else:
+                        new_category = "Other"
+
+                    # Print category header if changed
+                    if new_category != current_category:
+                        if category_started:
+                            print(flush=True)  # Blank line between categories
+                        current_category = new_category
+                        category_started = True
+                        print(f"\n{current_category}", flush=True)
+                        print("-" * 100, flush=True)
+                        print(f"{'Benchmark':<50} {'Iterations':>12} {'Latency/op':>12} {'B/op':>12} {'allocs/op':>12}", flush=True)
+                        print("-" * 100, flush=True)
+
+                # Parse and display benchmarks as they complete
+                elif line.startswith("Benchmark"):
+                    match = re.match(pattern, line)
+                    if match:
+                        name = match.group(1)
+                        iterations = int(match.group(2))
+                        ns_per_op = float(match.group(3))
+                        bytes_per_op = int(float(match.group(4)))
+                        allocs_per_op = int(float(match.group(5)))
+
+                        metric = BenchmarkMetrics(
+                            name=name,
+                            package=current_pkg,
+                            iterations=iterations,
+                            ns_per_op=ns_per_op,
+                            bytes_per_op=bytes_per_op,
+                            allocs_per_op=allocs_per_op
+                        )
+                        metrics.append(metric)
+
+                        # Format and print the result immediately
+                        iters_str = ReportFormatter.format_number(iterations)
+                        latency_str = ReportFormatter.format_time(ns_per_op)
+                        bytes_str = ReportFormatter.format_bytes(bytes_per_op)
+                        allocs_str = ReportFormatter.format_number(allocs_per_op) if allocs_per_op > 0 else "-"
+
+                        print(f"{name:<50} {iters_str:>12} {latency_str:>12} {bytes_str:>12} {allocs_str:>12}", flush=True)
+
+            process.wait(timeout=300)
+            output = ''.join(output_lines)
+
+            # Print summary
+            if metrics:
+                print(flush=True)
+                print("=" * 100, flush=True)
+                print("SUMMARY", flush=True)
+                print("=" * 100, flush=True)
+
+                total_benchmarks = len(metrics)
+
+                # Performance breakdown by category
+                by_category = {}
+                for m in metrics:
+                    if "internal/meta/exif" in m.package:
+                        cat = "EXIF Parser"
+                    elif "internal/meta/iptc" in m.package:
+                        cat = "IPTC Parser"
+                    elif "internal/meta/xmp" in m.package:
+                        cat = "XMP Parser"
+                    elif "internal/meta/icc" in m.package:
+                        cat = "ICC Parser"
+                    elif "internal/format/jpeg" in m.package:
+                        cat = "JPEG Format"
+                    elif m.package.endswith("/imx") or m.package == "github.com/gomantics/imx":
+                        cat = "High-Level API"
+                    else:
+                        cat = "Other"
+
+                    if cat not in by_category:
+                        by_category[cat] = []
+                    by_category[cat].append(m)
+
+                print(f"Total: {total_benchmarks} benchmarks across {len(by_category)} categories", flush=True)
+                print(flush=True)
+
+                # Category performance
+                for cat in sorted(by_category.keys()):
+                    cat_metrics = by_category[cat]
+                    avg_latency = sum(m.ns_per_op for m in cat_metrics) / len(cat_metrics)
+                    avg_mem = sum(m.bytes_per_op for m in cat_metrics) / len(cat_metrics)
+                    total_iters = sum(m.iterations for m in cat_metrics)
+
+                    print(f"  {cat:<20} {len(cat_metrics):>2} benchmarks  "
+                          f"avg: {ReportFormatter.format_time(avg_latency)}/op  "
+                          f"mem: {ReportFormatter.format_bytes(int(avg_mem))}/op  "
+                          f"iters: {ReportFormatter.format_number(total_iters)}", flush=True)
+
+                print(flush=True)
+
+            if process.returncode == 0 and metrics:
+                return True, metrics, output
+            else:
+                stderr = process.stderr.read() if process.stderr else ""
+                return False, [], stderr or "No benchmark output"
 
         except subprocess.TimeoutExpired:
             return False, [], "Benchmark timeout (>5min)"
@@ -275,6 +426,16 @@ class HistoricalRunner:
 
         return commits
 
+    def _has_uncommitted_changes(self) -> bool:
+        """Check if there are uncommitted changes"""
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=self.repo_path,
+            capture_output=True,
+            text=True
+        )
+        return bool(result.stdout.strip())
+
     def _checkout_commit(self, commit_hash: str) -> bool:
         """Checkout a commit"""
         try:
@@ -290,6 +451,16 @@ class HistoricalRunner:
 
     def run(self) -> List[CommitBenchmark]:
         """Run benchmarks across commits"""
+        # Check for uncommitted changes
+        if self._has_uncommitted_changes():
+            print("\nError: Uncommitted changes detected in working directory.", file=sys.stderr)
+            print("Please commit or stash your changes before running historical benchmarks:", file=sys.stderr)
+            print("  git add .", file=sys.stderr)
+            print("  git commit -m 'your message'", file=sys.stderr)
+            print("OR", file=sys.stderr)
+            print("  git stash", file=sys.stderr)
+            sys.exit(1)
+
         commits = self._get_commits()
         print(f"Running benchmarks across {len(commits)} commits...", file=sys.stderr)
         print("This may take a while...\n", file=sys.stderr)
@@ -300,10 +471,16 @@ class HistoricalRunner:
         try:
             for i, (commit_hash, commit_date, commit_message) in enumerate(commits, 1):
                 short_hash = commit_hash[:8]
-                print(f"[{i}/{len(commits)}] {short_hash} - {commit_message[:50]}...", end=" ", file=sys.stderr, flush=True)
+                commit_date_str = commit_date.strftime("%Y-%m-%d %H:%M:%S")
+
+                print(f"\n[{i}/{len(commits)}] Processing commit {short_hash}", file=sys.stderr)
+                print(f"  Date: {commit_date_str}", file=sys.stderr)
+                print(f"  Message: {commit_message}", file=sys.stderr)
+                print(f"  Checking out...", end=" ", file=sys.stderr, flush=True)
 
                 if not self._checkout_commit(commit_hash):
-                    print("✗ checkout failed", file=sys.stderr)
+                    print("✗ FAILED", file=sys.stderr)
+                    print(f"  Error: Could not checkout commit", file=sys.stderr)
                     results.append(CommitBenchmark(
                         commit_hash=commit_hash,
                         commit_date=commit_date,
@@ -314,10 +491,19 @@ class HistoricalRunner:
                     ))
                     continue
 
-                success, metrics, error = runner.run_current_benchmarks()
+                print("✓", file=sys.stderr)
+
+                # Clean build cache for this commit
+                print(f"  Cleaning build cache...", end=" ", file=sys.stderr, flush=True)
+                subprocess.run(["go", "clean", "-cache"], cwd=self.repo_path, capture_output=True)
+                print("✓", file=sys.stderr)
+
+                print(f"  Running benchmarks:\n", file=sys.stderr)
+
+                success, metrics, error = runner.run_current_benchmarks_streaming()
 
                 if success:
-                    print(f"✓ {len(metrics)} benchmarks", file=sys.stderr)
+                    print(f"\n  Status: SUCCESS - {len(metrics)} benchmarks completed", file=sys.stderr)
                     results.append(CommitBenchmark(
                         commit_hash=commit_hash,
                         commit_date=commit_date,
@@ -326,7 +512,8 @@ class HistoricalRunner:
                         success=True
                     ))
                 else:
-                    print(f"✗ {error[:50]}", file=sys.stderr)
+                    print(f"\n  Status: FAILED", file=sys.stderr)
+                    print(f"  Error: {error[:100]}", file=sys.stderr)
                     results.append(CommitBenchmark(
                         commit_hash=commit_hash,
                         commit_date=commit_date,
@@ -381,11 +568,10 @@ class GraphGenerator:
             return
 
         # Generate metric graphs (all benchmarks combined)
-        self._generate_metric_graph(by_benchmark, "ops_per_sec", "Operations per Second", "ops_per_sec.png")
-        self._generate_metric_graph(by_benchmark, "ns_per_op", "Nanoseconds per Operation", "ns_per_op.png")
-        self._generate_metric_graph(by_benchmark, "bytes_per_op", "Bytes Allocated per Operation", "bytes_per_op.png")
-        self._generate_metric_graph(by_benchmark, "allocs_per_op", "Allocations per Operation", "allocs_per_op.png")
-        self._generate_metric_graph(by_benchmark, "mb_per_sec", "Throughput (MB/s)", "throughput.png")
+        self._generate_metric_graph(by_benchmark, "iterations", "Iterations", "iterations.png")
+        self._generate_metric_graph(by_benchmark, "ns_per_op", "Latency (ns/op)", "latency.png")
+        self._generate_metric_graph(by_benchmark, "bytes_per_op", "Memory (B/op)", "memory.png")
+        self._generate_metric_graph(by_benchmark, "allocs_per_op", "Allocations (allocs/op)", "allocs.png")
 
         print(f"\n✓ Graphs saved to {self.output_dir}/", file=sys.stderr)
 
@@ -434,20 +620,18 @@ class GraphGenerator:
 
                 dates = [d for d, _ in data]
 
-                if metric_name == "ops_per_sec":
-                    values = [m.ops_per_sec for _, m in data]
+                if metric_name == "iterations":
+                    values = [m.iterations for _, m in data]
                 elif metric_name == "ns_per_op":
                     values = [m.ns_per_op for _, m in data]
                 elif metric_name == "bytes_per_op":
                     values = [m.bytes_per_op for _, m in data]
                 elif metric_name == "allocs_per_op":
                     values = [m.allocs_per_op for _, m in data]
-                elif metric_name == "mb_per_sec":
-                    values = [m.mb_per_sec for _, m in data]
                 else:
                     continue
 
-                # Skip if all zeros (for mb_per_sec)
+                # Skip if all zeros
                 if all(v == 0 for v in values):
                     continue
 
@@ -484,15 +668,11 @@ def main():
     repo_path = Path.cwd()
     runner = BenchmarkRunner(repo_path)
 
-    # Always run current benchmarks first
+    # Always run current benchmarks first with streaming output
     print("Running benchmarks on current commit...\n", file=sys.stderr)
-    success, metrics, output = runner.run_current_benchmarks()
+    success, metrics, output = runner.run_current_benchmarks_streaming()
 
-    if success:
-        # Print human-readable report
-        report = ReportFormatter.format_current_results(metrics, output)
-        print(report)
-    else:
+    if not success:
         print(f"Error running benchmarks: {output}", file=sys.stderr)
         return 1
 
