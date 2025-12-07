@@ -22,3 +22,11 @@ go.work.sum
 # Debug files
 *.log
 debug/
+
+# Benchmark outputs
+bench.txt
+bench-report.txt
+bench_output.txt
+*.prof
+*.test
+trace.out
