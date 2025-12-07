@@ -28,20 +28,16 @@ type Extractor struct {
 
 // New creates a new Extractor with the given options
 func New(opts ...Option) *Extractor {
-	cfg := Config{
-		BufferSize: 64 * 1024, // 64KB default
-	}
+	cfg := defaultConfig()
 	for _, opt := range opts {
 		opt(&cfg)
 	}
 
 	e := &Extractor{
 		cfg: cfg,
-		// Future: filter format parsers based on cfg.Formats when specified
 		formatParsers: []format.Parser{
 			jpeg.New(),
 		},
-		// Future: filter meta parsers based on cfg.Specs when specified
 		metaParsers: []meta.Parser{
 			exif.New(),
 			xmp.New(),
@@ -100,11 +96,6 @@ func (e *Extractor) MetadataFromReader(r io.Reader, opts ...Option) (Metadata, e
 
 	for _, metaParser := range e.metaParsers {
 		spec := metaParser.Spec()
-
-		// Apply spec filter
-		if len(cfg.Specs) > 0 && !contains(cfg.Specs, spec) {
-			continue
-		}
 
 		// Filter blocks for this spec
 		relevantBlocks := filterBlocksForSpec(blocks, spec)

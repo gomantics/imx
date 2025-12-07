@@ -25,36 +25,22 @@ func TestWithBufferSize(t *testing.T) {
 	}
 }
 
-func TestWithSpecs(t *testing.T) {
-	cfg := Config{}
-	opt := WithSpecs(SpecEXIF, SpecXMP)
-	opt(&cfg)
-
-	if len(cfg.Specs) != 2 {
-		t.Errorf("WithSpecs() len(Specs) = %d, want 2", len(cfg.Specs))
-	}
-	if cfg.Specs[0] != SpecEXIF || cfg.Specs[1] != SpecXMP {
-		t.Error("WithSpecs() Specs not set correctly")
-	}
-}
-
-func TestWithFormats(t *testing.T) {
-	cfg := Config{}
-	opt := WithFormats(FormatJPEG, FormatPNG)
-	opt(&cfg)
-
-	if len(cfg.Formats) != 2 {
-		t.Errorf("WithFormats() len(Formats) = %d, want 2", len(cfg.Formats))
-	}
-}
-
 func TestWithStopOnFirstError(t *testing.T) {
 	cfg := Config{}
-	opt := WithStopOnFirstError()
+	opt := WithStopOnFirstError(true)
 	opt(&cfg)
 
 	if !cfg.StopOnFirstErr {
-		t.Error("WithStopOnFirstError() StopOnFirstErr should be true")
+		t.Error("WithStopOnFirstError(true) StopOnFirstErr should be true")
+	}
+
+	// Test false as well
+	cfg2 := Config{StopOnFirstErr: true}
+	opt2 := WithStopOnFirstError(false)
+	opt2(&cfg2)
+
+	if cfg2.StopOnFirstErr {
+		t.Error("WithStopOnFirstError(false) StopOnFirstErr should be false")
 	}
 }
 
@@ -65,6 +51,23 @@ func TestWithHTTPTimeout(t *testing.T) {
 
 	if cfg.HTTPTimeout != 60*time.Second {
 		t.Errorf("WithHTTPTimeout() HTTPTimeout = %v, want 60s", cfg.HTTPTimeout)
+	}
+}
+
+func TestDefaultConfig(t *testing.T) {
+	cfg := defaultConfig()
+
+	if cfg.MaxBytes != 0 {
+		t.Errorf("defaultConfig() MaxBytes = %d, want 0", cfg.MaxBytes)
+	}
+	if cfg.BufferSize != 64*1024 {
+		t.Errorf("defaultConfig() BufferSize = %d, want %d", cfg.BufferSize, 64*1024)
+	}
+	if cfg.StopOnFirstErr {
+		t.Errorf("defaultConfig() StopOnFirstErr = %v, want false", cfg.StopOnFirstErr)
+	}
+	if cfg.HTTPTimeout != 30*time.Second {
+		t.Errorf("defaultConfig() HTTPTimeout = %v, want 30s", cfg.HTTPTimeout)
 	}
 }
 
@@ -79,12 +82,6 @@ func TestConfig_Defaults(t *testing.T) {
 	}
 	if cfg.StopOnFirstErr {
 		t.Errorf("Default StopOnFirstErr = %v, want false", cfg.StopOnFirstErr)
-	}
-	if cfg.Specs != nil {
-		t.Errorf("Default Specs = %v, want nil", cfg.Specs)
-	}
-	if cfg.Formats != nil {
-		t.Errorf("Default Formats = %v, want nil", cfg.Formats)
 	}
 }
 
@@ -109,48 +106,6 @@ func TestConfig_EdgeCases(t *testing.T) {
 			check: func(t *testing.T, cfg Config) {
 				if cfg.BufferSize != 1<<30 {
 					t.Errorf("BufferSize = %d, want %d", cfg.BufferSize, 1<<30)
-				}
-			},
-		},
-		{
-			name: "WithSpecs empty slice",
-			opt:  WithSpecs(),
-			check: func(t *testing.T, cfg Config) {
-				if len(cfg.Specs) != 0 {
-					t.Errorf("len(Specs) = %d, want 0", len(cfg.Specs))
-				}
-			},
-		},
-		{
-			name: "WithFormats empty slice",
-			opt:  WithFormats(),
-			check: func(t *testing.T, cfg Config) {
-				if len(cfg.Formats) != 0 {
-					t.Errorf("len(Formats) = %d, want 0", len(cfg.Formats))
-				}
-			},
-		},
-		{
-			name: "WithSpecs single spec",
-			opt:  WithSpecs(SpecEXIF),
-			check: func(t *testing.T, cfg Config) {
-				if len(cfg.Specs) != 1 {
-					t.Errorf("len(Specs) = %d, want 1", len(cfg.Specs))
-				}
-				if len(cfg.Specs) > 0 && cfg.Specs[0] != SpecEXIF {
-					t.Errorf("Specs[0] = %v, want %v", cfg.Specs[0], SpecEXIF)
-				}
-			},
-		},
-		{
-			name: "WithFormats single format",
-			opt:  WithFormats(FormatJPEG),
-			check: func(t *testing.T, cfg Config) {
-				if len(cfg.Formats) != 1 {
-					t.Errorf("len(Formats) = %d, want 1", len(cfg.Formats))
-				}
-				if len(cfg.Formats) > 0 && cfg.Formats[0] != FormatJPEG {
-					t.Errorf("Formats[0] = %v, want %v", cfg.Formats[0], FormatJPEG)
 				}
 			},
 		},

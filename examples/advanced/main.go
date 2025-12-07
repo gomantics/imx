@@ -2,7 +2,7 @@
 //
 // This example demonstrates advanced usage of the imx library including:
 // - Custom extractor with options
-// - Filtering by metadata spec
+// - Filtering tags by spec using EachInSpec
 // - Batch processing multiple files
 // - Iterating tags
 // - Error handling
@@ -54,27 +54,25 @@ func printUsage() {
 	fmt.Println("  advanced --batch <files...>      Batch process with summary")
 }
 
-// exifOnly demonstrates filtering metadata to only EXIF spec
+// exifOnly demonstrates filtering EXIF tags using EachInSpec
 func exifOnly(filename string) {
 	fmt.Printf("=== EXIF Only: %s ===\n\n", filepath.Base(filename))
 
-	// Create extractor that only extracts EXIF
-	extractor := imx.New(
-		imx.WithSpecs(imx.SpecEXIF),
-	)
-
-	meta, err := extractor.MetadataFromFile(filename)
+	// Extract all metadata
+	meta, err := imx.MetadataFromFile(filename)
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 
-	// Iterate all EXIF tags
+	// Iterate only EXIF tags using EachInSpec
+	count := 0
 	meta.EachInSpec(imx.SpecEXIF, func(tag imx.Tag) bool {
 		fmt.Printf("%-30s = %v\n", tag.Name, tag.Value)
+		count++
 		return true
 	})
 
-	fmt.Printf("\nTotal EXIF tags: %d\n", countTags(meta))
+	fmt.Printf("\nTotal EXIF tags: %d\n", count)
 }
 
 // allTags demonstrates iterating all tags with full details

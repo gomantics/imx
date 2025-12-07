@@ -41,24 +41,15 @@ func TestNew(t *testing.T) {
 			opts: []Option{WithBufferSize(32 * 1024)},
 		},
 		{
-			name: "with specs",
-			opts: []Option{WithSpecs(SpecEXIF)},
-		},
-		{
-			name: "with formats",
-			opts: []Option{WithFormats(FormatJPEG)},
-		},
-		{
 			name: "with stop on first error",
-			opts: []Option{WithStopOnFirstError()},
+			opts: []Option{WithStopOnFirstError(true)},
 		},
 		{
 			name: "with multiple options",
 			opts: []Option{
 				WithMaxBytes(2048),
 				WithBufferSize(16 * 1024),
-				WithSpecs(SpecEXIF, SpecXMP),
-				WithStopOnFirstError(),
+				WithStopOnFirstError(true),
 			},
 		},
 	}
@@ -159,28 +150,9 @@ func TestExtractor_MaxBytes(t *testing.T) {
 	_ = err // Error is acceptable
 }
 
-func TestExtractor_SpecFilter(t *testing.T) {
-	e := New(WithSpecs(SpecXMP)) // Only want XMP, not EXIF
-	validJPEG := loadTestJPEG(t) // Has EXIF
-
-	r := bytes.NewReader(validJPEG)
-	metadata, err := e.MetadataFromReader(r)
-
-	if err != nil {
-		t.Fatalf("Metadata() error = %v", err)
-	}
-
-	// Should have no EXIF directories since we filtered for XMP only
-	for _, dir := range metadata.Directories {
-		if dir.Spec == SpecEXIF {
-			t.Error("Metadata() should not return EXIF dirs when filtered for XMP only")
-		}
-	}
-}
-
 func TestExtractor_StopOnError(t *testing.T) {
 	// Create extractor with StopOnFirstError
-	e := New(WithStopOnFirstError())
+	e := New(WithStopOnFirstError(true))
 
 	// Valid JPEG that parses successfully
 	validJPEG := loadTestJPEG(t)
@@ -359,7 +331,7 @@ func TestExtractor_NoBlocks(t *testing.T) {
 
 func TestExtractor_ParseErrorStop(t *testing.T) {
 	// Test with StopOnFirstError=true and bad EXIF data
-	e := New(WithStopOnFirstError())
+	e := New(WithStopOnFirstError(true))
 	jpegBadExif := buildJPEGWithBadEXIF()
 
 	r := bytes.NewReader(jpegBadExif)

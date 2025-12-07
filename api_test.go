@@ -124,7 +124,7 @@ func TestMetadataFromBytes(t *testing.T) {
 		{
 			name:    "valid JPEG with options",
 			data:    validJPEG,
-			opts:    []Option{WithSpecs(SpecEXIF)},
+			opts:    []Option{WithMaxBytes(20000000)},
 			wantErr: false,
 		},
 		{
@@ -309,6 +309,15 @@ func TestExtractor_MetadataFromURL(t *testing.T) {
 		_, err := e.MetadataFromURL("://invalid-url")
 		if err == nil {
 			t.Error("MetadataFromURL() expected error for invalid URL format")
+		}
+	})
+
+	t.Run("zero HTTPTimeout uses fallback", func(t *testing.T) {
+		// Create extractor with HTTPTimeout=0 to test the fallback logic
+		e2 := New(WithHTTPTimeout(0))
+		_, err := e2.MetadataFromURL(server.URL + "/valid.jpg")
+		if err != nil {
+			t.Errorf("MetadataFromURL() with HTTPTimeout=0 should use fallback, got error: %v", err)
 		}
 	})
 }

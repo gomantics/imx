@@ -5,11 +5,26 @@ import "time"
 // Config holds configuration options for metadata extraction
 type Config struct {
 	MaxBytes       int64         // Maximum bytes to read (0 = no limit)
-	BufferSize     int           // Buffer size for reading (0 = default 64KB)
-	Specs          []Spec        // Metadata specs to extract (nil/empty = all)
-	Formats        []Format      // Formats to detect (nil/empty = all registered)
+	BufferSize     int           // Buffer size for reading
 	StopOnFirstErr bool          // Stop on first error vs. continue with partial results
-	HTTPTimeout    time.Duration // HTTP request timeout for URL fetching (0 = 30s default)
+	HTTPTimeout    time.Duration // HTTP request timeout for URL fetching
+
+	// TODO: Add support for custom format and spec filters in a future version.
+	// This would allow users to register custom parsers or filter which specs to extract.
+	// Example API:
+	//   - WithFormatFilter(func(Format) bool)
+	//   - WithSpecFilter(func(Spec) bool)
+	//   - RegisterCustomParser(Parser)
+}
+
+// defaultConfig returns a Config with reasonable defaults
+func defaultConfig() Config {
+	return Config{
+		MaxBytes:       0,              // No limit
+		BufferSize:     64 * 1024,      // 64KB
+		StopOnFirstErr: false,          // Continue on errors for partial results
+		HTTPTimeout:    30 * time.Second, // 30 second timeout
+	}
 }
 
 // Option is a functional option for configuring an Extractor
@@ -40,24 +55,10 @@ func WithBufferSize(n int) Option {
 	}
 }
 
-// WithSpecs sets the metadata specs to extract
-func WithSpecs(specs ...Spec) Option {
+// WithStopOnFirstError configures whether the extractor should stop on first error
+func WithStopOnFirstError(stop bool) Option {
 	return func(cfg *Config) {
-		cfg.Specs = specs
-	}
-}
-
-// WithFormats sets the formats to detect
-func WithFormats(fs ...Format) Option {
-	return func(cfg *Config) {
-		cfg.Formats = fs
-	}
-}
-
-// WithStopOnFirstError configures the extractor to stop on first error
-func WithStopOnFirstError() Option {
-	return func(cfg *Config) {
-		cfg.StopOnFirstErr = true
+		cfg.StopOnFirstErr = stop
 	}
 }
 
