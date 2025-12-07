@@ -242,8 +242,8 @@ func TestParseDatasetValue_DateCreated(t *testing.T) {
 func TestParseDatasetValue_TimeCreated(t *testing.T) {
 	data := []byte("143052+0530")
 	val := parseDatasetValue(RecordApplication, 60, data)
-	if val != "14:30:52 +05:30" {
-		t.Errorf("parseDatasetValue() = %v, want %q", val, "14:30:52 +05:30")
+	if val != "14:30:52+05:30" {
+		t.Errorf("parseDatasetValue() = %v, want %q", val, "14:30:52+05:30")
 	}
 }
 
@@ -350,7 +350,8 @@ func TestParseTimeString(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"143052+0530", "14:30:52 +05:30"},
+		{"143052+0530", "14:30:52+05:30"},
+		{"143052-0600", "14:30:52-06:00"},
 		{"143052", "14:30:52"},
 		{"1430", "1430"},
 		{"", ""},
@@ -379,6 +380,33 @@ func TestParseDatasetValue_ShortUrgency(t *testing.T) {
 	val := parseDatasetValue(RecordApplication, 10, data)
 	if val != "" {
 		t.Errorf("parseDatasetValue() = %v, want empty string", val)
+	}
+}
+
+func TestParseDatasetValue_Prefs(t *testing.T) {
+	data := []byte("1:0:0:-00001")
+	val := parseDatasetValue(RecordApplication, 221, data)
+	want := "Tagged:1, ColorClass:0, Rating:0, FrameNum:-00001"
+	if val != want {
+		t.Errorf("parseDatasetValue() = %v, want %q", val, want)
+	}
+}
+
+func TestParsePrefs(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"1:0:0:-00001", "Tagged:1, ColorClass:0, Rating:0, FrameNum:-00001"},
+		{"0:2:5:00123", "Tagged:0, ColorClass:2, Rating:5, FrameNum:00123"},
+		{"simple", "simple"}, // Not enough parts
+	}
+	
+	for _, tt := range tests {
+		got := parsePrefs([]byte(tt.input))
+		if got != tt.want {
+			t.Errorf("parsePrefs(%q) = %q, want %q", tt.input, got, tt.want)
+		}
 	}
 }
 

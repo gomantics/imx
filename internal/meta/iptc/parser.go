@@ -40,7 +40,7 @@ func parsePhotoshopIRB(data []byte) ([]byte, error) {
 		// Pascal string (name) - first byte is length
 		nameLen := int(data[offset])
 		offset++
-		
+
 		// Name is padded to even length (including length byte)
 		// If nameLen is even, we need 1 byte padding; if odd, no padding
 		namePadded := nameLen
@@ -176,6 +176,8 @@ func parseDatasetValue(record Record, datasetID uint8, data []byte) any {
 			return parseDateString(data)
 		case 35, 38: // ReleaseTime, ExpirationTime
 			return parseTimeString(data)
+		case 221: // Prefs (Photo Mechanic format: Tagged:ColorClass:Rating:FrameNum)
+			return parsePrefs(data)
 		}
 	}
 
@@ -212,11 +214,24 @@ func parseTimeString(data []byte) string {
 	if len(s) >= 6 {
 		result := s[0:2] + ":" + s[2:4] + ":" + s[4:6]
 		if len(s) >= 11 {
-			// Include timezone
-			result += " " + s[6:7] + s[7:9] + ":" + s[9:11]
+			// Include timezone (format: ±HH:MM)
+			result += s[6:7] + s[7:9] + ":" + s[9:11]
 		}
 		return result
 	}
 	return s
 }
 
+// parsePrefs parses Photo Mechanic Prefs field (format: Tagged:ColorClass:Rating:FrameNum)
+func parsePrefs(data []byte) string {
+	s := string(bytes.TrimRight(data, "\x00"))
+	parts := bytes.Split(data, []byte(":"))
+	if len(parts) >= 4 {
+		return fmt.Sprintf("Tagged:%s, ColorClass:%s, Rating:%s, FrameNum:%s",
+			string(bytes.TrimRight(parts[0], "\x00")),
+			string(bytes.TrimRight(parts[1], "\x00")),
+			string(bytes.TrimRight(parts[2], "\x00")),
+			string(bytes.TrimRight(parts[3], "\x00")))
+	}
+	return s
+}

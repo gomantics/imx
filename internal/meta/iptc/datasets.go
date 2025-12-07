@@ -83,6 +83,7 @@ var applicationDatasets = map[uint8]DatasetInfo{
 	200: {"ObjectDataPreviewFileFormat", false},
 	201: {"ObjectDataPreviewFileFormatVersion", false},
 	202: {"ObjectDataPreviewData", false},
+	221: {"Prefs", false}, // Photo Mechanic preferences
 }
 
 // getDatasetInfo returns info about a dataset
