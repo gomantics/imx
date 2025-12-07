@@ -533,13 +533,6 @@ func (a *App) filterTag(dir imx.Directory, tag imx.Tag) bool {
 		}
 	}
 
-	// Skip large binary data unless --full
-	if !a.opts.Full {
-		if b, ok := tag.Value.([]byte); ok && len(b) > 100 {
-			return false
-		}
-	}
-
 	return true
 }
 

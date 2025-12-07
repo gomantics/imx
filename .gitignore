@@ -9,6 +9,7 @@ coverage.html
 # IDE and editor files
 .idea/
 .vscode/
+.context/
 *.swp
 *.swo
 *~
