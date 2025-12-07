@@ -68,7 +68,6 @@ func TestPartialError_Error(t *testing.T) {
 	}
 }
 
-
 func TestPartialError_Unwrap(t *testing.T) {
 	formatErr := errors.New("format error")
 	exifErr := errors.New("exif error")

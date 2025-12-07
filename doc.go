@@ -1,7 +1,7 @@
 // Package imx provides fast, dependency-free extraction of image metadata.
 //
-// It supports EXIF, IPTC, XMP, and ICC metadata from JPEG, PNG, WebP, TIFF,
-// HEIF/HEIC, and AVIF formats.
+// It supports EXIF, IPTC, XMP, and ICC metadata from JPEG images
+// (with more formats coming soon).
 //
 // Basic usage:
 //
@@ -10,13 +10,18 @@
 //		log.Fatal(err)
 //	}
 //
-//	fmt.Printf("Taken at: %v\n", meta.DateTimeOriginal())
-//	fmt.Printf("Camera: %s %s\n", meta.Make(), meta.Model())
+//	// Access tags using constants
+//	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagMake); ok {
+//		fmt.Printf("Camera: %v\n", tag.Value)
+//	}
+//	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagDateTimeOriginal); ok {
+//		fmt.Printf("Date: %v\n", tag.Value)
+//	}
 //
 // For more control, use the Extractor type:
 //
 //	extractor := imx.New(
-//		imx.WithNamespaces(imx.NamespaceEXIF),
+//		imx.WithSpecs(imx.SpecEXIF),
 //		imx.WithMaxBytes(10 << 20),
 //	)
 //

@@ -286,5 +286,3 @@ func TestParseU8Fixed8(t *testing.T) {
 		t.Errorf("parseU8Fixed8() = %f, want 1.5", got)
 	}
 }
-
-

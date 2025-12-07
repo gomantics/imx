@@ -287,4 +287,3 @@ func (p *Parser) parseValue(data []byte, tagType uint16, count uint32, offset in
 		return valueData[:count], fmt.Sprintf("type_%d", tagType)
 	}
 }
-

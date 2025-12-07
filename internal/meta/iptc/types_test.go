@@ -37,4 +37,3 @@ func TestResourceConstants(t *testing.T) {
 		t.Errorf("ResourceICCProfile = 0x%04X, want 0x040F", ResourceICCProfile)
 	}
 }
-

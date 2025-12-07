@@ -316,7 +316,7 @@ func (a *App) runStdin() int {
 		return 1
 	}
 
-	meta, err := a.extractor.ExtractFromBytes(data)
+	meta, err := a.extractor.MetadataFromBytes(data)
 	if err != nil {
 		a.printError(fmt.Sprintf("parsing stdin: %v", err))
 		return 1
@@ -501,7 +501,7 @@ func (a *App) fetchURL(url string) (*imx.Metadata, error) {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
 
-	meta, err := a.extractor.ExtractFromBytes(data)
+	meta, err := a.extractor.MetadataFromBytes(data)
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +520,7 @@ func (a *App) processFile(path string) (*ProcessResult, error) {
 	if isURL(path) {
 		meta, err = a.fetchURL(path)
 	} else {
-		m, e := a.extractor.ExtractFromFile(path)
+		m, e := a.extractor.MetadataFromFile(path)
 		if e != nil {
 			return nil, e
 		}

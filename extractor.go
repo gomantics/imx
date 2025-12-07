@@ -35,11 +35,11 @@ func New(opts ...Option) *Extractor {
 
 	e := &Extractor{
 		cfg: cfg,
-		// TODO: only use New (default) when no format filter is applied. Also add any format passed by user,
+		// Future: filter format parsers based on cfg.Formats when specified
 		formatParsers: []format.Parser{
 			jpeg.New(),
 		},
-		// TODO: only use New (default) when no spec filter is applied. Also add any spec passed by user.
+		// Future: filter meta parsers based on cfg.Specs when specified
 		metaParsers: []meta.Parser{
 			exif.New(),
 			xmp.New(),
@@ -51,8 +51,8 @@ func New(opts ...Option) *Extractor {
 	return e
 }
 
-// Metadata extracts metadata from an io.Reader
-func (e *Extractor) Metadata(r io.Reader, opts ...Option) (Metadata, error) {
+// MetadataFromReader extracts metadata from an io.Reader
+func (e *Extractor) MetadataFromReader(r io.Reader, opts ...Option) (Metadata, error) {
 	// Clone config and apply per-call options
 	cfg := e.cfg
 	for _, opt := range opts {
@@ -126,24 +126,24 @@ func (e *Extractor) Metadata(r io.Reader, opts ...Option) (Metadata, error) {
 	return result, nil
 }
 
-// ExtractFromFile extracts metadata from a file path using this extractor
-func (e *Extractor) ExtractFromFile(path string, opts ...Option) (Metadata, error) {
+// MetadataFromFile extracts metadata from a file path using this extractor
+func (e *Extractor) MetadataFromFile(path string, opts ...Option) (Metadata, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return Metadata{}, fmt.Errorf("imx: open file: %w", err)
 	}
 	defer f.Close()
 
-	return e.Metadata(f, opts...)
+	return e.MetadataFromReader(f, opts...)
 }
 
-// ExtractFromBytes extracts metadata from a byte slice using this extractor
-func (e *Extractor) ExtractFromBytes(data []byte, opts ...Option) (Metadata, error) {
-	return e.Metadata(bytes.NewReader(data), opts...)
+// MetadataFromBytes extracts metadata from a byte slice using this extractor
+func (e *Extractor) MetadataFromBytes(data []byte, opts ...Option) (Metadata, error) {
+	return e.MetadataFromReader(bytes.NewReader(data), opts...)
 }
 
-// ExtractFromURL extracts metadata from an HTTP/HTTPS URL using this extractor
-func (e *Extractor) ExtractFromURL(url string, opts ...Option) (Metadata, error) {
+// MetadataFromURL extracts metadata from an HTTP/HTTPS URL using this extractor
+func (e *Extractor) MetadataFromURL(url string, opts ...Option) (Metadata, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return Metadata{}, fmt.Errorf("imx: fetch url: %w", err)
@@ -154,7 +154,7 @@ func (e *Extractor) ExtractFromURL(url string, opts ...Option) (Metadata, error)
 		return Metadata{}, fmt.Errorf("imx: http status %d", resp.StatusCode)
 	}
 
-	return e.Metadata(resp.Body, opts...)
+	return e.MetadataFromReader(resp.Body, opts...)
 }
 
 // Helper functions

@@ -142,4 +142,3 @@ func parseU8Fixed8(data []byte) float64 {
 	val := binary.BigEndian.Uint16(data)
 	return float64(val) / 256.0
 }
-

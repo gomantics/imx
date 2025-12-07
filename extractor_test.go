@@ -128,10 +128,10 @@ func TestExtractor_Metadata(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := bytes.NewReader(tt.data)
-			metadata, err := e.Metadata(r, tt.opts...)
+			metadata, err := e.MetadataFromReader(r, tt.opts...)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Metadata() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MetadataFromReader() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
@@ -153,7 +153,7 @@ func TestExtractor_MaxBytes(t *testing.T) {
 	validJPEG := loadTestJPEG(t)
 
 	r := bytes.NewReader(validJPEG)
-	_, err := e.Metadata(r)
+	_, err := e.MetadataFromReader(r)
 
 	// With MaxBytes limiting the read, parsing may or may not succeed
 	// depending on where the limit cuts off
@@ -165,7 +165,7 @@ func TestExtractor_SpecFilter(t *testing.T) {
 	validJPEG := loadTestJPEG(t) // Has EXIF
 
 	r := bytes.NewReader(validJPEG)
-	metadata, err := e.Metadata(r)
+	metadata, err := e.MetadataFromReader(r)
 
 	if err != nil {
 		t.Fatalf("Metadata() error = %v", err)
@@ -187,7 +187,7 @@ func TestExtractor_StopOnError(t *testing.T) {
 	validJPEG := loadTestJPEG(t)
 	r := bytes.NewReader(validJPEG)
 
-	_, err := e.Metadata(r)
+	_, err := e.MetadataFromReader(r)
 	if err != nil {
 		t.Errorf("Metadata() error = %v for valid JPEG", err)
 	}
@@ -274,7 +274,7 @@ func (r failingReader) Read(p []byte) (n int, err error) {
 
 func TestExtractor_ReaderError(t *testing.T) {
 	e := New()
-	_, err := e.Metadata(failingReader{})
+	_, err := e.MetadataFromReader(failingReader{})
 
 	if err == nil {
 		t.Error("Metadata() expected error for failing reader, got nil")
@@ -346,7 +346,7 @@ func TestExtractor_NoBlocks(t *testing.T) {
 	jpegNoExif := buildJPEGWithNoEXIF()
 
 	r := bytes.NewReader(jpegNoExif)
-	metadata, err := e.Metadata(r)
+	metadata, err := e.MetadataFromReader(r)
 
 	if err != nil {
 		t.Errorf("expected success, got error: %v", err)
@@ -364,7 +364,7 @@ func TestExtractor_ParseErrorStop(t *testing.T) {
 	jpegBadExif := buildJPEGWithBadEXIF()
 
 	r := bytes.NewReader(jpegBadExif)
-	_, err := e.Metadata(r)
+	_, err := e.MetadataFromReader(r)
 
 	if err == nil {
 		t.Error("expected error with StopOnFirstError=true, got nil")
@@ -378,7 +378,7 @@ func TestExtractor_ParseErrorContinue(t *testing.T) {
 	jpegBadExif := buildJPEGWithBadEXIF()
 
 	r := bytes.NewReader(jpegBadExif)
-	metadata, err := e.Metadata(r)
+	metadata, err := e.MetadataFromReader(r)
 
 	if err != nil {
 		t.Errorf("returned unexpected error with StopOnFirstError=false: %v", err)

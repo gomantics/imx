@@ -1247,7 +1247,7 @@ func TestGetTagValue(t *testing.T) {
 	}
 
 	app := NewApp()
-	meta, err := app.extractor.ExtractFromFile(testFile)
+	meta, err := app.extractor.MetadataFromFile(testFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1272,7 +1272,7 @@ func TestGetRawTagValue(t *testing.T) {
 	}
 
 	app := NewApp()
-	meta, err := app.extractor.ExtractFromFile(testFile)
+	meta, err := app.extractor.MetadataFromFile(testFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1388,4 +1388,3 @@ func TestPrintStats(t *testing.T) {
 		t.Error("should contain tag count")
 	}
 }
-

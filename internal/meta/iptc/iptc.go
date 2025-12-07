@@ -118,4 +118,3 @@ func (p *Parser) buildDirectories(datasets []Dataset) []meta.Directory {
 
 	return dirs
 }
-

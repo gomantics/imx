@@ -51,13 +51,13 @@ func TestParser_Parse_NonIPTCBlocks(t *testing.T) {
 
 func TestParser_Parse_ValidIPTC(t *testing.T) {
 	p := New()
-	
+
 	// Build IPTC data
 	iptcData := buildIPTCDataset(RecordApplication, 5, []byte("Test Title"))
 	iptcData = append(iptcData, buildIPTCDataset(RecordApplication, 80, []byte("John Doe"))...)
 	iptcData = append(iptcData, buildIPTCDataset(RecordApplication, 25, []byte("keyword1"))...)
 	iptcData = append(iptcData, buildIPTCDataset(RecordApplication, 25, []byte("keyword2"))...)
-	
+
 	// Wrap in Photoshop IRB
 	irbData := buildPhotoshopIRB(ResourceIPTC, iptcData)
 
@@ -102,7 +102,7 @@ func TestParser_Parse_ValidIPTC(t *testing.T) {
 
 func TestParser_Parse_RawIPTC(t *testing.T) {
 	p := New()
-	
+
 	// Raw IPTC data without Photoshop wrapper
 	iptcData := buildIPTCDataset(RecordApplication, 5, []byte("Direct Title"))
 
@@ -129,7 +129,7 @@ func TestParser_Parse_RawIPTC(t *testing.T) {
 
 func TestParser_Parse_MalformedIRB(t *testing.T) {
 	p := New()
-	
+
 	blocks := []format.RawBlock{
 		{
 			Spec:    int(meta.SpecIPTC),
@@ -149,7 +149,7 @@ func TestParser_Parse_MalformedIRB(t *testing.T) {
 
 func TestParser_Parse_EnvelopeRecord(t *testing.T) {
 	p := New()
-	
+
 	// Build envelope record data
 	iptcData := buildIPTCDataset(RecordEnvelope, 70, []byte("20231215"))
 	irbData := buildPhotoshopIRB(ResourceIPTC, iptcData)
@@ -177,11 +177,11 @@ func TestParser_Parse_EnvelopeRecord(t *testing.T) {
 
 func TestParser_Parse_MultipleBlocks(t *testing.T) {
 	p := New()
-	
+
 	// First block
 	iptc1 := buildIPTCDataset(RecordApplication, 5, []byte("Title 1"))
 	irb1 := buildPhotoshopIRB(ResourceIPTC, iptc1)
-	
+
 	// Second block
 	iptc2 := buildIPTCDataset(RecordApplication, 80, []byte("Author"))
 	irb2 := buildPhotoshopIRB(ResourceIPTC, iptc2)
@@ -208,7 +208,7 @@ func TestParser_Parse_MultipleBlocks(t *testing.T) {
 
 func TestParser_Parse_IntegerValue(t *testing.T) {
 	p := New()
-	
+
 	// RecordVersion returns int
 	iptcData := buildIPTCDataset(RecordApplication, 0, []byte{0x00, 0x04})
 	irbData := buildPhotoshopIRB(ResourceIPTC, iptcData)
@@ -262,7 +262,7 @@ func TestParser_BuildDirectories_MultipleRecords(t *testing.T) {
 
 func TestParser_Parse_IRBError(t *testing.T) {
 	p := New()
-	
+
 	// Block with too short data to trigger IRB error, followed by valid block
 	iptcData := buildIPTCDataset(RecordApplication, 5, []byte("Title"))
 	irbData := buildPhotoshopIRB(ResourceIPTC, iptcData)
@@ -288,4 +288,3 @@ func TestParser_Parse_IRBError(t *testing.T) {
 		t.Errorf("Parse() returned %d directories, want 1", len(dirs))
 	}
 }
-

@@ -283,4 +283,3 @@ func signatureToString(sig uint32) string {
 	b[3] = byte(sig)
 	return string(b)
 }
-

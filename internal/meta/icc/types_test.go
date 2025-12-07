@@ -145,12 +145,12 @@ func TestProfileFlags(t *testing.T) {
 
 func TestDeviceAttributes(t *testing.T) {
 	tests := []struct {
-		name        string
-		attrs       DeviceAttributes
+		name         string
+		attrs        DeviceAttributes
 		isReflective bool
-		isGlossy    bool
-		isPositive  bool
-		isColor     bool
+		isGlossy     bool
+		isPositive   bool
+		isColor      bool
 	}{
 		{"AllDefaults", DeviceAttributes(0), true, true, true, true},
 		{"Transparency", DeviceAttributes(0x01), false, true, true, true},
@@ -217,5 +217,3 @@ func TestSignatureToString(t *testing.T) {
 		})
 	}
 }
-
-

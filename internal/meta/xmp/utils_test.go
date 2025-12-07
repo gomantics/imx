@@ -68,8 +68,8 @@ func TestIsInt(t *testing.T) {
 		{"-456", true},
 		{"+789", true},
 		{"0", true},
-		{"-", true},  // Bug: returns true for sign only
-		{"+", true},  // Bug: returns true for sign only
+		{"-", true}, // Bug: returns true for sign only
+		{"+", true}, // Bug: returns true for sign only
 		{"12.34", false},
 		{"1e10", false},
 		{"abc", false},
@@ -95,14 +95,14 @@ func TestIsFloat(t *testing.T) {
 		{"-2.5", true},
 		{"+1.5", true},
 		{"0.0", true},
-		{".", true},   // Bug: returns true for dot only
+		{".", true}, // Bug: returns true for dot only
 		{"-", false},
 		{"+", false},
 		{"1.2.3", false},
 		{"123", false}, // No dot
 		{"abc", false},
-		{"-.", true},   // Bug: returns true for sign+dot only
-		{"+.", true},   // Bug: returns true for sign+dot only
+		{"-.", true}, // Bug: returns true for sign+dot only
+		{"+.", true}, // Bug: returns true for sign+dot only
 		{"1.2a", false},
 		// Note: Current implementation doesn't detect exponential notation
 		{"1.23e10", false},
@@ -136,7 +136,7 @@ func TestResolvePrefix(t *testing.T) {
 		{"http://purl.org/dc/elements/1.1/", "dc"},
 		{"http://ns.adobe.com/xap/1.0/", "xmp"},
 		{"http://ns.adobe.com/photoshop/1.0/", "photoshop"}, // well-known
-		{"http://example.com/unknown/", "ns"},                // fallback
+		{"http://example.com/unknown/", "ns"},               // fallback
 	}
 
 	for _, tt := range tests {

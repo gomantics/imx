@@ -10,7 +10,7 @@ func TestParseTagTable(t *testing.T) {
 	data := make([]byte, 200)
 
 	// Set profile header (minimal)
-	binary.BigEndian.PutUint32(data[0:4], 200)       // profile size
+	binary.BigEndian.PutUint32(data[0:4], 200)            // profile size
 	binary.BigEndian.PutUint32(data[36:40], ICCSignature) // 'acsp'
 
 	// Tag count at offset 128
@@ -78,7 +78,7 @@ func TestParseTagTable_UnreasonableCount(t *testing.T) {
 }
 
 func TestParseTagTable_ShortForEntries(t *testing.T) {
-	data := make([]byte, 140) // Room for header + count + partial entry
+	data := make([]byte, 140)                    // Room for header + count + partial entry
 	binary.BigEndian.PutUint32(data[128:132], 2) // 2 tags but not enough space
 
 	_, err := parseTagTable(data)
@@ -183,5 +183,3 @@ func TestTypeConstants(t *testing.T) {
 		t.Errorf("TypeParametricCurve = %q, want %q", TypeParametricCurve, "para")
 	}
 }
-
-

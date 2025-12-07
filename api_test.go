@@ -21,7 +21,7 @@ func loadTestJPEGAPI(t *testing.T) []byte {
 	return data
 }
 
-func TestExtract(t *testing.T) {
+func TestMetadataFromReader(t *testing.T) {
 	validJPEG := loadTestJPEGAPI(t)
 
 	tests := []struct {
@@ -53,16 +53,16 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := bytes.NewReader(tt.data)
-			_, err := Extract(r, tt.opts...)
+			_, err := MetadataFromReader(r, tt.opts...)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Extract() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MetadataFromReader() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestExtractFromFile(t *testing.T) {
+func TestMetadataFromFile(t *testing.T) {
 	tests := []struct {
 		name    string
 		path    string
@@ -97,16 +97,16 @@ func TestExtractFromFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ExtractFromFile(tt.path, tt.opts...)
+			_, err := MetadataFromFile(tt.path, tt.opts...)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ExtractFromFile() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MetadataFromFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestExtractFromBytes(t *testing.T) {
+func TestMetadataFromBytes(t *testing.T) {
 	validJPEG := loadTestJPEGAPI(t)
 
 	tests := []struct {
@@ -143,16 +143,16 @@ func TestExtractFromBytes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ExtractFromBytes(tt.data, tt.opts...)
+			_, err := MetadataFromBytes(tt.data, tt.opts...)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ExtractFromBytes() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MetadataFromBytes() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestExtractFromURL(t *testing.T) {
+func TestMetadataFromURL(t *testing.T) {
 	validJPEG := loadTestJPEGAPI(t)
 
 	// Create test server
@@ -227,53 +227,53 @@ func TestExtractFromURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ExtractFromURL(tt.url, tt.opts...)
+			_, err := MetadataFromURL(tt.url, tt.opts...)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ExtractFromURL() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MetadataFromURL() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestExtractor_ExtractFromFile(t *testing.T) {
+func TestExtractor_MetadataFromFile(t *testing.T) {
 	e := New()
 
 	t.Run("valid file", func(t *testing.T) {
-		_, err := e.ExtractFromFile(testJPEGPathAPI)
+		_, err := e.MetadataFromFile(testJPEGPathAPI)
 		if err != nil {
-			t.Errorf("ExtractFromFile() error = %v", err)
+			t.Errorf("MetadataFromFile() error = %v", err)
 		}
 	})
 
 	t.Run("non-existent file", func(t *testing.T) {
-		_, err := e.ExtractFromFile("/nonexistent/path/image.jpg")
+		_, err := e.MetadataFromFile("/nonexistent/path/image.jpg")
 		if err == nil {
-			t.Error("ExtractFromFile() expected error for non-existent file")
+			t.Error("MetadataFromFile() expected error for non-existent file")
 		}
 	})
 }
 
-func TestExtractor_ExtractFromBytes(t *testing.T) {
+func TestExtractor_MetadataFromBytes(t *testing.T) {
 	e := New()
 	validJPEG := loadTestJPEGAPI(t)
 
 	t.Run("valid bytes", func(t *testing.T) {
-		_, err := e.ExtractFromBytes(validJPEG)
+		_, err := e.MetadataFromBytes(validJPEG)
 		if err != nil {
-			t.Errorf("ExtractFromBytes() error = %v", err)
+			t.Errorf("MetadataFromBytes() error = %v", err)
 		}
 	})
 
 	t.Run("invalid bytes", func(t *testing.T) {
-		_, err := e.ExtractFromBytes([]byte{0x00, 0x01})
+		_, err := e.MetadataFromBytes([]byte{0x00, 0x01})
 		if err == nil {
-			t.Error("ExtractFromBytes() expected error for invalid data")
+			t.Error("MetadataFromBytes() expected error for invalid data")
 		}
 	})
 }
 
-func TestExtractor_ExtractFromURL(t *testing.T) {
+func TestExtractor_MetadataFromURL(t *testing.T) {
 	e := New()
 	validJPEG := loadTestJPEGAPI(t)
 
@@ -292,23 +292,23 @@ func TestExtractor_ExtractFromURL(t *testing.T) {
 	defer server.Close()
 
 	t.Run("valid URL", func(t *testing.T) {
-		_, err := e.ExtractFromURL(server.URL + "/valid.jpg")
+		_, err := e.MetadataFromURL(server.URL + "/valid.jpg")
 		if err != nil {
-			t.Errorf("ExtractFromURL() error = %v", err)
+			t.Errorf("MetadataFromURL() error = %v", err)
 		}
 	})
 
 	t.Run("non-200 status", func(t *testing.T) {
-		_, err := e.ExtractFromURL(server.URL + "/error")
+		_, err := e.MetadataFromURL(server.URL + "/error")
 		if err == nil {
-			t.Error("ExtractFromURL() expected error for non-200 status")
+			t.Error("MetadataFromURL() expected error for non-200 status")
 		}
 	})
 
 	t.Run("invalid URL format", func(t *testing.T) {
-		_, err := e.ExtractFromURL("://invalid-url")
+		_, err := e.MetadataFromURL("://invalid-url")
 		if err == nil {
-			t.Error("ExtractFromURL() expected error for invalid URL format")
+			t.Error("MetadataFromURL() expected error for invalid URL format")
 		}
 	})
 }
@@ -320,12 +320,12 @@ func TestDefaultExtractor(t *testing.T) {
 	}
 }
 
-// TestExtractMetadataContent verifies that real metadata is extracted from the test file
-func TestExtractMetadataContent(t *testing.T) {
+// TestMetadataContent verifies that real metadata is extracted from the test file
+func TestMetadataContent(t *testing.T) {
 	// Use the real test file to validate actual metadata extraction
-	metadata, err := ExtractFromFile(testJPEGPathAPI)
+	metadata, err := MetadataFromFile(testJPEGPathAPI)
 	if err != nil {
-		t.Fatalf("ExtractFromFile() error = %v", err)
+		t.Fatalf("MetadataFromFile() error = %v", err)
 	}
 
 	// Verify we got some directories

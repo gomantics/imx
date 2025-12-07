@@ -8,10 +8,10 @@ import (
 // buildPhotoshopIRB creates a Photoshop Image Resource Block
 func buildPhotoshopIRB(resourceID uint16, data []byte) []byte {
 	result := make([]byte, 0, 12+len(data))
-	result = append(result, signature8BIM...) // 8BIM
+	result = append(result, signature8BIM...)                      // 8BIM
 	result = append(result, byte(resourceID>>8), byte(resourceID)) // Resource ID
-	result = append(result, 0) // Pascal string length (0 = no name)
-	result = append(result, 0) // Padding to even
+	result = append(result, 0)                                     // Pascal string length (0 = no name)
+	result = append(result, 0)                                     // Padding to even
 	// Data size (4 bytes)
 	size := make([]byte, 4)
 	binary.BigEndian.PutUint32(size, uint32(len(data)))
@@ -27,9 +27,9 @@ func buildPhotoshopIRB(resourceID uint16, data []byte) []byte {
 // buildIPTCDataset creates an IPTC-IIM dataset
 func buildIPTCDataset(record Record, datasetID uint8, value []byte) []byte {
 	result := make([]byte, 0, 5+len(value))
-	result = append(result, iptcTagMarker)           // Tag marker
-	result = append(result, byte(record))            // Record
-	result = append(result, datasetID)               // Dataset ID
+	result = append(result, iptcTagMarker) // Tag marker
+	result = append(result, byte(record))  // Record
+	result = append(result, datasetID)     // Dataset ID
 	// Size (2 bytes)
 	result = append(result, byte(len(value)>>8), byte(len(value)))
 	result = append(result, value...)
@@ -39,7 +39,7 @@ func buildIPTCDataset(record Record, datasetID uint8, value []byte) []byte {
 func TestParsePhotoshopIRB(t *testing.T) {
 	// Create IPTC data
 	iptcData := buildIPTCDataset(RecordApplication, 5, []byte("Test Title"))
-	
+
 	// Wrap in Photoshop IRB
 	irbData := buildPhotoshopIRB(ResourceIPTC, iptcData)
 
@@ -87,9 +87,9 @@ func TestParsePhotoshopIRB_FindNext8BIM(t *testing.T) {
 	garbage := []byte{0, 0, 0, 0}
 	iptcData := buildIPTCDataset(RecordApplication, 5, []byte("Test"))
 	irb := buildPhotoshopIRB(ResourceIPTC, iptcData)
-	
+
 	data := append(garbage, irb...)
-	
+
 	result, err := parsePhotoshopIRB(data)
 	if err != nil {
 		t.Fatalf("parsePhotoshopIRB() error = %v", err)
@@ -105,9 +105,9 @@ func TestParsePhotoshopIRB_MultipleResources(t *testing.T) {
 	// Then IPTC
 	iptcData := buildIPTCDataset(RecordApplication, 5, []byte("Title"))
 	iptcIRB := buildPhotoshopIRB(ResourceIPTC, iptcData)
-	
+
 	data := append(xmpIRB, iptcIRB...)
-	
+
 	result, err := parsePhotoshopIRB(data)
 	if err != nil {
 		t.Fatalf("parsePhotoshopIRB() error = %v", err)
@@ -121,15 +121,15 @@ func TestParsePhotoshopIRB_OddNameLength(t *testing.T) {
 	// Build manually with odd name length
 	data := make([]byte, 0, 30)
 	data = append(data, signature8BIM...)
-	data = append(data, 0x04, 0x04) // IPTC resource ID
-	data = append(data, 3)          // Name length = 3 (odd)
+	data = append(data, 0x04, 0x04)    // IPTC resource ID
+	data = append(data, 3)             // Name length = 3 (odd)
 	data = append(data, 'a', 'b', 'c') // Name
 	// Padding not needed for odd length (3+1 = 4, already even)
 	// Data size
 	data = append(data, 0, 0, 0, 5)
 	data = append(data, 'h', 'e', 'l', 'l', 'o')
 	data = append(data, 0) // Pad to even
-	
+
 	result, err := parsePhotoshopIRB(data)
 	if err != nil {
 		t.Fatalf("parsePhotoshopIRB() error = %v", err)
@@ -142,7 +142,7 @@ func TestParsePhotoshopIRB_OddNameLength(t *testing.T) {
 func TestParseIPTCIIM(t *testing.T) {
 	data := buildIPTCDataset(RecordApplication, 5, []byte("Test Title"))
 	data = append(data, buildIPTCDataset(RecordApplication, 80, []byte("John Doe"))...)
-	
+
 	datasets, err := parseIPTCIIM(data)
 	if err != nil {
 		t.Fatalf("parseIPTCIIM() error = %v", err)
@@ -175,7 +175,7 @@ func TestParseIPTCIIM_SkipNonMarker(t *testing.T) {
 	// Some garbage followed by valid dataset
 	data := []byte{0, 0, 0}
 	data = append(data, buildIPTCDataset(RecordApplication, 5, []byte("Title"))...)
-	
+
 	datasets, _ := parseIPTCIIM(data)
 	if len(datasets) != 1 {
 		t.Errorf("parseIPTCIIM() should skip non-marker bytes, got %d datasets", len(datasets))
@@ -184,12 +184,12 @@ func TestParseIPTCIIM_SkipNonMarker(t *testing.T) {
 
 func TestParseIPTCIIM_UnknownDataset(t *testing.T) {
 	data := buildIPTCDataset(RecordApplication, 255, []byte("Unknown"))
-	
+
 	datasets, _ := parseIPTCIIM(data)
 	if len(datasets) != 1 {
 		t.Fatalf("parseIPTCIIM() returned %d datasets, want 1", len(datasets))
 	}
-	
+
 	if datasets[0].Name != "Dataset2:255" {
 		t.Errorf("datasets[0].Name = %q, want %q", datasets[0].Name, "Dataset2:255")
 	}
@@ -200,12 +200,12 @@ func TestParseIPTCIIM_ExtendedSize(t *testing.T) {
 	data := []byte{
 		iptcTagMarker,
 		byte(RecordApplication),
-		5, // ObjectName
+		5,          // ObjectName
 		0x80, 0x04, // Extended size flag + 4 bytes follow
 		0x00, 0x00, 0x00, 0x05, // Size = 5
 		'H', 'e', 'l', 'l', 'o',
 	}
-	
+
 	datasets, _ := parseIPTCIIM(data)
 	if len(datasets) != 1 {
 		t.Fatalf("parseIPTCIIM() returned %d datasets, want 1", len(datasets))
@@ -336,7 +336,7 @@ func TestParseDateString(t *testing.T) {
 		{"2023", "2023"},
 		{"", ""},
 	}
-	
+
 	for _, tt := range tests {
 		got := parseDateString([]byte(tt.input))
 		if got != tt.want {
@@ -356,7 +356,7 @@ func TestParseTimeString(t *testing.T) {
 		{"1430", "1430"},
 		{"", ""},
 	}
-	
+
 	for _, tt := range tests {
 		got := parseTimeString([]byte(tt.input))
 		if got != tt.want {
@@ -401,7 +401,7 @@ func TestParsePrefs(t *testing.T) {
 		{"0:2:5:00123", "Tagged:0, ColorClass:2, Rating:5, FrameNum:00123"},
 		{"simple", "simple"}, // Not enough parts
 	}
-	
+
 	for _, tt := range tests {
 		got := parsePrefs([]byte(tt.input))
 		if got != tt.want {
@@ -437,10 +437,10 @@ func TestParsePhotoshopIRB_TruncatedBeforeResourceData(t *testing.T) {
 	data[6] = 0                   // Pascal string len = 0
 	// namePadded = 0, (0+1)%2 = 1 != 0, so namePadded = 1
 	// offset after len byte = 7, offset after namePadded = 8
-	data[7] = 0                              // Padding byte
+	data[7] = 0                                         // Padding byte
 	data[8], data[9], data[10], data[11] = 0, 0, 0, 100 // Data size = 100
 	// offset = 12, check: 12 + 100 > 16 = true, breaks!
-	
+
 	result, _ := parsePhotoshopIRB(data)
 	if result != nil {
 		t.Error("parsePhotoshopIRB() should return nil when dataSize exceeds buffer")
@@ -454,7 +454,7 @@ func TestParseIPTCIIM_TruncatedValue(t *testing.T) {
 	data := []byte{
 		iptcTagMarker,
 		byte(RecordApplication),
-		5,    // ObjectName
+		5,     // ObjectName
 		0, 20, // Size = 20
 		'H', 'e', 'l', 'l', 'o', // Only 5 bytes
 	}
@@ -469,7 +469,7 @@ func TestParseIPTCIIM_ExtendedSizeInvalid(t *testing.T) {
 	data := []byte{
 		iptcTagMarker,
 		byte(RecordApplication),
-		5, // ObjectName
+		5,          // ObjectName
 		0x80, 0x05, // Extended size flag + 5 bytes (invalid, max is 4)
 		0, 0, 0, 0, 0, // 5 bytes of size
 	}
@@ -484,7 +484,7 @@ func TestParseIPTCIIM_ExtendedSizeTruncated(t *testing.T) {
 	data := []byte{
 		iptcTagMarker,
 		byte(RecordApplication),
-		5, // ObjectName
+		5,          // ObjectName
 		0x80, 0x04, // Extended size flag + 4 bytes follow
 		0, 0, // Only 2 bytes (truncated)
 	}
@@ -493,4 +493,3 @@ func TestParseIPTCIIM_ExtendedSizeTruncated(t *testing.T) {
 		t.Errorf("parseIPTCIIM() should break on truncated extended size, got %d", len(datasets))
 	}
 }
-

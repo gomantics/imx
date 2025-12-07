@@ -1,5 +1,23 @@
-testdata/
+# Binaries
 bin/
-tmp/
-coverage.*
+
+# Test coverage
+coverage.out
+coverage.html
+*.coverprofile
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 .DS_Store
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Debug files
+*.log
+debug/
