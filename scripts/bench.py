@@ -86,9 +86,8 @@ class BenchmarkRunner:
         """Run benchmarks with streaming formatted output"""
         try:
             process = subprocess.Popen(
-                ["go", "test", "-bench=.", "-benchmem", "-benchtime=10x", "-run=^$",
-                # ".", "./internal/meta/...", "./internal/format/..."],
-                "./internal/format/..."],
+                ["go", "test", "-bench=.", "-benchmem", "-benchtime=2s", "-run=^$",
+                ".", "./internal/meta/...", "./internal/format/..."],
                 cwd=self.repo_path,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -543,15 +542,32 @@ class GraphGenerator:
         if not HAS_MATPLOTLIB:
             raise ImportError("matplotlib required. Install with: pip3 install matplotlib")
 
+    def _is_top_level_benchmark(self, name: str) -> bool:
+        """Check if benchmark is a top-level function worth graphing"""
+        # Include high-level API benchmarks
+        if name.startswith("MetadataFrom"):
+            return True
+        if name.startswith("Metadata_"):
+            return True
+
+        # Include main parser benchmarks (Parser_Parse, Parser_New)
+        # Exclude detailed benchmarks like Parser_ParseSegment, Parser_ParseValue, etc.
+        if name.startswith("Parser_"):
+            return name in ["Parser_Parse", "Parser_New"]
+
+        return False
+
     def _organize_by_benchmark(self, commits: List[CommitBenchmark]) -> Dict[str, List[Tuple[datetime, BenchmarkMetrics]]]:
-        """Organize results by benchmark name"""
+        """Organize results by benchmark name, filtering to top-level benchmarks only"""
         by_benchmark = defaultdict(list)
 
         for commit in commits:
             if not commit.success:
                 continue
             for metric in commit.metrics:
-                by_benchmark[metric.name].append((commit.commit_date, metric))
+                # Only include top-level benchmarks for cleaner graphs
+                if self._is_top_level_benchmark(metric.name):
+                    by_benchmark[metric.name].append((commit.commit_date, metric))
 
         # Sort by date
         for name in by_benchmark:
@@ -635,18 +651,60 @@ class GraphGenerator:
                 if all(v == 0 for v in values):
                     continue
 
-                plt.plot(dates, values, marker='o', label=f"{bench_name} ({category})",
-                        linewidth=2, markersize=4, color=color_map[category], alpha=0.7)
+                # Cleaner label without redundant category
+                label = bench_name.replace("Parser_", "").replace("Metadata_", "").replace("MetadataFrom", "")
+                plt.plot(dates, values, marker='o', label=label,
+                        linewidth=2.5, markersize=6, color=color_map[category], alpha=0.8)
 
-        plt.xlabel('Date', fontsize=14, fontweight='bold')
-        plt.ylabel(ylabel, fontsize=14, fontweight='bold')
-        plt.title(f'Performance History - {ylabel}', fontsize=16, fontweight='bold')
-        plt.legend(loc='best', fontsize=8, ncol=2)
-        plt.grid(True, alpha=0.3, linestyle='--')
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        # Format Y-axis based on metric type
+        ax = plt.gca()
+        if metric_name == "ns_per_op":
+            # Custom formatter for latency to show in human-readable units
+            def format_latency(value, pos):
+                if value >= 1_000_000_000:
+                    return f'{value/1_000_000_000:.1f}s'
+                elif value >= 1_000_000:
+                    return f'{value/1_000_000:.1f}ms'
+                elif value >= 1_000:
+                    return f'{value/1_000:.1f}µs'
+                else:
+                    return f'{value:.0f}ns'
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(format_latency))
+            ylabel = "Latency per Operation"
+        elif metric_name == "bytes_per_op":
+            # Custom formatter for memory
+            def format_bytes(value, pos):
+                if value >= 1024*1024:
+                    return f'{value/(1024*1024):.1f}MB'
+                elif value >= 1024:
+                    return f'{value/1024:.1f}KB'
+                else:
+                    return f'{value:.0f}B'
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(format_bytes))
+            ylabel = "Memory per Operation"
+        elif metric_name == "iterations":
+            # Custom formatter for iterations
+            def format_iterations(value, pos):
+                if value >= 1_000_000:
+                    return f'{value/1_000_000:.1f}M'
+                elif value >= 1_000:
+                    return f'{value/1_000:.1f}K'
+                else:
+                    return f'{value:.0f}'
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(format_iterations))
+            ylabel = "Iterations"
+        else:  # allocs_per_op
+            ylabel = "Allocations per Operation"
+
+        plt.xlabel('Date', fontsize=12)
+        plt.ylabel(ylabel, fontsize=12, fontweight='bold')
+        plt.title(f'Performance History - {ylabel}', fontsize=14, fontweight='bold', pad=20)
+        plt.legend(loc='best', fontsize=10, framealpha=0.9)
+        plt.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
         plt.gcf().autofmt_xdate()
         plt.tight_layout()
-        plt.savefig(self.output_dir / filename, dpi=150, bbox_inches='tight')
+        plt.savefig(self.output_dir / filename, dpi=120, bbox_inches='tight')
         plt.close()
 
         print(f"  ✓ Generated {filename}", file=sys.stderr)
