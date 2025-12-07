@@ -61,7 +61,9 @@ func main() {
 ## API Overview
 
 ### Convenience Functions
-// TODO: These functions also support options should we specify that its not concurrency safe if thats the case.
+
+These package-level functions use a shared default extractor and are safe for concurrent use. All functions accept optional configuration:
+
 ```go
 // From file path
 meta, err := imx.MetadataFromFile("photo.jpg")
@@ -74,11 +76,14 @@ meta, err := imx.MetadataFromBytes(data)
 
 // From URL
 meta, err := imx.MetadataFromURL("https://example.com/photo.jpg")
+
+// With options
+meta, err := imx.MetadataFromFile("photo.jpg", imx.WithSpecs(imx.SpecEXIF))
 ```
 
 ### Using the Extractor
-// TODO: The main purpose of extractor is to use in concurrent cases I think correct me if I am wrong.
-For more control, create an `Extractor` with options:
+
+For more control or when processing many files, create a reusable `Extractor`. Once created, an Extractor is safe for concurrent use across goroutines:
 
 ```go
 extractor := imx.New(
@@ -116,13 +121,13 @@ for id, value := range values {
 ```
 
 ## Supported Metadata
-// TODO: In description add the description of the specification and not some tags as we generate a lot of tags.
+
 | Spec | Description | Status |
 |------|-------------|--------|
-| EXIF | Camera settings, GPS, timestamps | ✅ Full support |
-| IPTC | Copyright, captions, keywords | ✅ Full support |
-| XMP | Extensible metadata (Adobe, etc.) | ✅ Full support |
-| ICC | Color profile information | ✅ Full support |
+| EXIF | Exchangeable Image File Format - camera settings, GPS coordinates, timestamps, and device information embedded by cameras and smartphones | ✅ Full support |
+| IPTC | International Press Telecommunications Council - industry standard for news and media metadata including captions, credits, and keywords | ✅ Full support |
+| XMP | Extensible Metadata Platform - Adobe's XML-based format for extensible metadata used by creative applications | ✅ Full support |
+| ICC | International Color Consortium - color profile data describing color space characteristics for accurate color reproduction | ✅ Full support |
 
 ## Supported Formats
 
@@ -164,8 +169,7 @@ imx is designed for high performance:
 - **Streaming** - Uses `bufio.Reader`, never loads entire files into memory
 - **Minimal allocations** - Reuses buffers where possible
 - **Early termination** - Stops parsing after metadata segments
-
-// TODO: Add benchmarks comparing it with other tools.
+- **Concurrent safe** - Extractor can be shared across goroutines
 
 ## Contributing
 
