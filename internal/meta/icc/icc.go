@@ -28,10 +28,7 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 	}
 
 	// Reassemble ICC profile from potentially multiple segments
-	profileData, err := p.reassembleSegments(blocks)
-	if err != nil {
-		return nil, err
-	}
+	profileData, _ := p.reassembleSegments(blocks)
 
 	if len(profileData) == 0 {
 		return nil, nil
@@ -70,14 +67,7 @@ func (p *Parser) reassembleSegments(blocks []format.RawBlock) ([][]byte, error) 
 		}
 
 		if len(block.Payload) < 2 {
-			// Might be a complete profile without segmentation
-			if len(block.Payload) >= MinProfileSize {
-				segments = append(segments, segmentInfo{
-					segmentNum:    1,
-					totalSegments: 1,
-					data:          block.Payload,
-				})
-			}
+			// Too short to have segment header, skip
 			continue
 		}
 
@@ -309,25 +299,15 @@ func isZeroBytes(data []byte) bool {
 
 // formatFlags returns a human-readable string for profile flags
 func formatFlags(f ProfileFlags) string {
-	var parts []string
+	embedded := "Not Embedded"
 	if f.IsEmbedded() {
-		parts = append(parts, "Embedded")
-	} else {
-		parts = append(parts, "Not Embedded")
+		embedded = "Embedded"
 	}
-	if f.IsIndependent() {
-		parts = append(parts, "Independent")
-	} else {
-		parts = append(parts, "Not Independent")
+	independent := "Independent"
+	if !f.IsIndependent() {
+		independent = "Not Independent"
 	}
-	if len(parts) == 0 {
-		return "None"
-	}
-	result := parts[0]
-	for i := 1; i < len(parts); i++ {
-		result += ", " + parts[i]
-	}
-	return result
+	return embedded + ", " + independent
 }
 
 // formatDeviceAttributes returns a human-readable string for device attributes
