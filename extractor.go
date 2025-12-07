@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gomantics/imx/internal/common"
 	"github.com/gomantics/imx/internal/format"
@@ -153,13 +152,7 @@ func (e *Extractor) MetadataFromURL(url string, opts ...Option) (Metadata, error
 		opt(&cfg)
 	}
 
-	// Use timeout from config, default to 30 seconds
-	timeout := cfg.HTTPTimeout
-	if timeout == 0 {
-		timeout = 30 * time.Second
-	}
-
-	client := &http.Client{Timeout: timeout}
+	client := &http.Client{Timeout: cfg.HTTPTimeout}
 	resp, err := client.Get(url)
 	if err != nil {
 		return Metadata{}, fmt.Errorf("imx: fetch url: %w", err)

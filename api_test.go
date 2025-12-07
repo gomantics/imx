@@ -312,12 +312,12 @@ func TestExtractor_MetadataFromURL(t *testing.T) {
 		}
 	})
 
-	t.Run("zero HTTPTimeout uses fallback", func(t *testing.T) {
-		// Create extractor with HTTPTimeout=0 to test the fallback logic
+	t.Run("zero HTTPTimeout means unlimited", func(t *testing.T) {
+		// Create extractor with HTTPTimeout=0 (unlimited timeout in http.Client)
 		e2 := New(WithHTTPTimeout(0))
 		_, err := e2.MetadataFromURL(server.URL + "/valid.jpg")
 		if err != nil {
-			t.Errorf("MetadataFromURL() with HTTPTimeout=0 should use fallback, got error: %v", err)
+			t.Errorf("MetadataFromURL() with HTTPTimeout=0 should work (unlimited timeout), got error: %v", err)
 		}
 	})
 }
