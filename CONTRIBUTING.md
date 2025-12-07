@@ -297,7 +297,36 @@ make bench              # Quick benchmark run
 make bench-all          # Detailed output (3s timing, saved to bench.txt)
 make bench-report       # Generate formatted report
 make bench-compare OLD=commit1 NEW=commit2  # Compare commits
+make bench-viz N=50     # Generate performance graphs across last N commits
 ```
+
+### Performance Visualization
+
+Generate graphs showing how performance evolved over time:
+
+```bash
+# Generate graphs for last 50 commits
+make bench-viz N=50
+
+# Custom number of commits
+make bench-viz N=100
+```
+
+**Requirements**: Python 3 with matplotlib
+```bash
+pip3 install matplotlib
+```
+
+The tool will:
+1. Checkout each commit in git history
+2. Run benchmarks (skip if they fail to compile)
+3. Collect performance metrics
+4. Generate graphs in `out/` directory showing trends over time
+
+Graphs are generated for each benchmark showing:
+- Nanoseconds per operation (ns/op)
+- Bytes allocated per operation (B/op)
+- Allocations per operation (allocs/op)
 
 ### Continuous Benchmarking
 
@@ -355,6 +384,7 @@ make bench         # Run benchmarks
 make bench-all     # Run benchmarks with detailed output
 make bench-report  # Generate benchmark report
 make bench-compare # Compare benchmarks between commits
+make bench-viz     # Generate performance graphs across git history
 make example       # Build and run example
 ```
 

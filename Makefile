@@ -1,4 +1,4 @@
-.PHONY: build test test-lib lint fmt clean install coverage coverage-html check help bench bench-all bench-report bench-compare
+.PHONY: build test test-lib lint fmt clean install coverage coverage-html check help bench bench-all bench-report bench-compare bench-viz
 
 # Go settings
 GOCMD = go
@@ -114,6 +114,12 @@ bench-compare:
 	@./scripts/bench-compare.sh $(OLD) $(NEW)
 	@echo "Usage: make bench-compare OLD=commit1 NEW=commit2"
 
+# Generate benchmark visualizations across git history
+bench-viz:
+	@echo "Running benchmarks across git history and generating graphs..."
+	@./scripts/bench-viz.py --max-commits $(or $(N),50) --graphs --output out
+	@echo "✓ Benchmark visualization complete. Graphs saved to out/"
+
 # Show help
 help:
 	@echo "imx - Image Metadata Extraction Library"
@@ -136,5 +142,6 @@ help:
 	@echo "  bench-all    - Run benchmarks with detailed output"
 	@echo "  bench-report - Generate detailed benchmark report"
 	@echo "  bench-compare- Compare benchmarks between commits"
+	@echo "  bench-viz    - Generate benchmark graphs across git history (N=commits)"
 	@echo "  example      - Build and run example"
 	@echo "  help         - Show this help"

@@ -202,11 +202,34 @@ make bench              # Quick benchmark run
 make bench-all          # Detailed output with 3s timing
 make bench-report       # Generate formatted report
 make bench-compare OLD=commit1 NEW=commit2  # Compare commits
+make bench-viz N=50     # Generate performance graphs across last 50 commits
 ```
+
+**Performance Visualization**:
+
+Generate performance graphs showing how benchmarks evolved over time:
+
+```bash
+# Generate graphs for last 50 commits
+make bench-viz N=50
+```
+
+This creates visualizations in `out/` directory showing:
+- **ns/op** - Nanoseconds per operation over time
+- **B/op** - Bytes allocated per operation over time
+- **allocs/op** - Number of allocations per operation over time
+
+Example graphs (run `make bench-viz` to generate):
+
+![High-Level API Performance](out/summary_HighLevelAPI.png)
+![Parser Performance](out/summary_ParserEXIF.png)
+
+**Requirements**: Python 3 with matplotlib (`pip3 install matplotlib`)
 
 **Tools**:
 - Results tracked via [github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark)
 - Statistical comparison using [benchstat](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat)
+- Historical visualization using Python + matplotlib
 
 ## Contributing
 
