@@ -32,6 +32,7 @@ except ImportError:
 class BenchmarkMetrics:
     """Comprehensive benchmark metrics"""
     name: str
+    package: str  # Go package name
     iterations: int
     ns_per_op: float
     ops_per_sec: float  # Calculated from ns_per_op
@@ -95,33 +96,71 @@ class BenchmarkRunner:
         if time_match:
             total_time = float(time_match.group(1))
 
-        for match in re.finditer(pattern, output):
-            name = match.group(1)
-            iterations = int(match.group(2))
-            ns_per_op = float(match.group(3))
-            bytes_per_op = int(float(match.group(4)))
-            allocs_per_op = int(float(match.group(5)))
+        # Parse benchmarks line by line to track current package
+        current_pkg = "unknown"
+        for line in output.split("\n"):
+            if line.startswith("pkg: "):
+                current_pkg = line.split("pkg: ")[1].strip()
+            elif line.startswith("Benchmark"):
+                match = re.match(pattern, line)
+                if match:
+                    name = match.group(1)
+                    iterations = int(match.group(2))
+                    ns_per_op = float(match.group(3))
+                    bytes_per_op = int(float(match.group(4)))
+                    allocs_per_op = int(float(match.group(5)))
 
-            # Calculate derived metrics
-            ops_per_sec = 1_000_000_000 / ns_per_op if ns_per_op > 0 else 0
-            mb_per_sec = (bytes_per_op * ops_per_sec) / (1024 * 1024) if bytes_per_op > 0 else 0
+                    # Calculate derived metrics
+                    ops_per_sec = 1_000_000_000 / ns_per_op if ns_per_op > 0 else 0
+                    mb_per_sec = (bytes_per_op * ops_per_sec) / (1024 * 1024) if bytes_per_op > 0 else 0
 
-            metrics.append(BenchmarkMetrics(
-                name=name,
-                iterations=iterations,
-                ns_per_op=ns_per_op,
-                ops_per_sec=ops_per_sec,
-                bytes_per_op=bytes_per_op,
-                mb_per_sec=mb_per_sec,
-                allocs_per_op=allocs_per_op,
-                total_time_sec=total_time
-            ))
+                    metrics.append(BenchmarkMetrics(
+                        name=name,
+                        package=current_pkg,
+                        iterations=iterations,
+                        ns_per_op=ns_per_op,
+                        ops_per_sec=ops_per_sec,
+                        bytes_per_op=bytes_per_op,
+                        mb_per_sec=mb_per_sec,
+                        allocs_per_op=allocs_per_op,
+                        total_time_sec=total_time
+                    ))
 
         return metrics
 
 
 class ReportFormatter:
     """Formats benchmark results as human-readable reports"""
+
+    @staticmethod
+    def format_number(n: float) -> str:
+        """Format number with K/M/B suffixes"""
+        if n == 0:
+            return "-"
+
+        if n >= 1_000_000_000:
+            return f"{n/1_000_000_000:.1f}B"
+        elif n >= 1_000_000:
+            return f"{n/1_000_000:.1f}M"
+        elif n >= 1_000:
+            return f"{n/1_000:.1f}K"
+        elif n >= 1:
+            return f"{n:.1f}"
+        else:
+            return f"{n:.2e}"
+
+    @staticmethod
+    def format_bytes(b: int) -> str:
+        """Format bytes with B/KB/MB suffixes"""
+        if b == 0:
+            return "-"
+
+        if b >= 1024*1024:
+            return f"{b/(1024*1024):.1f}MB"
+        elif b >= 1024:
+            return f"{b/1024:.1f}KB"
+        else:
+            return f"{b}B"
 
     @staticmethod
     def format_current_results(metrics: List[BenchmarkMetrics], output: str) -> str:
@@ -135,24 +174,23 @@ class ReportFormatter:
         lines.append("=" * 100)
         lines.append("")
 
-        # Group by category
+        # Group by category using package field
         categories = defaultdict(list)
+
         for m in metrics:
-            if m.name.startswith("MetadataFrom") or m.name.startswith("Metadata_") or m.name in ["SmallFile", "LargeFile", "WithMaxBytes", "WithBufferSize", "Extractor_New", "Extractor_NewWithOptions"]:
+            # Categorize based on package
+            if "internal/meta/exif" in m.package:
+                categories["EXIF Parser"].append(m)
+            elif "internal/meta/iptc" in m.package:
+                categories["IPTC Parser"].append(m)
+            elif "internal/meta/xmp" in m.package:
+                categories["XMP Parser"].append(m)
+            elif "internal/meta/icc" in m.package:
+                categories["ICC Parser"].append(m)
+            elif "internal/format/jpeg" in m.package:
+                categories["JPEG Format"].append(m)
+            elif m.package.endswith("/imx") or m.package == "github.com/gomantics/imx":
                 categories["High-Level API"].append(m)
-            elif "Parser_Parse" in m.name or "Parser_New" in m.name:
-                if "exif" in m.name.lower() or m.name.startswith("Parser_ParseIFD"):
-                    categories["EXIF Parser"].append(m)
-                elif "iptc" in m.name.lower():
-                    categories["IPTC Parser"].append(m)
-                elif "xmp" in m.name.lower():
-                    categories["XMP Parser"].append(m)
-                elif "icc" in m.name.lower():
-                    categories["ICC Parser"].append(m)
-                elif "jpeg" in m.name.lower() or "Parser_ParseSegment" in m.name:
-                    categories["JPEG Format"].append(m)
-                else:
-                    categories["Other"].append(m)
             else:
                 categories["Other"].append(m)
 
@@ -163,17 +201,17 @@ class ReportFormatter:
 
             lines.append(f"\n{category}")
             lines.append("-" * 100)
-            lines.append(f"{'Benchmark':<40} {'Ops/Sec':>12} {'ns/op':>12} {'MB/s':>10} {'B/op':>12} {'allocs/op':>10}")
+            lines.append(f"{'Benchmark':<50} {'Ops/Sec':>12} {'ns/op':>12} {'MB/s':>12} {'B/op':>12} {'allocs/op':>12}")
             lines.append("-" * 100)
 
             for m in cat_metrics:
-                ops_str = f"{m.ops_per_sec:,.0f}" if m.ops_per_sec >= 1 else f"{m.ops_per_sec:.2e}"
-                ns_str = f"{m.ns_per_op:,.1f}" if m.ns_per_op >= 1 else f"{m.ns_per_op:.2e}"
-                mb_str = f"{m.mb_per_sec:.1f}" if m.mb_per_sec > 0 else "-"
-                bytes_str = f"{m.bytes_per_op:,}" if m.bytes_per_op > 0 else "-"
-                allocs_str = f"{m.allocs_per_op:,}" if m.allocs_per_op > 0 else "-"
+                ops_str = ReportFormatter.format_number(m.ops_per_sec)
+                ns_str = ReportFormatter.format_number(m.ns_per_op)
+                mb_str = f"{ReportFormatter.format_number(m.mb_per_sec)}/s" if m.mb_per_sec > 0 else "-"
+                bytes_str = ReportFormatter.format_bytes(m.bytes_per_op)
+                allocs_str = ReportFormatter.format_number(m.allocs_per_op) if m.allocs_per_op > 0 else "-"
 
-                lines.append(f"{m.name:<40} {ops_str:>12} {ns_str:>12} {mb_str:>10} {bytes_str:>12} {allocs_str:>10}")
+                lines.append(f"{m.name:<50} {ops_str:>12} {ns_str:>12} {mb_str:>12} {bytes_str:>12} {allocs_str:>12}")
 
         lines.append("")
         lines.append("=" * 100)
@@ -188,12 +226,12 @@ class ReportFormatter:
         slowest = max(metrics, key=lambda m: m.ns_per_op) if metrics else None
 
         lines.append(f"Total Benchmarks: {total_benchmarks}")
-        lines.append(f"Average Time: {avg_ns:,.1f} ns/op")
-        lines.append(f"Total Memory Allocated: {total_allocs:,} bytes across all benchmarks")
+        lines.append(f"Average Time: {ReportFormatter.format_number(avg_ns)} ns/op")
+        lines.append(f"Total Memory Allocated: {ReportFormatter.format_bytes(total_allocs)} across all benchmarks")
         if fastest:
-            lines.append(f"Fastest: {fastest.name} ({fastest.ns_per_op:.1f} ns/op)")
+            lines.append(f"Fastest: {fastest.name} ({ReportFormatter.format_number(fastest.ns_per_op)} ns/op)")
         if slowest:
-            lines.append(f"Slowest: {slowest.name} ({slowest.ns_per_op:,.1f} ns/op)")
+            lines.append(f"Slowest: {slowest.name} ({ReportFormatter.format_number(slowest.ns_per_op)} ns/op)")
         lines.append("")
 
         return "\n".join(lines)
