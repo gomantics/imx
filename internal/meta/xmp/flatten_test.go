@@ -3,7 +3,7 @@ package xmp
 import (
 	"testing"
 
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 func TestFlattenNodeMap(t *testing.T) {
@@ -20,8 +20,8 @@ func TestFlattenNodeMap(t *testing.T) {
 
 		dir := flattenNodeMap(nodeMap, namespaces)
 
-		if dir.Spec != meta.SpecXMP {
-			t.Errorf("dir.Spec = %v, want %v", dir.Spec, meta.SpecXMP)
+		if dir.Spec != common.SpecXMP {
+			t.Errorf("dir.Spec = %v, want %v", dir.Spec, common.SpecXMP)
 		}
 
 		if dir.Name != "XMP" {

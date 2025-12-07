@@ -2,6 +2,8 @@ package format
 
 import (
 	"bufio"
+
+	"github.com/gomantics/imx/internal/common"
 )
 
 // Parser is the interface for format parsers
@@ -10,5 +12,5 @@ type Parser interface {
 	Detect(peek []byte) bool
 
 	// Parse reads from r and returns all metadata blocks found
-	Parse(r *bufio.Reader) ([]RawBlock, error)
+	Parse(r *bufio.Reader) ([]common.RawBlock, error)
 }

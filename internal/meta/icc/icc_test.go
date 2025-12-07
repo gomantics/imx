@@ -4,8 +4,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 // buildValidProfile creates a minimal valid ICC profile
@@ -89,8 +88,8 @@ func TestNew(t *testing.T) {
 
 func TestParser_Spec(t *testing.T) {
 	p := New()
-	if p.Spec() != meta.SpecICC {
-		t.Errorf("Spec() = %v, want %v", p.Spec(), meta.SpecICC)
+	if p.Spec() != common.SpecICC {
+		t.Errorf("Spec() = %v, want %v", p.Spec(), common.SpecICC)
 	}
 }
 
@@ -115,12 +114,12 @@ func TestParser_Parse_ValidProfile(t *testing.T) {
 	payload[1] = 1 // of 1
 	copy(payload[2:], profileData)
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: payload,
 			Origin:  "APP2 ICC",
-			Format:  format.FormatJPEG,
+			Format:  common.FormatJPEG,
 			Index:   0,
 		},
 	}
@@ -135,8 +134,8 @@ func TestParser_Parse_ValidProfile(t *testing.T) {
 	}
 
 	dir := dirs[0]
-	if dir.Spec != meta.SpecICC {
-		t.Errorf("dir.Spec = %v, want %v", dir.Spec, meta.SpecICC)
+	if dir.Spec != common.SpecICC {
+		t.Errorf("dir.Spec = %v, want %v", dir.Spec, common.SpecICC)
 	}
 
 	// Check some expected tags
@@ -153,9 +152,9 @@ func TestParser_Parse_ValidProfile(t *testing.T) {
 
 func TestParser_Parse_NonICCBlocks(t *testing.T) {
 	p := New()
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecEXIF), // Wrong spec
+			Spec:    common.SpecEXIF, // Wrong spec
 			Payload: []byte{1, 2, 3, 4},
 		},
 	}
@@ -178,9 +177,9 @@ func TestParser_Parse_MalformedProfile(t *testing.T) {
 	payload[1] = 1 // of 1
 	// Profile data is too short and invalid
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: payload,
 		},
 	}
@@ -204,9 +203,9 @@ func TestParser_ReassembleSegments_SingleSegment(t *testing.T) {
 	payload[1] = 1 // of 1
 	copy(payload[2:], profileData)
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: payload,
 		},
 	}
@@ -234,13 +233,13 @@ func TestParser_ReassembleSegments_MultiSegment(t *testing.T) {
 	part1[8] = 4
 	binary.BigEndian.PutUint32(part1[36:40], ICCSignature)
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: append([]byte{1, 2}, part1...), // segment 1 of 2
 		},
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: append([]byte{2, 2}, part2...), // segment 2 of 2
 		},
 	}
@@ -263,9 +262,9 @@ func TestParser_ReassembleSegments_IncompleteMultiSegment(t *testing.T) {
 	p := New()
 
 	// Only provide 1 of 2 segments
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: append([]byte{1, 2}, make([]byte, 100)...), // segment 1 of 2
 		},
 	}
@@ -285,9 +284,9 @@ func TestParser_ReassembleSegments_InvalidSegmentNumbers(t *testing.T) {
 	p := New()
 
 	// Invalid segment numbers (0)
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: append([]byte{0, 0}, make([]byte, 50)...), // invalid
 		},
 	}
@@ -306,9 +305,9 @@ func TestParser_ReassembleSegments_InvalidSegmentNumbers(t *testing.T) {
 func TestParser_ReassembleSegments_ShortPayload(t *testing.T) {
 	p := New()
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: []byte{1}, // Too short for segment header
 		},
 	}
@@ -471,9 +470,9 @@ func TestParser_ReassembleSegments_LooksLikeICCHeader(t *testing.T) {
 
 	// Test case: payload that is a complete profile without segmentation
 	// (no segment header, just raw ICC data)
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: profileData, // No segment header, looks like ICC directly
 		},
 	}
@@ -566,9 +565,9 @@ func TestParser_Parse_Error(t *testing.T) {
 	// Invalid tag count (at offset 128 from profile start, which is 130 from data start)
 	binary.BigEndian.PutUint32(data[2+128:2+132], 10000) // unreasonable
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: data,
 		},
 	}
@@ -586,9 +585,9 @@ func TestParser_Parse_Error(t *testing.T) {
 func TestParser_ReassembleSegments_SegmentNumGreaterThanTotal(t *testing.T) {
 	p := New()
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: append([]byte{5, 2}, make([]byte, 100)...), // segment 5 of 2 (invalid)
 		},
 	}
@@ -607,13 +606,13 @@ func TestParser_ReassembleSegments_MissingMiddleSegment(t *testing.T) {
 	p := New()
 
 	// Provide segments 1 and 3 of 3, missing 2
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: append([]byte{1, 3}, make([]byte, 100)...),
 		},
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: append([]byte{3, 3}, make([]byte, 100)...),
 		},
 	}
@@ -630,9 +629,9 @@ func TestParser_ReassembleSegments_MissingMiddleSegment(t *testing.T) {
 
 func TestParser_AddTag(t *testing.T) {
 	p := New()
-	dir := meta.Directory{
-		Spec: meta.SpecICC,
-		Tags: make(map[meta.TagID]meta.Tag),
+	dir := common.Directory{
+		Spec: common.SpecICC,
+		Tags: make(map[common.TagID]common.Tag),
 	}
 
 	p.addTag(&dir, "TestTag", "string", "TestValue")
@@ -664,14 +663,14 @@ func TestParser_Parse_MultipleProfiles(t *testing.T) {
 	payload2[1] = 1
 	copy(payload2[2:], profileData)
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: payload1,
 			Index:   0,
 		},
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: payload2,
 			Index:   1,
 		},
@@ -713,9 +712,9 @@ func TestParser_ReassembleSegments_ShortButValidProfile(t *testing.T) {
 
 	// Create a very short payload that doesn't have segment header
 	// but might be interpreted as one
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecICC),
+			Spec:    common.SpecICC,
 			Payload: make([]byte, 1), // Too short
 		},
 	}
@@ -764,7 +763,7 @@ func TestParser_BuildDirectory_TagWithNilValue(t *testing.T) {
 	dir := p.buildDirectory(profile, 0)
 
 	// Should still build directory without the nil-valued tag
-	if dir.Spec != meta.SpecICC {
+	if dir.Spec != common.SpecICC {
 		t.Error("Directory should still be valid")
 	}
 }
@@ -854,10 +853,10 @@ func TestParser_ReassembleSegments_MultiSegmentMissingMiddle(t *testing.T) {
 	seg3[0] = 3
 	seg3[1] = 3
 
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecICC), Payload: seg1a},
-		{Spec: int(meta.SpecICC), Payload: seg1b},
-		{Spec: int(meta.SpecICC), Payload: seg3},
+	blocks := []common.RawBlock{
+		{Spec: common.SpecICC, Payload: seg1a},
+		{Spec: common.SpecICC, Payload: seg1b},
+		{Spec: common.SpecICC, Payload: seg3},
 	}
 
 	profiles, _ := p.reassembleSegments(blocks)
@@ -903,7 +902,7 @@ func TestParser_BuildDirectory_TagWithNilValue2(t *testing.T) {
 	dir := p.buildDirectory(profile, 0)
 
 	// Should skip the nil-valued tag but still build directory
-	if dir.Spec != meta.SpecICC {
+	if dir.Spec != common.SpecICC {
 		t.Error("Directory should still be valid")
 	}
 }

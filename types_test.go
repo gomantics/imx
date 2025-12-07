@@ -3,7 +3,7 @@ package imx
 import (
 	"testing"
 
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 func TestMetadata_Directory(t *testing.T) {
@@ -328,24 +328,24 @@ func TestMetadata_EachInSpec(t *testing.T) {
 func TestTypeAliases(t *testing.T) {
 	// Spec alias
 	var spec Spec = SpecEXIF
-	if spec != meta.SpecEXIF {
+	if spec != SpecEXIF {
 		t.Error("Spec alias not working correctly")
 	}
 
 	// TagID alias
 	var tagID TagID = "EXIF:Make"
-	if tagID != meta.TagID("EXIF:Make") {
+	if tagID != common.TagID("EXIF:Make") {
 		t.Error("TagID alias not working correctly")
 	}
 
 	// Tag alias
-	var tag Tag = meta.Tag{ID: "EXIF:Make"}
+	var tag Tag = common.Tag{ID: "EXIF:Make"}
 	if tag.ID != "EXIF:Make" {
 		t.Error("Tag alias not working correctly")
 	}
 
 	// Directory alias
-	var dir Directory = meta.Directory{Name: "IFD0"}
+	var dir Directory = common.Directory{Name: "IFD0"}
 	if dir.Name != "IFD0" {
 		t.Error("Directory alias not working correctly")
 	}

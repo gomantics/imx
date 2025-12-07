@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gomantics/imx/internal/common"
 	"github.com/gomantics/imx/internal/format"
 	"github.com/gomantics/imx/internal/format/jpeg"
 	"github.com/gomantics/imx/internal/meta"
@@ -92,7 +93,7 @@ func (e *Extractor) MetadataFromReader(r io.Reader, opts ...Option) (Metadata, e
 	}
 
 	// Step 3: Parse metadata from blocks
-	var allDirs []meta.Directory
+	var allDirs []common.Directory
 
 	for _, metaParser := range e.metaParsers {
 		spec := metaParser.Spec()
@@ -173,8 +174,8 @@ func (e *Extractor) MetadataFromURL(url string, opts ...Option) (Metadata, error
 
 // Helper functions
 
-func filterBlocksForSpec(blocks []format.RawBlock, spec Spec) []format.RawBlock {
-	var filtered []format.RawBlock
+func filterBlocksForSpec(blocks []common.RawBlock, spec Spec) []common.RawBlock {
+	var filtered []common.RawBlock
 	for _, b := range blocks {
 		if Spec(b.Spec) == spec {
 			filtered = append(filtered, b)

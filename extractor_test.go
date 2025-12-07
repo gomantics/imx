@@ -7,8 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 // testJPEGPath is the path to the test JPEG file
@@ -194,11 +193,11 @@ func TestExtractor_StopOnError(t *testing.T) {
 }
 
 func TestFilterBlocksForSpec(t *testing.T) {
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecEXIF), Payload: []byte{1}},
-		{Spec: int(meta.SpecXMP), Payload: []byte{2}},
-		{Spec: int(meta.SpecEXIF), Payload: []byte{3}},
-		{Spec: int(meta.SpecICC), Payload: []byte{4}},
+	blocks := []common.RawBlock{
+		{Spec: SpecEXIF, Payload: []byte{1}},
+		{Spec: SpecXMP, Payload: []byte{2}},
+		{Spec: SpecEXIF, Payload: []byte{3}},
+		{Spec: SpecICC, Payload: []byte{4}},
 	}
 
 	tests := []struct {

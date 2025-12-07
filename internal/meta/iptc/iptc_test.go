@@ -3,8 +3,7 @@ package iptc
 import (
 	"testing"
 
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 func TestNew(t *testing.T) {
@@ -16,8 +15,8 @@ func TestNew(t *testing.T) {
 
 func TestParser_Spec(t *testing.T) {
 	p := New()
-	if p.Spec() != meta.SpecIPTC {
-		t.Errorf("Spec() = %v, want %v", p.Spec(), meta.SpecIPTC)
+	if p.Spec() != common.SpecIPTC {
+		t.Errorf("Spec() = %v, want %v", p.Spec(), common.SpecIPTC)
 	}
 }
 
@@ -34,9 +33,9 @@ func TestParser_Parse_EmptyBlocks(t *testing.T) {
 
 func TestParser_Parse_NonIPTCBlocks(t *testing.T) {
 	p := New()
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecEXIF),
+			Spec:    common.SpecEXIF,
 			Payload: []byte{1, 2, 3},
 		},
 	}
@@ -61,12 +60,12 @@ func TestParser_Parse_ValidIPTC(t *testing.T) {
 	// Wrap in Photoshop IRB
 	irbData := buildPhotoshopIRB(ResourceIPTC, iptcData)
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecIPTC),
+			Spec:    common.SpecIPTC,
 			Payload: irbData,
 			Origin:  "APP13 IPTC",
-			Format:  format.FormatJPEG,
+			Format:  common.FormatJPEG,
 		},
 	}
 
@@ -80,8 +79,8 @@ func TestParser_Parse_ValidIPTC(t *testing.T) {
 	}
 
 	dir := dirs[0]
-	if dir.Spec != meta.SpecIPTC {
-		t.Errorf("dir.Spec = %v, want %v", dir.Spec, meta.SpecIPTC)
+	if dir.Spec != common.SpecIPTC {
+		t.Errorf("dir.Spec = %v, want %v", dir.Spec, common.SpecIPTC)
 	}
 
 	// Check for expected tags
@@ -106,9 +105,9 @@ func TestParser_Parse_RawIPTC(t *testing.T) {
 	// Raw IPTC data without Photoshop wrapper
 	iptcData := buildIPTCDataset(RecordApplication, 5, []byte("Direct Title"))
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecIPTC),
+			Spec:    common.SpecIPTC,
 			Payload: iptcData,
 		},
 	}
@@ -130,9 +129,9 @@ func TestParser_Parse_RawIPTC(t *testing.T) {
 func TestParser_Parse_MalformedIRB(t *testing.T) {
 	p := New()
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecIPTC),
+			Spec:    common.SpecIPTC,
 			Payload: []byte("invalid data"),
 		},
 	}
@@ -154,9 +153,9 @@ func TestParser_Parse_EnvelopeRecord(t *testing.T) {
 	iptcData := buildIPTCDataset(RecordEnvelope, 70, []byte("20231215"))
 	irbData := buildPhotoshopIRB(ResourceIPTC, iptcData)
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecIPTC),
+			Spec:    common.SpecIPTC,
 			Payload: irbData,
 		},
 	}
@@ -186,9 +185,9 @@ func TestParser_Parse_MultipleBlocks(t *testing.T) {
 	iptc2 := buildIPTCDataset(RecordApplication, 80, []byte("Author"))
 	irb2 := buildPhotoshopIRB(ResourceIPTC, iptc2)
 
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecIPTC), Payload: irb1},
-		{Spec: int(meta.SpecIPTC), Payload: irb2},
+	blocks := []common.RawBlock{
+		{Spec: common.SpecIPTC, Payload: irb1},
+		{Spec: common.SpecIPTC, Payload: irb2},
 	}
 
 	dirs, err := p.Parse(blocks)
@@ -213,8 +212,8 @@ func TestParser_Parse_IntegerValue(t *testing.T) {
 	iptcData := buildIPTCDataset(RecordApplication, 0, []byte{0x00, 0x04})
 	irbData := buildPhotoshopIRB(ResourceIPTC, iptcData)
 
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecIPTC), Payload: irbData},
+	blocks := []common.RawBlock{
+		{Spec: common.SpecIPTC, Payload: irbData},
 	}
 
 	dirs, err := p.Parse(blocks)
@@ -267,13 +266,13 @@ func TestParser_Parse_IRBError(t *testing.T) {
 	iptcData := buildIPTCDataset(RecordApplication, 5, []byte("Title"))
 	irbData := buildPhotoshopIRB(ResourceIPTC, iptcData)
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecIPTC),
+			Spec:    common.SpecIPTC,
 			Payload: []byte{1, 2, 3}, // Too short, triggers IRB error
 		},
 		{
-			Spec:    int(meta.SpecIPTC),
+			Spec:    common.SpecIPTC,
 			Payload: irbData, // Valid
 		},
 	}

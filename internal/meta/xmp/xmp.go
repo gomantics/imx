@@ -1,8 +1,7 @@
 package xmp
 
 import (
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 // Parser implements meta.Parser for the XMP specification using a streaming approach.
@@ -14,12 +13,12 @@ func New() *Parser {
 }
 
 // Spec returns the meta.Spec constant for XMP.
-func (p *Parser) Spec() meta.Spec {
-	return meta.SpecXMP
+func (p *Parser) Spec() common.Spec {
+	return common.SpecXMP
 }
 
 // Parse parses a list of raw blocks and returns a single Directory containing usage XMP tags.
-func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
+func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
 	// NodeMap to accumulate properties from all blocks
 	nodeMap := make(NodeMap)
 	// Track URI -> Prefix mappings found in packets
@@ -29,7 +28,7 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 	var lastErr error
 
 	for _, block := range blocks {
-		if meta.Spec(block.Spec) != meta.SpecXMP {
+		if block.Spec != common.SpecXMP {
 			continue
 		}
 
@@ -55,5 +54,5 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 	}
 
 	dir := flattenNodeMap(nodeMap, namespaces)
-	return []meta.Directory{dir}, nil
+	return []common.Directory{dir}, nil
 }

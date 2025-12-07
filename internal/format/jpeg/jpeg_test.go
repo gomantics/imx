@@ -7,7 +7,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 func TestNew(t *testing.T) {
@@ -123,35 +123,35 @@ func TestParser_Parse(t *testing.T) {
 		name       string
 		data       []byte
 		wantBlocks int
-		wantSpecs  []int
+		wantSpecs  []common.Spec
 		wantErr    bool
 	}{
 		{
 			name:       "valid JPEG with EXIF",
 			data:       buildJPEG(buildSegment(0xE1, append(exifMagic, sampleTIFF...))),
 			wantBlocks: 1,
-			wantSpecs:  []int{int(meta.SpecEXIF)},
+			wantSpecs:  []common.Spec{common.SpecEXIF,},
 			wantErr:    false,
 		},
 		{
 			name:       "valid JPEG with XMP",
 			data:       buildJPEG(buildSegment(0xE1, append(xmpMagic, []byte("<x:xmpmeta></x:xmpmeta>")...))),
 			wantBlocks: 1,
-			wantSpecs:  []int{int(meta.SpecXMP)},
+			wantSpecs:  []common.Spec{common.SpecXMP,},
 			wantErr:    false,
 		},
 		{
 			name:       "valid JPEG with ICC profile",
 			data:       buildJPEG(buildSegment(0xE2, append(iccMagic, []byte{0x01, 0x01, 0x00, 0x00}...))),
 			wantBlocks: 1,
-			wantSpecs:  []int{int(meta.SpecICC)},
+			wantSpecs:  []common.Spec{common.SpecICC,},
 			wantErr:    false,
 		},
 		{
 			name:       "valid JPEG with IPTC",
 			data:       buildJPEG(buildSegment(0xED, append(iptcMagic, []byte{0x38, 0x42, 0x49, 0x4D}...))),
 			wantBlocks: 1,
-			wantSpecs:  []int{int(meta.SpecIPTC)},
+			wantSpecs:  []common.Spec{common.SpecIPTC,},
 			wantErr:    false,
 		},
 		{
@@ -162,7 +162,7 @@ func TestParser_Parse(t *testing.T) {
 				buildSegment(0xE2, append(iccMagic, []byte{0x01, 0x01}...)),
 			),
 			wantBlocks: 3,
-			wantSpecs:  []int{int(meta.SpecEXIF), int(meta.SpecXMP), int(meta.SpecICC)},
+			wantSpecs:  []common.Spec{common.SpecEXIF, common.SpecXMP, common.SpecICC,},
 			wantErr:    false,
 		},
 		{
@@ -176,7 +176,7 @@ func TestParser_Parse(t *testing.T) {
 			name:       "JPEG with SOS marker stops parsing",
 			data:       append(buildJPEG(buildSegment(0xE1, append(exifMagic, sampleTIFF...)))[:len(buildJPEG(buildSegment(0xE1, append(exifMagic, sampleTIFF...))))-2], []byte{0xFF, 0xDA, 0x00, 0x02, 0xFF, 0xD9}...),
 			wantBlocks: 1,
-			wantSpecs:  []int{int(meta.SpecEXIF)},
+			wantSpecs:  []common.Spec{common.SpecEXIF,},
 			wantErr:    false,
 		},
 		{
@@ -240,7 +240,7 @@ func TestParser_Parse(t *testing.T) {
 				buildSegment(0xE1, append(exifMagic, sampleTIFF...)),
 			),
 			wantBlocks: 2,
-			wantSpecs:  []int{int(meta.SpecEXIF), int(meta.SpecEXIF)},
+			wantSpecs:  []common.Spec{common.SpecEXIF, common.SpecEXIF,},
 			wantErr:    false,
 		},
 		{

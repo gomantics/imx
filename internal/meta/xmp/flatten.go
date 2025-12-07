@@ -3,17 +3,17 @@ package xmp
 import (
 	"fmt"
 
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 // flattenNodeMap converts the nested NodeMap into a flat Directory structure
 // suitable for the public API, while preserving hierarchical data in nested maps/slices.
 
-func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) meta.Directory {
-	dir := meta.Directory{
-		Spec: meta.SpecXMP,
+func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) common.Directory {
+	dir := common.Directory{
+		Spec: common.SpecXMP,
 		Name: "XMP",
-		Tags: make(map[meta.TagID]meta.Tag),
+		Tags: make(map[common.TagID]common.Tag),
 	}
 
 	for key, values := range nodeMap {
@@ -26,7 +26,7 @@ func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) meta.Director
 			}
 		}
 
-		tagID := meta.TagID(fmt.Sprintf("XMP-%s:%s", prefix, key.Local))
+		tagID := common.TagID(fmt.Sprintf("XMP-%s:%s", prefix, key.Local))
 
 		var finalVal any
 		var dataType string
@@ -43,8 +43,8 @@ func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) meta.Director
 			dataType = "array"
 		}
 
-		dir.Tags[tagID] = meta.Tag{
-			Spec:     meta.SpecXMP,
+		dir.Tags[tagID] = common.Tag{
+			Spec:     common.SpecXMP,
 			ID:       tagID,
 			Name:     key.Local,
 			DataType: dataType,

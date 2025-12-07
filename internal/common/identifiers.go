@@ -1,4 +1,4 @@
-package meta
+package common
 
 // Magic bytes for identifying metadata types embedded in image files.
 // These identifiers are format-agnostic and used across different container

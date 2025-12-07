@@ -3,8 +3,7 @@ package iptc
 import (
 	"fmt"
 
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 // Parser implements meta.Parser for IPTC-IIM metadata
@@ -16,12 +15,12 @@ func New() *Parser {
 }
 
 // Spec returns the metadata spec this parser handles
-func (p *Parser) Spec() meta.Spec {
-	return meta.SpecIPTC
+func (p *Parser) Spec() common.Spec {
+	return common.SpecIPTC
 }
 
 // Parse extracts IPTC metadata from raw blocks
-func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
+func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
 	if len(blocks) == 0 {
 		return nil, nil
 	}
@@ -29,7 +28,7 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 	var allDatasets []Dataset
 
 	for _, block := range blocks {
-		if meta.Spec(block.Spec) != meta.SpecIPTC {
+		if block.Spec != common.SpecIPTC {
 			continue
 		}
 
@@ -58,22 +57,22 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 	return dirs, nil
 }
 
-// buildDirectories creates meta.Directory structures from parsed datasets
-func (p *Parser) buildDirectories(datasets []Dataset) []meta.Directory {
+// buildDirectories creates common.Directory structures from parsed datasets
+func (p *Parser) buildDirectories(datasets []Dataset) []common.Directory {
 	// Group datasets by record
 	byRecord := make(map[Record][]Dataset)
 	for _, ds := range datasets {
 		byRecord[ds.Record] = append(byRecord[ds.Record], ds)
 	}
 
-	var dirs []meta.Directory
+	var dirs []common.Directory
 
 	// Process each record
 	for record, recordDatasets := range byRecord {
-		dir := meta.Directory{
-			Spec: meta.SpecIPTC,
+		dir := common.Directory{
+			Spec: common.SpecIPTC,
 			Name: fmt.Sprintf("IPTC-%s", record.String()),
-			Tags: make(map[meta.TagID]meta.Tag),
+			Tags: make(map[common.TagID]common.Tag),
 		}
 
 		// Track repeatable fields
@@ -81,17 +80,17 @@ func (p *Parser) buildDirectories(datasets []Dataset) []meta.Directory {
 
 		for _, ds := range recordDatasets {
 			// Build tag ID
-			var tagID meta.TagID
+			var tagID common.TagID
 			if isRepeatable(ds.Record, ds.DatasetID) {
 				count := repeatCounts[ds.DatasetID]
 				repeatCounts[ds.DatasetID]++
 				if count == 0 {
-					tagID = meta.TagID(fmt.Sprintf("IPTC:%s", ds.Name))
+					tagID = common.TagID(fmt.Sprintf("IPTC:%s", ds.Name))
 				} else {
-					tagID = meta.TagID(fmt.Sprintf("IPTC:%s[%d]", ds.Name, count))
+					tagID = common.TagID(fmt.Sprintf("IPTC:%s[%d]", ds.Name, count))
 				}
 			} else {
-				tagID = meta.TagID(fmt.Sprintf("IPTC:%s", ds.Name))
+				tagID = common.TagID(fmt.Sprintf("IPTC:%s", ds.Name))
 			}
 
 			// Determine data type
@@ -101,8 +100,8 @@ func (p *Parser) buildDirectories(datasets []Dataset) []meta.Directory {
 				dataType = "int"
 			}
 
-			dir.Tags[tagID] = meta.Tag{
-				Spec:     meta.SpecIPTC,
+			dir.Tags[tagID] = common.Tag{
+				Spec:     common.SpecIPTC,
 				ID:       tagID,
 				Name:     ds.Name,
 				DataType: dataType,

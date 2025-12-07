@@ -5,8 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 // Parser implements meta.Parser for EXIF
@@ -18,16 +17,16 @@ func New() *Parser {
 }
 
 // Spec returns the EXIF metadata spec
-func (p *Parser) Spec() meta.Spec {
-	return meta.SpecEXIF
+func (p *Parser) Spec() common.Spec {
+	return common.SpecEXIF
 }
 
 // Parse extracts EXIF data from raw blocks
-func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
-	var dirs []meta.Directory
+func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
+	var dirs []common.Directory
 
 	for _, block := range blocks {
-		if meta.Spec(block.Spec) != meta.SpecEXIF {
+		if block.Spec != common.SpecEXIF {
 			continue
 		}
 
@@ -44,7 +43,7 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 }
 
 // parseTIFF parses a TIFF-formatted EXIF block
-func (p *Parser) parseTIFF(data []byte) ([]meta.Directory, error) {
+func (p *Parser) parseTIFF(data []byte) ([]common.Directory, error) {
 	if len(data) < 8 {
 		return nil, fmt.Errorf("TIFF header too short")
 	}
@@ -68,7 +67,7 @@ func (p *Parser) parseTIFF(data []byte) ([]meta.Directory, error) {
 	// Read offset to first IFD
 	ifd0Offset := byteOrder.Uint32(data[4:8])
 
-	var dirs []meta.Directory
+	var dirs []common.Directory
 
 	// Parse IFD0
 	if ifd0Offset > 0 && int(ifd0Offset) < len(data) {
@@ -111,19 +110,19 @@ func (p *Parser) parseTIFF(data []byte) ([]meta.Directory, error) {
 }
 
 // parseIFD parses a single IFD (Image File Directory)
-func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, name string) (meta.Directory, uint32, error) {
+func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, name string) (common.Directory, uint32, error) {
 	if offset+2 > len(data) {
-		return meta.Directory{}, 0, fmt.Errorf("IFD offset out of bounds")
+		return common.Directory{}, 0, fmt.Errorf("IFD offset out of bounds")
 	}
 
 	// Read number of entries
 	entryCount := byteOrder.Uint16(data[offset : offset+2])
 	offset += 2
 
-	dir := meta.Directory{
-		Spec: meta.SpecEXIF,
+	dir := common.Directory{
+		Spec: common.SpecEXIF,
 		Name: name,
-		Tags: make(map[meta.TagID]meta.Tag),
+		Tags: make(map[common.TagID]common.Tag),
 	}
 
 	// Parse each entry (12 bytes each)
@@ -150,14 +149,14 @@ func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, n
 }
 
 // parseEntry parses a single IFD entry (tag)
-func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder, ifdName string) meta.Tag {
+func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder, ifdName string) common.Tag {
 	tagID := byteOrder.Uint16(data[offset : offset+2])
 	tagType := byteOrder.Uint16(data[offset+2 : offset+4])
 	count := byteOrder.Uint32(data[offset+4 : offset+8])
 	valueOffset := offset + 8 // Last 4 bytes contain value or offset
 
-	tag := meta.Tag{
-		Spec: meta.SpecEXIF,
+	tag := common.Tag{
+		Spec: common.SpecEXIF,
 	}
 
 	// Get tag name and ID based on IFD
@@ -175,7 +174,7 @@ func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder,
 	if !ok {
 		tagName = fmt.Sprintf("Tag%04X", tagID)
 	}
-	tag.ID = meta.TagID(fmt.Sprintf("EXIF:%s", tagName))
+	tag.ID = common.TagID(fmt.Sprintf("EXIF:%s", tagName))
 	tag.Name = tagName
 
 	// Parse value based on type

@@ -4,8 +4,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 func TestNew(t *testing.T) {
@@ -17,8 +16,8 @@ func TestNew(t *testing.T) {
 
 func TestParser_Spec(t *testing.T) {
 	p := New()
-	if p.Spec() != meta.SpecEXIF {
-		t.Errorf("Spec() = %v, want %v", p.Spec(), meta.SpecEXIF)
+	if p.Spec() != common.SpecEXIF {
+		t.Errorf("Spec() = %v, want %v", p.Spec(), common.SpecEXIF)
 	}
 }
 
@@ -78,37 +77,37 @@ type ifdEntry struct {
 func TestParser_Parse(t *testing.T) {
 	tests := []struct {
 		name     string
-		blocks   []format.RawBlock
+		blocks   []common.RawBlock
 		wantDirs int
 		wantErr  bool
-		checkFn  func(t *testing.T, dirs []meta.Directory)
+		checkFn  func(t *testing.T, dirs []common.Directory)
 	}{
 		{
 			name:     "empty blocks returns empty",
-			blocks:   []format.RawBlock{},
+			blocks:   []common.RawBlock{},
 			wantDirs: 0,
 			wantErr:  false,
 		},
 		{
 			name: "non-EXIF blocks are ignored",
-			blocks: []format.RawBlock{
-				{Spec: int(meta.SpecXMP), Payload: []byte("some xmp data")},
-				{Spec: int(meta.SpecICC), Payload: []byte("some icc data")},
+			blocks: []common.RawBlock{
+				{Spec: common.SpecXMP, Payload: []byte("some xmp data")},
+				{Spec: common.SpecICC, Payload: []byte("some icc data")},
 			},
 			wantDirs: 0,
 			wantErr:  false,
 		},
 		{
 			name: "valid EXIF with little-endian",
-			blocks: []format.RawBlock{
+			blocks: []common.RawBlock{
 				{
-					Spec:    int(meta.SpecEXIF),
+					Spec:    common.SpecEXIF,
 					Payload: buildTIFF(false, nil),
 				},
 			},
 			wantDirs: 1,
 			wantErr:  false,
-			checkFn: func(t *testing.T, dirs []meta.Directory) {
+			checkFn: func(t *testing.T, dirs []common.Directory) {
 				if dirs[0].Name != "IFD0" {
 					t.Errorf("Directory name = %q, want %q", dirs[0].Name, "IFD0")
 				}
@@ -116,9 +115,9 @@ func TestParser_Parse(t *testing.T) {
 		},
 		{
 			name: "valid EXIF with big-endian",
-			blocks: []format.RawBlock{
+			blocks: []common.RawBlock{
 				{
-					Spec:    int(meta.SpecEXIF),
+					Spec:    common.SpecEXIF,
 					Payload: buildTIFF(true, nil),
 				},
 			},
@@ -127,9 +126,9 @@ func TestParser_Parse(t *testing.T) {
 		},
 		{
 			name: "TIFF header too short",
-			blocks: []format.RawBlock{
+			blocks: []common.RawBlock{
 				{
-					Spec:    int(meta.SpecEXIF),
+					Spec:    common.SpecEXIF,
 					Payload: []byte{0x49, 0x49, 0x2A, 0x00}, // Only 4 bytes
 				},
 			},
@@ -138,9 +137,9 @@ func TestParser_Parse(t *testing.T) {
 		},
 		{
 			name: "invalid byte order",
-			blocks: []format.RawBlock{
+			blocks: []common.RawBlock{
 				{
-					Spec:    int(meta.SpecEXIF),
+					Spec:    common.SpecEXIF,
 					Payload: []byte{'X', 'X', 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00},
 				},
 			},
@@ -149,9 +148,9 @@ func TestParser_Parse(t *testing.T) {
 		},
 		{
 			name: "invalid TIFF magic number",
-			blocks: []format.RawBlock{
+			blocks: []common.RawBlock{
 				{
-					Spec:    int(meta.SpecEXIF),
+					Spec:    common.SpecEXIF,
 					Payload: []byte{'I', 'I', 0x00, 0x00, 0x08, 0x00, 0x00, 0x00}, // Magic = 0, not 42
 				},
 			},
@@ -160,9 +159,9 @@ func TestParser_Parse(t *testing.T) {
 		},
 		{
 			name: "IFD offset beyond data",
-			blocks: []format.RawBlock{
+			blocks: []common.RawBlock{
 				{
-					Spec:    int(meta.SpecEXIF),
+					Spec:    common.SpecEXIF,
 					Payload: []byte{'I', 'I', 0x2A, 0x00, 0xFF, 0x00, 0x00, 0x00}, // Offset = 255
 				},
 			},
@@ -171,9 +170,9 @@ func TestParser_Parse(t *testing.T) {
 		},
 		{
 			name: "IFD offset at zero skips parsing",
-			blocks: []format.RawBlock{
+			blocks: []common.RawBlock{
 				{
-					Spec:    int(meta.SpecEXIF),
+					Spec:    common.SpecEXIF,
 					Payload: []byte{'I', 'I', 0x2A, 0x00, 0x00, 0x00, 0x00, 0x00}, // Offset = 0
 				},
 			},
@@ -217,9 +216,9 @@ func TestParser_ParseWithTags(t *testing.T) {
 		{tagID: 0x0110, value: "EOS 5D"}, // Model
 	})
 
-	blocks := []format.RawBlock{
+	blocks := []common.RawBlock{
 		{
-			Spec:    int(meta.SpecEXIF),
+			Spec:    common.SpecEXIF,
 			Payload: tiff,
 		},
 	}
@@ -603,8 +602,8 @@ func TestParser_ParseWithExifSubIFD(t *testing.T) {
 	buf = append(buf, tmp[:2]...)
 	buf = append(buf, 0, 0, 0, 0) // Next IFD = 0
 
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecEXIF), Payload: buf},
+	blocks := []common.RawBlock{
+		{Spec: common.SpecEXIF, Payload: buf},
 	}
 
 	dirs, err := p.Parse(blocks)
@@ -664,8 +663,8 @@ func TestParser_ParseWithGPSSubIFD(t *testing.T) {
 
 	buf = append(buf, 0, 0, 0, 0) // Next IFD = 0
 
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecEXIF), Payload: buf},
+	blocks := []common.RawBlock{
+		{Spec: common.SpecEXIF, Payload: buf},
 	}
 
 	dirs, err := p.Parse(blocks)
@@ -720,8 +719,8 @@ func TestParser_ParseWithIFD1(t *testing.T) {
 	buf = append(buf, tmp[:2]...)
 	buf = append(buf, 0, 0, 0, 0)
 
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecEXIF), Payload: buf},
+	blocks := []common.RawBlock{
+		{Spec: common.SpecEXIF, Payload: buf},
 	}
 
 	dirs, err := p.Parse(blocks)
@@ -795,8 +794,8 @@ func TestParser_Parse_IFD0ParseError(t *testing.T) {
 		0x00, // Only 1 byte after offset, need 2 for entry count
 	}
 
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecEXIF), Payload: data},
+	blocks := []common.RawBlock{
+		{Spec: common.SpecEXIF, Payload: data},
 	}
 
 	_, err := p.Parse(blocks)

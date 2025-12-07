@@ -4,8 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 // Parser implements meta.Parser for ICC color profiles
@@ -17,12 +16,12 @@ func New() *Parser {
 }
 
 // Spec returns the metadata spec this parser handles
-func (p *Parser) Spec() meta.Spec {
-	return meta.SpecICC
+func (p *Parser) Spec() common.Spec {
+	return common.SpecICC
 }
 
 // Parse extracts ICC profile metadata from raw blocks
-func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
+func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
 	if len(blocks) == 0 {
 		return nil, nil
 	}
@@ -34,7 +33,7 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 		return nil, nil
 	}
 
-	var dirs []meta.Directory
+	var dirs []common.Directory
 
 	for i, data := range profileData {
 		profile, err := p.parseProfile(data)
@@ -52,7 +51,7 @@ func (p *Parser) Parse(blocks []format.RawBlock) ([]meta.Directory, error) {
 
 // reassembleSegments reassembles ICC profile data from multiple APP2 segments
 // JPEG splits large ICC profiles across multiple APP2 markers
-func (p *Parser) reassembleSegments(blocks []format.RawBlock) ([][]byte, error) {
+func (p *Parser) reassembleSegments(blocks []common.RawBlock) ([][]byte, error) {
 	type segmentInfo struct {
 		segmentNum    int
 		totalSegments int
@@ -62,7 +61,7 @@ func (p *Parser) reassembleSegments(blocks []format.RawBlock) ([][]byte, error) 
 	var segments []segmentInfo
 
 	for _, block := range blocks {
-		if meta.Spec(block.Spec) != meta.SpecICC {
+		if block.Spec != common.SpecICC {
 			continue
 		}
 
@@ -185,12 +184,12 @@ func (p *Parser) parseProfile(data []byte) (*Profile, error) {
 	}, nil
 }
 
-// buildDirectory converts a parsed profile into a meta.Directory
-func (p *Parser) buildDirectory(profile *Profile, index int) meta.Directory {
-	dir := meta.Directory{
-		Spec: meta.SpecICC,
+// buildDirectory converts a parsed profile into a common.Directory
+func (p *Parser) buildDirectory(profile *Profile, index int) common.Directory {
+	dir := common.Directory{
+		Spec: common.SpecICC,
 		Name: fmt.Sprintf("ICC Profile %d", index+1),
-		Tags: make(map[meta.TagID]meta.Tag),
+		Tags: make(map[common.TagID]common.Tag),
 	}
 
 	h := &profile.Header
@@ -245,15 +244,15 @@ func (p *Parser) buildDirectory(profile *Profile, index int) meta.Directory {
 			continue
 		}
 
-		tagID := meta.TagID(fmt.Sprintf("ICC:%s", parsed.Name))
+		tagID := common.TagID(fmt.Sprintf("ICC:%s", parsed.Name))
 
 		// Skip if we already have this tag (from header)
 		if _, exists := dir.Tags[tagID]; exists {
 			continue
 		}
 
-		dir.Tags[tagID] = meta.Tag{
-			Spec:     meta.SpecICC,
+		dir.Tags[tagID] = common.Tag{
+			Spec:     common.SpecICC,
 			ID:       tagID,
 			Name:     parsed.Name,
 			DataType: parsed.TypeSig,
@@ -266,10 +265,10 @@ func (p *Parser) buildDirectory(profile *Profile, index int) meta.Directory {
 }
 
 // addTag adds a tag to the directory
-func (p *Parser) addTag(dir *meta.Directory, name string, dataType string, value any) {
-	id := meta.TagID(fmt.Sprintf("ICC:%s", name))
-	dir.Tags[id] = meta.Tag{
-		Spec:     meta.SpecICC,
+func (p *Parser) addTag(dir *common.Directory, name string, dataType string, value any) {
+	id := common.TagID(fmt.Sprintf("ICC:%s", name))
+	dir.Tags[id] = common.Tag{
+		Spec:     common.SpecICC,
 		ID:       id,
 		Name:     name,
 		DataType: dataType,

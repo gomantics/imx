@@ -7,8 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 // JPEG marker constants
@@ -37,8 +36,8 @@ func (p *Parser) Detect(peek []byte) bool {
 }
 
 // Parse extracts metadata blocks from a JPEG file
-func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
-	var blocks []format.RawBlock
+func (p *Parser) Parse(r *bufio.Reader) ([]common.RawBlock, error) {
+	var blocks []common.RawBlock
 	exifIndex := 0
 	xmpIndex := 0
 	iccIndex := 0
@@ -89,21 +88,21 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 		switch marker {
 		case markerAPP1:
 			// APP1 can contain EXIF or XMP
-			if bytes.HasPrefix(data, meta.MagicEXIF) {
-				blocks = append(blocks, format.RawBlock{
-					Spec:    int(meta.SpecEXIF),
-					Payload: data[len(meta.MagicEXIF):], // Skip "Exif\x00\x00"
+			if bytes.HasPrefix(data, common.MagicEXIF) {
+				blocks = append(blocks, common.RawBlock{
+					Spec:    common.SpecEXIF,
+					Payload: data[len(common.MagicEXIF):], // Skip "Exif\x00\x00"
 					Origin:  "APP1 Exif",
-					Format:  format.FormatJPEG,
+					Format:  common.FormatJPEG,
 					Index:   exifIndex,
 				})
 				exifIndex++
-			} else if bytes.HasPrefix(data, meta.MagicXMP) {
-				blocks = append(blocks, format.RawBlock{
-					Spec:    int(meta.SpecXMP),
-					Payload: data[len(meta.MagicXMP):], // Skip XMP namespace
+			} else if bytes.HasPrefix(data, common.MagicXMP) {
+				blocks = append(blocks, common.RawBlock{
+					Spec:    common.SpecXMP,
+					Payload: data[len(common.MagicXMP):], // Skip XMP namespace
 					Origin:  "APP1 XMP",
-					Format:  format.FormatJPEG,
+					Format:  common.FormatJPEG,
 					Index:   xmpIndex,
 				})
 				xmpIndex++
@@ -111,12 +110,12 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 
 		case markerAPP2:
 			// APP2 can contain ICC profiles
-			if bytes.HasPrefix(data, meta.MagicICC) {
-				blocks = append(blocks, format.RawBlock{
-					Spec:    int(meta.SpecICC),
-					Payload: data[len(meta.MagicICC):], // Skip "ICC_PROFILE\x00"
+			if bytes.HasPrefix(data, common.MagicICC) {
+				blocks = append(blocks, common.RawBlock{
+					Spec:    common.SpecICC,
+					Payload: data[len(common.MagicICC):], // Skip "ICC_PROFILE\x00"
 					Origin:  "APP2 ICC",
-					Format:  format.FormatJPEG,
+					Format:  common.FormatJPEG,
 					Index:   iccIndex,
 				})
 				iccIndex++
@@ -124,12 +123,12 @@ func (p *Parser) Parse(r *bufio.Reader) ([]format.RawBlock, error) {
 
 		case markerAPP13:
 			// APP13 contains IPTC/Photoshop data
-			if bytes.HasPrefix(data, meta.MagicIPTC) {
-				blocks = append(blocks, format.RawBlock{
-					Spec:    int(meta.SpecIPTC),
-					Payload: data[len(meta.MagicIPTC):], // Skip "Photoshop 3.0\x00"
+			if bytes.HasPrefix(data, common.MagicIPTC) {
+				blocks = append(blocks, common.RawBlock{
+					Spec:    common.SpecIPTC,
+					Payload: data[len(common.MagicIPTC):], // Skip "Photoshop 3.0\x00"
 					Origin:  "APP13 IPTC",
-					Format:  format.FormatJPEG,
+					Format:  common.FormatJPEG,
 					Index:   iptcIndex,
 				})
 				iptcIndex++

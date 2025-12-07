@@ -3,8 +3,6 @@ package imx
 import (
 	"errors"
 	"fmt"
-
-	"github.com/gomantics/imx/internal/meta"
 )
 
 // Sentinel errors
@@ -18,7 +16,7 @@ var (
 // while still producing partial results
 type PartialError struct {
 	FormatErr error
-	SpecErrs  map[meta.Spec]error
+	SpecErrs  map[Spec]error
 }
 
 func (e *PartialError) Error() string {

@@ -1,39 +1,38 @@
 package imx
 
 import (
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 // Format represents an image container format (JPEG, PNG, WebP, etc.)
-type Format = format.Format
+type Format = common.Format
 
 const (
-	FormatJPEG = format.FormatJPEG
-	FormatPNG  = format.FormatPNG
-	FormatWebP = format.FormatWebP
-	FormatTIFF = format.FormatTIFF
-	FormatHEIF = format.FormatHEIF
+	FormatJPEG = common.FormatJPEG
+	FormatPNG  = common.FormatPNG
+	FormatWebP = common.FormatWebP
+	FormatTIFF = common.FormatTIFF
+	FormatHEIF = common.FormatHEIF
 )
 
 // Spec represents a metadata specification (EXIF, IPTC, XMP, ICC, etc.)
-type Spec = meta.Spec
+type Spec = common.Spec
 
 const (
-	SpecEXIF = meta.SpecEXIF
-	SpecIPTC = meta.SpecIPTC
-	SpecXMP  = meta.SpecXMP
-	SpecICC  = meta.SpecICC
+	SpecEXIF = common.SpecEXIF
+	SpecIPTC = common.SpecIPTC
+	SpecXMP  = common.SpecXMP
+	SpecICC  = common.SpecICC
 )
 
 // TagID is a unique identifier for a metadata tag (e.g. "EXIF:DateTimeOriginal")
-type TagID = meta.TagID
+type TagID = common.TagID
 
 // Tag represents a single metadata attribute
-type Tag = meta.Tag
+type Tag = common.Tag
 
 // Directory is a logical collection of tags for a given kind and grouping
-type Directory = meta.Directory
+type Directory = common.Directory
 
 // Metadata is the top-level container for all parsed metadata
 type Metadata struct {

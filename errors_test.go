@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/gomantics/imx/internal/meta"
 )
 
 func TestPartialError_Error(t *testing.T) {
@@ -26,8 +24,8 @@ func TestPartialError_Error(t *testing.T) {
 		{
 			name: "spec errors only",
 			err: &PartialError{
-				SpecErrs: map[meta.Spec]error{
-					meta.SpecEXIF: errors.New("exif parse error"),
+				SpecErrs: map[Spec]error{
+					SpecEXIF: errors.New("exif parse error"),
 				},
 			},
 			wantMsg: "imx: exif: exif parse error",
@@ -41,8 +39,8 @@ func TestPartialError_Error(t *testing.T) {
 			name: "multiple errors",
 			err: &PartialError{
 				FormatErr: errors.New("format first"),
-				SpecErrs: map[meta.Spec]error{
-					meta.SpecEXIF: errors.New("exif error"),
+				SpecErrs: map[Spec]error{
+					SpecEXIF: errors.New("exif error"),
 				},
 			},
 			wantContain: []string{"format: format first", "exif: exif error", "multiple errors"},
@@ -90,8 +88,8 @@ func TestPartialError_Unwrap(t *testing.T) {
 		{
 			name: "unwrap spec error when no format error",
 			err: &PartialError{
-				SpecErrs: map[meta.Spec]error{
-					meta.SpecEXIF: exifErr,
+				SpecErrs: map[Spec]error{
+					SpecEXIF: exifErr,
 				},
 			},
 			wantErrs:  []error{exifErr},
@@ -107,9 +105,9 @@ func TestPartialError_Unwrap(t *testing.T) {
 			name: "unwrap all errors",
 			err: &PartialError{
 				FormatErr: formatErr,
-				SpecErrs: map[meta.Spec]error{
-					meta.SpecEXIF: exifErr,
-					meta.SpecIPTC: iptcErr,
+				SpecErrs: map[Spec]error{
+					SpecEXIF: exifErr,
+					SpecIPTC: iptcErr,
 				},
 			},
 			wantErrs:  []error{formatErr, exifErr, iptcErr},
@@ -209,9 +207,9 @@ func TestPartialError_MultipleWrapping(t *testing.T) {
 	iptcErr := errors.New("iptc parse error")
 
 	partialErr := &PartialError{
-		SpecErrs: map[meta.Spec]error{
-			meta.SpecEXIF: exifErr,
-			meta.SpecIPTC: iptcErr,
+		SpecErrs: map[Spec]error{
+			SpecEXIF: exifErr,
+			SpecIPTC: iptcErr,
 		},
 	}
 

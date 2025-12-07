@@ -4,8 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gomantics/imx/internal/format"
-	"github.com/gomantics/imx/internal/meta"
+	"github.com/gomantics/imx/internal/common"
 )
 
 func TestParse(t *testing.T) {
@@ -129,11 +128,11 @@ func TestParse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			block := format.RawBlock{
-				Spec:    int(meta.SpecXMP),
+			block := common.RawBlock{
+				Spec:    common.SpecXMP,
 				Payload: []byte(tt.payload),
 			}
-			dirs, err := parser.Parse([]format.RawBlock{block})
+			dirs, err := parser.Parse([]common.RawBlock{block})
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
@@ -142,7 +141,7 @@ func TestParse(t *testing.T) {
 			}
 			dir := dirs[0]
 			for id, wantVal := range tt.want {
-				tag, ok := dir.Tags[meta.TagID(id)]
+				tag, ok := dir.Tags[common.TagID(id)]
 				if !ok {
 					t.Errorf("Tag %s missing", id)
 					continue
@@ -159,9 +158,9 @@ func TestParser_AllBlocksFail(t *testing.T) {
 	parser := New()
 
 	// All blocks are malformed XML
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecXMP), Payload: []byte("<bad>xml</broken>")},
-		{Spec: int(meta.SpecXMP), Payload: []byte("<another><bad>")},
+	blocks := []common.RawBlock{
+		{Spec: common.SpecXMP, Payload: []byte("<bad>xml</broken>")},
+		{Spec: common.SpecXMP, Payload: []byte("<another><bad>")},
 	}
 
 	dirs, err := parser.Parse(blocks)
@@ -176,9 +175,9 @@ func TestParser_AllBlocksFail(t *testing.T) {
 func TestParser_Robustness(t *testing.T) {
 	parser := New()
 
-	blocks := []format.RawBlock{
-		{Spec: int(meta.SpecXMP), Payload: []byte("<bad>xml</broken>")}, // Malformed
-		{Spec: int(meta.SpecXMP), Payload: []byte(`
+	blocks := []common.RawBlock{
+		{Spec: common.SpecXMP, Payload: []byte("<bad>xml</broken>")}, // Malformed
+		{Spec: common.SpecXMP, Payload: []byte(`
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" dc:valid="true"/>
@@ -245,8 +244,8 @@ func TestStripXPacket(t *testing.T) {
 // TestSpec tests the Spec() method
 func TestSpec(t *testing.T) {
 	parser := New()
-	if got := parser.Spec(); got != meta.SpecXMP {
-		t.Errorf("Spec() = %v, want %v", got, meta.SpecXMP)
+	if got := parser.Spec(); got != common.SpecXMP {
+		t.Errorf("Spec() = %v, want %v", got, common.SpecXMP)
 	}
 }
 
@@ -255,7 +254,7 @@ func TestParse_EdgeCases(t *testing.T) {
 	parser := New()
 
 	t.Run("Empty blocks", func(t *testing.T) {
-		dirs, err := parser.Parse([]format.RawBlock{})
+		dirs, err := parser.Parse([]common.RawBlock{})
 		if err != nil {
 			t.Errorf("Parse(empty) error: %v", err)
 		}
@@ -265,8 +264,8 @@ func TestParse_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Non-XMP blocks", func(t *testing.T) {
-		dirs, err := parser.Parse([]format.RawBlock{
-			{Spec: int(meta.SpecEXIF), Payload: []byte("not xmp")},
+		dirs, err := parser.Parse([]common.RawBlock{
+			{Spec: common.SpecEXIF, Payload: []byte("not xmp")},
 		})
 		if err != nil {
 			t.Errorf("Parse(non-xmp) error: %v", err)
@@ -277,8 +276,8 @@ func TestParse_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Empty payload", func(t *testing.T) {
-		dirs, err := parser.Parse([]format.RawBlock{
-			{Spec: int(meta.SpecXMP), Payload: []byte("")},
+		dirs, err := parser.Parse([]common.RawBlock{
+			{Spec: common.SpecXMP, Payload: []byte("")},
 		})
 		if err != nil {
 			t.Errorf("Parse(empty payload) error: %v", err)
@@ -289,8 +288,8 @@ func TestParse_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Whitespace only", func(t *testing.T) {
-		dirs, err := parser.Parse([]format.RawBlock{
-			{Spec: int(meta.SpecXMP), Payload: []byte("   \n\t  ")},
+		dirs, err := parser.Parse([]common.RawBlock{
+			{Spec: common.SpecXMP, Payload: []byte("   \n\t  ")},
 		})
 		if err != nil {
 			t.Errorf("Parse(whitespace) error: %v", err)
@@ -301,16 +300,16 @@ func TestParse_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Multiple blocks", func(t *testing.T) {
-		blocks := []format.RawBlock{
+		blocks := []common.RawBlock{
 			{
-				Spec: int(meta.SpecXMP),
+				Spec: common.SpecXMP,
 				Payload: []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" dc:format="jpeg"/>
 </rdf:RDF></x:xmpmeta>`),
 			},
 			{
-				Spec: int(meta.SpecXMP),
+				Spec: common.SpecXMP,
 				Payload: []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
  <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:Rating="3"/>
