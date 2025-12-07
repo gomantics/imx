@@ -197,8 +197,8 @@ func TestDecodeUTF16BE(t *testing.T) {
 func TestParseXYZType(t *testing.T) {
 	// Create XYZ data with one value
 	data := make([]byte, 12)
-	binary.BigEndian.PutUint32(data[0:4], 0x00010000) // X = 1.0
-	binary.BigEndian.PutUint32(data[4:8], 0x00008000) // Y = 0.5
+	binary.BigEndian.PutUint32(data[0:4], 0x00010000)  // X = 1.0
+	binary.BigEndian.PutUint32(data[4:8], 0x00008000)  // Y = 0.5
 	binary.BigEndian.PutUint32(data[8:12], 0x00004000) // Z = 0.25
 
 	got := parseXYZType(data)
@@ -258,10 +258,10 @@ func TestParseCurveType(t *testing.T) {
 			name: "curve with points",
 			data: func() []byte {
 				d := make([]byte, 12)
-				binary.BigEndian.PutUint32(d[0:4], 4)       // 4 points
-				binary.BigEndian.PutUint16(d[4:6], 0x0000)  // 0.0
-				binary.BigEndian.PutUint16(d[6:8], 0x5555)  // ~0.33
-				binary.BigEndian.PutUint16(d[8:10], 0xAAAA) // ~0.67
+				binary.BigEndian.PutUint32(d[0:4], 4)        // 4 points
+				binary.BigEndian.PutUint16(d[4:6], 0x0000)   // 0.0
+				binary.BigEndian.PutUint16(d[6:8], 0x5555)   // ~0.33
+				binary.BigEndian.PutUint16(d[8:10], 0xAAAA)  // ~0.67
 				binary.BigEndian.PutUint16(d[10:12], 0xFFFF) // 1.0
 				return d
 			}(),
@@ -308,7 +308,7 @@ func TestParseParametricCurveType(t *testing.T) {
 			name: "type 0 (simple gamma)",
 			data: func() []byte {
 				d := make([]byte, 8)
-				binary.BigEndian.PutUint16(d[0:2], 0) // function type
+				binary.BigEndian.PutUint16(d[0:2], 0)          // function type
 				binary.BigEndian.PutUint32(d[4:8], 0x00024000) // gamma = 2.25
 				return d
 			}(),
@@ -427,9 +427,9 @@ func TestParseMeasurementType(t *testing.T) {
 	binary.BigEndian.PutUint32(data[4:8], 0x00010000)   // X = 1.0
 	binary.BigEndian.PutUint32(data[8:12], 0x00010000)  // Y = 1.0
 	binary.BigEndian.PutUint32(data[12:16], 0x00010000) // Z = 1.0
-	binary.BigEndian.PutUint32(data[16:20], 1) // 0/45 geometry
+	binary.BigEndian.PutUint32(data[16:20], 1)          // 0/45 geometry
 	binary.BigEndian.PutUint32(data[20:24], 0x00001000) // flare
-	binary.BigEndian.PutUint32(data[24:28], 1) // D50 illuminant
+	binary.BigEndian.PutUint32(data[24:28], 1)          // D50 illuminant
 
 	got := parseMeasurementType(data)
 
@@ -537,8 +537,8 @@ func TestParseU16Fixed16ArrayType_Empty(t *testing.T) {
 
 func TestParseChromaticityType(t *testing.T) {
 	data := make([]byte, 20)
-	binary.BigEndian.PutUint16(data[0:2], 3)  // 3 channels
-	binary.BigEndian.PutUint16(data[2:4], 1)  // ITU-R BT.709
+	binary.BigEndian.PutUint16(data[0:2], 3) // 3 channels
+	binary.BigEndian.PutUint16(data[2:4], 1) // ITU-R BT.709
 	// Channel 0 coordinates
 	binary.BigEndian.PutUint32(data[4:8], 0x0000A800)  // x
 	binary.BigEndian.PutUint32(data[8:12], 0x00005400) // y
@@ -566,7 +566,7 @@ func TestParseChromaticityType_Short(t *testing.T) {
 func TestParseTagValue(t *testing.T) {
 	// Build a profile with a text tag
 	fullData := make([]byte, 200)
-	copy(fullData[100:104], "text")   // type signature
+	copy(fullData[100:104], "text")      // type signature
 	copy(fullData[108:120], "Hello\x00") // text value
 
 	entry := TagEntry{
@@ -935,9 +935,9 @@ func TestParseMultiLocalizedUnicode_NonEnglish(t *testing.T) {
 	// Build MLUC with French only
 	data := make([]byte, 40)
 	copy(data[0:4], "mluc")
-	binary.BigEndian.PutUint32(data[8:12], 1)  // 1 record
+	binary.BigEndian.PutUint32(data[8:12], 1)   // 1 record
 	binary.BigEndian.PutUint32(data[12:16], 12) // record size
-	copy(data[16:18], "fr") // French
+	copy(data[16:18], "fr")                     // French
 	copy(data[18:20], "FR")
 	binary.BigEndian.PutUint32(data[20:24], 8)  // string length
 	binary.BigEndian.PutUint32(data[24:28], 28) // string offset
@@ -956,7 +956,7 @@ func TestParseMultiLocalizedUnicode_NonEnglish(t *testing.T) {
 func TestParseMultiLocalizedUnicode_ZeroOffset(t *testing.T) {
 	data := make([]byte, 28)
 	copy(data[0:4], "mluc")
-	binary.BigEndian.PutUint32(data[8:12], 1)  // 1 record
+	binary.BigEndian.PutUint32(data[8:12], 1)   // 1 record
 	binary.BigEndian.PutUint32(data[12:16], 12) // record size
 	copy(data[16:18], "en")
 	copy(data[18:20], "US")
@@ -972,11 +972,11 @@ func TestParseMultiLocalizedUnicode_ZeroOffset(t *testing.T) {
 func TestParseMultiLocalizedUnicode_OffsetOutOfBounds(t *testing.T) {
 	data := make([]byte, 28)
 	copy(data[0:4], "mluc")
-	binary.BigEndian.PutUint32(data[8:12], 1)  // 1 record
+	binary.BigEndian.PutUint32(data[8:12], 1)   // 1 record
 	binary.BigEndian.PutUint32(data[12:16], 12) // record size
 	copy(data[16:18], "en")
 	copy(data[18:20], "US")
-	binary.BigEndian.PutUint32(data[20:24], 100) // length
+	binary.BigEndian.PutUint32(data[20:24], 100)  // length
 	binary.BigEndian.PutUint32(data[24:28], 1000) // offset out of bounds
 
 	got := parseMultiLocalizedUnicode(data)
@@ -997,4 +997,3 @@ func TestParseCurveType_GammaShortData(t *testing.T) {
 		t.Errorf("Gamma = %f, want 1.0 for short data", got.Gamma)
 	}
 }
-

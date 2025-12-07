@@ -34,9 +34,11 @@ func New(opts ...Option) *Extractor {
 
 	e := &Extractor{
 		cfg: cfg,
+		// TODO: only use New (default) when no format filter is applied. Also add any format passed by user,
 		formatParsers: []format.Parser{
 			jpeg.New(),
 		},
+		// TODO: only use New (default) when no spec filter is applied. Also add any spec passed by user.
 		metaParsers: []meta.Parser{
 			exif.New(),
 			xmp.New(),
