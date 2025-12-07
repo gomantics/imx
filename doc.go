@@ -11,10 +11,10 @@
 //	}
 //
 //	// Access tags using constants
-//	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagMake); ok {
+//	if tag, ok := meta.Tag(imx.TagMake); ok {
 //		fmt.Printf("Camera: %v\n", tag.Value)
 //	}
-//	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagDateTimeOriginal); ok {
+//	if tag, ok := meta.Tag(imx.TagDateTimeOriginal); ok {
 //		fmt.Printf("Date: %v\n", tag.Value)
 //	}
 //

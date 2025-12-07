@@ -33,34 +33,34 @@ func main() {
 	// Print common EXIF tags using tag constants
 	fmt.Println("=== Common EXIF Tags ===")
 
-	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagMake); ok {
+	if tag, ok := meta.Tag(imx.TagMake); ok {
 		fmt.Printf("Make: %v\n", tag.Value)
 	}
-	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagModel); ok {
+	if tag, ok := meta.Tag(imx.TagModel); ok {
 		fmt.Printf("Model: %v\n", tag.Value)
 	}
-	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagDateTimeOriginal); ok {
+	if tag, ok := meta.Tag(imx.TagDateTimeOriginal); ok {
 		fmt.Printf("Date: %v\n", tag.Value)
 	}
-	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagOrientation); ok {
+	if tag, ok := meta.Tag(imx.TagOrientation); ok {
 		fmt.Printf("Orientation: %v\n", tag.Value)
 	}
-	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagISO); ok {
+	if tag, ok := meta.Tag(imx.TagISO); ok {
 		fmt.Printf("ISO: %v\n", tag.Value)
 	}
-	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagExposureTime); ok {
+	if tag, ok := meta.Tag(imx.TagExposureTime); ok {
 		fmt.Printf("Exposure: %v\n", tag.Value)
 	}
-	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagFNumber); ok {
+	if tag, ok := meta.Tag(imx.TagFNumber); ok {
 		fmt.Printf("Aperture: f/%v\n", tag.Value)
 	}
 
 	// Print GPS coordinates if available
 	fmt.Println("\n=== GPS ===")
-	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagGPSLatitude); ok {
+	if tag, ok := meta.Tag(imx.TagGPSLatitude); ok {
 		fmt.Printf("Latitude: %v\n", tag.Value)
 	}
-	if tag, ok := meta.Tag(imx.SpecEXIF, imx.TagGPSLongitude); ok {
+	if tag, ok := meta.Tag(imx.TagGPSLongitude); ok {
 		fmt.Printf("Longitude: %v\n", tag.Value)
 	}
 

@@ -50,21 +50,21 @@ func (m *Metadata) Directory(spec Spec, name string) (Directory, bool) {
 	return Directory{}, false
 }
 
-// Tag returns the tag with the given spec and ID
-func (m *Metadata) Tag(spec Spec, id TagID) (Tag, bool) {
+// Tag returns the tag with the given ID.
+// The spec is extracted from the TagID (e.g., "EXIF:Make" → spec=EXIF).
+func (m *Metadata) Tag(id TagID) (Tag, bool) {
 	// Use index if available
 	if m.index != nil {
-		if tag, ok := m.index[id]; ok && tag.Spec == spec {
+		if tag, ok := m.index[id]; ok {
 			return *tag, true
 		}
+		return Tag{}, false
 	}
 
 	// Fallback: scan directories
 	for _, dir := range m.Directories {
-		if dir.Spec == spec {
-			if tag, ok := dir.Tags[id]; ok {
-				return tag, true
-			}
+		if tag, ok := dir.Tags[id]; ok {
+			return tag, true
 		}
 	}
 	return Tag{}, false

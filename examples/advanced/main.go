@@ -172,7 +172,7 @@ func countTags(meta imx.Metadata) int {
 }
 
 func getTagValue(meta imx.Metadata, tagID imx.TagID) string {
-	if tag, ok := meta.Tag(imx.SpecEXIF, tagID); ok {
+	if tag, ok := meta.Tag(tagID); ok {
 		return fmt.Sprintf("%v", tag.Value)
 	}
 	return "(none)"

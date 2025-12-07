@@ -95,35 +95,31 @@ func TestMetadata_Tag(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		spec   Spec
 		id     TagID
 		wantOk bool
 		want   any
 	}{
 		{
 			name:   "find existing tag",
-			spec:   SpecEXIF,
 			id:     "EXIF:Make",
 			wantOk: true,
 			want:   "Canon",
 		},
 		{
 			name:   "tag not found",
-			spec:   SpecEXIF,
 			id:     "EXIF:ISO",
 			wantOk: false,
 		},
 		{
-			name:   "wrong spec",
-			spec:   SpecXMP,
-			id:     "EXIF:Make",
+			name:   "different tag ID",
+			id:     "XMP:Title",
 			wantOk: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tag, ok := metadata.Tag(tt.spec, tt.id)
+			tag, ok := metadata.Tag(tt.id)
 			if ok != tt.wantOk {
 				t.Errorf("Tag() ok = %v, want %v", ok, tt.wantOk)
 			}
@@ -149,7 +145,7 @@ func TestMetadata_Tag_WithIndex(t *testing.T) {
 	metadata.BuildIndex()
 
 	// Test with index
-	tag, ok := metadata.Tag(SpecEXIF, "EXIF:Make")
+	tag, ok := metadata.Tag("EXIF:Make")
 	if !ok {
 		t.Error("Tag() with index should find tag")
 	}
@@ -157,10 +153,10 @@ func TestMetadata_Tag_WithIndex(t *testing.T) {
 		t.Errorf("Tag().Value = %v, want %q", tag.Value, "Canon")
 	}
 
-	// Test not found with different spec
-	_, ok = metadata.Tag(SpecXMP, "EXIF:Make")
+	// Test not found with wrong tag ID
+	_, ok = metadata.Tag("XMP:NonExistent")
 	if ok {
-		t.Error("Tag() should not find tag with wrong spec even with index")
+		t.Error("Tag() should not find non-existent tag with index")
 	}
 }
 
@@ -405,7 +401,7 @@ func TestMetadata_BuildIndex_EdgeCases(t *testing.T) {
 		m.BuildIndex()
 		m.BuildIndex()
 		m.BuildIndex()
-		tag, ok := m.Tag(SpecEXIF, "EXIF:Make")
+		tag, ok := m.Tag("EXIF:Make")
 		if !ok || tag.Value != "Canon" {
 			t.Error("Multiple BuildIndex() calls should be idempotent")
 		}
@@ -432,7 +428,7 @@ func TestMetadata_BuildIndex_EdgeCases(t *testing.T) {
 		}
 		m.BuildIndex()
 		// Should find one of them (first one encountered)
-		tag, ok := m.Tag(SpecEXIF, "EXIF:Make")
+		tag, ok := m.Tag("EXIF:Make")
 		if !ok {
 			t.Error("Should find at least one EXIF:Make tag")
 		}

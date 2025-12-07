@@ -344,7 +344,7 @@ func TestMetadataContent(t *testing.T) {
 
 	// Verify we can extract common EXIF tags
 	// Test that Tag() method works and returns valid data
-	if tag, ok := metadata.Tag(SpecEXIF, TagMake); ok {
+	if tag, ok := metadata.Tag(TagMake); ok {
 		if make, ok := tag.Value.(string); ok && make != "" {
 			t.Logf("Successfully extracted Camera Make: %s", make)
 		} else {
@@ -352,7 +352,7 @@ func TestMetadataContent(t *testing.T) {
 		}
 	}
 
-	if tag, ok := metadata.Tag(SpecEXIF, TagModel); ok {
+	if tag, ok := metadata.Tag(TagModel); ok {
 		if model, ok := tag.Value.(string); ok && model != "" {
 			t.Logf("Successfully extracted Camera Model: %s", model)
 		} else {
