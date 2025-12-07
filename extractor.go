@@ -12,6 +12,7 @@ import (
 	"github.com/gomantics/imx/internal/format/jpeg"
 	"github.com/gomantics/imx/internal/meta"
 	"github.com/gomantics/imx/internal/meta/exif"
+	"github.com/gomantics/imx/internal/meta/icc"
 	"github.com/gomantics/imx/internal/meta/xmp"
 )
 
@@ -39,6 +40,7 @@ func New(opts ...Option) *Extractor {
 		metaParsers: []meta.Parser{
 			exif.New(),
 			xmp.New(),
+			icc.New(),
 		},
 	}
 
