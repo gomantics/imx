@@ -1,7 +1,6 @@
 package exif
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 
@@ -59,13 +58,15 @@ func (p *Parser) parseTIFF(data []byte) ([]common.Directory, error) {
 	}
 
 	// Verify TIFF magic number (should be 42)
-	magic := byteOrder.Uint16(data[2:4])
+	// Safe: we already checked len(data) >= 8 above
+	magic, _ := common.ReadUint16(data, 2, byteOrder)
 	if magic != 42 {
 		return nil, fmt.Errorf("invalid TIFF magic number: %d", magic)
 	}
 
 	// Read offset to first IFD
-	ifd0Offset := byteOrder.Uint32(data[4:8])
+	// Safe: we already checked len(data) >= 8 above
+	ifd0Offset, _ := common.ReadUint32(data, 4, byteOrder)
 
 	var dirs []common.Directory
 
@@ -116,7 +117,8 @@ func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, n
 	}
 
 	// Read number of entries
-	entryCount := byteOrder.Uint16(data[offset : offset+2])
+	// Safe: we already checked offset+2 <= len(data) above
+	entryCount, _ := common.ReadUint16(data, offset, byteOrder)
 	offset += 2
 
 	dir := common.Directory{
@@ -142,7 +144,10 @@ func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, n
 	// Read offset to next IFD
 	var nextOffset uint32
 	if offset+4 <= len(data) {
-		nextOffset = byteOrder.Uint32(data[offset : offset+4])
+		val, err := common.ReadUint32(data, offset, byteOrder)
+		if err == nil {
+			nextOffset = val
+		}
 	}
 
 	return dir, nextOffset, nil
@@ -150,9 +155,9 @@ func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, n
 
 // parseEntry parses a single IFD entry (tag)
 func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder, ifdName string) common.Tag {
-	tagID := byteOrder.Uint16(data[offset : offset+2])
-	tagType := byteOrder.Uint16(data[offset+2 : offset+4])
-	count := byteOrder.Uint32(data[offset+4 : offset+8])
+	tagID, _ := common.ReadUint16(data, offset, byteOrder)
+	tagType, _ := common.ReadUint16(data, offset+2, byteOrder)
+	count, _ := common.ReadUint32(data, offset+4, byteOrder)
 	valueOffset := offset + 8 // Last 4 bytes contain value or offset
 
 	tag := common.Tag{
@@ -216,14 +221,19 @@ func (p *Parser) parseValue(data []byte, tagType uint16, count uint32, offset in
 	// Otherwise, the offset field points to the actual data
 	var valueData []byte
 	if totalSize <= 4 {
-		valueData = data[offset : offset+4]
+		// Safe: parseEntry is only called when offset+12 <= len(data)
+		valueData, _ = common.SafeSlice(data, offset, 4)
 	} else {
 		// Read offset to actual value
-		valueOffset := int(byteOrder.Uint32(data[offset : offset+4]))
-		if valueOffset+totalSize > len(data) {
+		// Safe: parseEntry is only called when offset+12 <= len(data)
+		valueOffsetVal, _ := common.ReadUint32(data, offset, byteOrder)
+
+		// Validate offset to actual value data
+		slice, err := common.SafeSlice(data, int(valueOffsetVal), totalSize)
+		if err != nil {
 			return nil, "invalid_offset"
 		}
-		valueData = data[valueOffset : valueOffset+totalSize]
+		valueData = slice
 	}
 
 	switch tagType {
@@ -235,33 +245,38 @@ func (p *Parser) parseValue(data []byte, tagType uint16, count uint32, offset in
 
 	case 2: // ASCII string
 		// Remove trailing null bytes
-		str := string(bytes.TrimRight(valueData[:count], "\x00"))
+		slice, _ := common.SafeSlice(valueData, 0, int(count))
+		str := common.TrimNullBytesFromSlice(slice)
 		return str, "string"
 
 	case 3: // SHORT (uint16)
 		if count == 1 {
-			return int(byteOrder.Uint16(valueData)), "short"
+			val, _ := common.ReadUint16(valueData, 0, byteOrder)
+			return int(val), "short"
 		}
 		vals := make([]int, count)
 		for i := uint32(0); i < count; i++ {
-			vals[i] = int(byteOrder.Uint16(valueData[i*2:]))
+			val, _ := common.ReadUint16(valueData, int(i*2), byteOrder)
+			vals[i] = int(val)
 		}
 		return vals, "shorts"
 
 	case 4: // LONG (uint32)
 		if count == 1 {
-			return int(byteOrder.Uint32(valueData)), "long"
+			val, _ := common.ReadUint32(valueData, 0, byteOrder)
+			return int(val), "long"
 		}
 		vals := make([]int, count)
 		for i := uint32(0); i < count; i++ {
-			vals[i] = int(byteOrder.Uint32(valueData[i*4:]))
+			val, _ := common.ReadUint32(valueData, int(i*4), byteOrder)
+			vals[i] = int(val)
 		}
 		return vals, "longs"
 
 	case 5: // RATIONAL (num/denom as uint32)
 		if count == 1 {
-			num := byteOrder.Uint32(valueData[0:4])
-			denom := byteOrder.Uint32(valueData[4:8])
+			num, _ := common.ReadUint32(valueData, 0, byteOrder)
+			denom, _ := common.ReadUint32(valueData, 4, byteOrder)
 			if denom == 0 {
 				return 0.0, "rational"
 			}
@@ -269,8 +284,8 @@ func (p *Parser) parseValue(data []byte, tagType uint16, count uint32, offset in
 		}
 		vals := make([]float64, count)
 		for i := uint32(0); i < count; i++ {
-			num := byteOrder.Uint32(valueData[i*8:])
-			denom := byteOrder.Uint32(valueData[i*8+4:])
+			num, _ := common.ReadUint32(valueData, int(i*8), byteOrder)
+			denom, _ := common.ReadUint32(valueData, int(i*8+4), byteOrder)
 			if denom == 0 {
 				vals[i] = 0
 			} else {
@@ -280,9 +295,11 @@ func (p *Parser) parseValue(data []byte, tagType uint16, count uint32, offset in
 		return vals, "rationals"
 
 	case 7: // UNDEFINED (raw bytes)
-		return valueData[:count], "undefined"
+		slice, _ := common.SafeSlice(valueData, 0, int(count))
+		return slice, "undefined"
 
 	default:
-		return valueData[:count], fmt.Sprintf("type_%d", tagType)
+		slice, _ := common.SafeSlice(valueData, 0, int(count))
+		return slice, fmt.Sprintf("type_%d", tagType)
 	}
 }

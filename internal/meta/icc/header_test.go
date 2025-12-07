@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"testing"
 	"time"
+
+	"github.com/gomantics/imx/internal/common"
 )
 
 // buildValidHeader creates a valid 128-byte ICC profile header
@@ -259,9 +261,12 @@ func TestParseS15Fixed16(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseS15Fixed16(tt.data)
+			got, err := common.ParseS15Fixed16(tt.data)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
 			if got != tt.want {
-				t.Errorf("parseS15Fixed16() = %f, want %f", got, tt.want)
+				t.Errorf("common.ParseS15Fixed16() = %f, want %f", got, tt.want)
 			}
 		})
 	}
@@ -271,9 +276,12 @@ func TestParseU16Fixed16(t *testing.T) {
 	data := make([]byte, 4)
 	binary.BigEndian.PutUint32(data, 0x00020000) // 2.0
 
-	got := parseU16Fixed16(data)
+	got, err := common.ParseU16Fixed16(data)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 	if got != 2.0 {
-		t.Errorf("parseU16Fixed16() = %f, want 2.0", got)
+		t.Errorf("common.ParseU16Fixed16() = %f, want 2.0", got)
 	}
 }
 
@@ -281,8 +289,11 @@ func TestParseU8Fixed8(t *testing.T) {
 	data := make([]byte, 2)
 	binary.BigEndian.PutUint16(data, 0x0180) // 1.5 (1 + 128/256)
 
-	got := parseU8Fixed8(data)
+	got, err := common.ParseU8Fixed8(data)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 	if got != 1.5 {
-		t.Errorf("parseU8Fixed8() = %f, want 1.5", got)
+		t.Errorf("common.ParseU8Fixed8() = %f, want 1.5", got)
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
+	"github.com/gomantics/imx/internal/common"
 )
 
 // Photoshop 8BIM signature
@@ -34,7 +36,8 @@ func parsePhotoshopIRB(data []byte) ([]byte, error) {
 		offset += 4
 
 		// Resource ID (2 bytes) - loop guard ensures at least 12 bytes from offset
-		resourceID := binary.BigEndian.Uint16(data[offset : offset+2])
+		// Safe: loop guard ensures offset+12 <= len(data)
+		resourceID, _ := common.ReadUint16(data, offset, binary.BigEndian)
 		offset += 2
 
 		// Pascal string (name) - first byte is length
@@ -53,14 +56,16 @@ func parsePhotoshopIRB(data []byte) ([]byte, error) {
 		if offset+4 > len(data) {
 			break
 		}
-		dataSize := int(binary.BigEndian.Uint32(data[offset : offset+4]))
+		// Safe: we just checked offset+4 <= len(data)
+		dataSizeVal, _ := common.ReadUint32(data, offset, binary.BigEndian)
+		dataSize := int(dataSizeVal)
 		offset += 4
 
 		// Resource data
-		if offset+dataSize > len(data) {
+		resourceData, err := common.SafeSlice(data, offset, dataSize)
+		if err != nil {
 			break
 		}
-		resourceData := data[offset : offset+dataSize]
 
 		// Check if this is IPTC resource
 		if resourceID == ResourceIPTC {
@@ -104,8 +109,9 @@ func parseIPTCIIM(data []byte) ([]Dataset, error) {
 
 		// Data size (2 bytes for standard, 4 bytes for extended)
 		// Loop guard ensures at least 5 bytes from offset; we've read 3, so 2 remain
+		// Safe: loop guard ensures offset+5 <= len(data), we've consumed 3 bytes, 2 remain
 		var dataSize int
-		sizeBytes := binary.BigEndian.Uint16(data[offset : offset+2])
+		sizeBytes, _ := common.ReadUint16(data, offset, binary.BigEndian)
 		offset += 2
 
 		if sizeBytes&0x8000 != 0 {
@@ -126,10 +132,10 @@ func parseIPTCIIM(data []byte) ([]Dataset, error) {
 		}
 
 		// Read dataset value
-		if offset+dataSize > len(data) {
+		value, err := common.SafeSlice(data, offset, dataSize)
+		if err != nil {
 			break
 		}
-		value := data[offset : offset+dataSize]
 		offset += dataSize
 
 		// Get dataset name
@@ -162,7 +168,8 @@ func parseDatasetValue(record Record, datasetID uint8, data []byte) any {
 		switch datasetID {
 		case 0: // RecordVersion
 			if len(data) >= 2 {
-				return int(binary.BigEndian.Uint16(data))
+				val, _ := common.ReadUint16(data, 0, binary.BigEndian)
+				return int(val)
 			}
 		case 10: // Urgency
 			if len(data) >= 1 {
@@ -185,7 +192,8 @@ func parseDatasetValue(record Record, datasetID uint8, data []byte) any {
 		switch datasetID {
 		case 0: // RecordVersion
 			if len(data) >= 2 {
-				return int(binary.BigEndian.Uint16(data))
+				val, _ := common.ReadUint16(data, 0, binary.BigEndian)
+				return int(val)
 			}
 		case 70: // DateSent
 			return parseDateString(data)
@@ -195,7 +203,7 @@ func parseDatasetValue(record Record, datasetID uint8, data []byte) any {
 	}
 
 	// Default: treat as string
-	return string(bytes.TrimRight(data, "\x00"))
+	return common.TrimNullBytesFromSlice(data)
 }
 
 // parseDateString parses IPTC date format (CCYYMMDD or YYYYMMDD)
@@ -224,14 +232,14 @@ func parseTimeString(data []byte) string {
 
 // parsePrefs parses Photo Mechanic Prefs field (format: Tagged:ColorClass:Rating:FrameNum)
 func parsePrefs(data []byte) string {
-	s := string(bytes.TrimRight(data, "\x00"))
+	s := common.TrimNullBytesFromSlice(data)
 	parts := bytes.Split(data, []byte(":"))
 	if len(parts) >= 4 {
 		return fmt.Sprintf("Tagged:%s, ColorClass:%s, Rating:%s, FrameNum:%s",
-			string(bytes.TrimRight(parts[0], "\x00")),
-			string(bytes.TrimRight(parts[1], "\x00")),
-			string(bytes.TrimRight(parts[2], "\x00")),
-			string(bytes.TrimRight(parts[3], "\x00")))
+			common.TrimNullBytesFromSlice(parts[0]),
+			common.TrimNullBytesFromSlice(parts[1]),
+			common.TrimNullBytesFromSlice(parts[2]),
+			common.TrimNullBytesFromSlice(parts[3]))
 	}
 	return s
 }

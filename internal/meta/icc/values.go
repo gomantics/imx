@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"unicode/utf16"
+
+	"github.com/gomantics/imx/internal/common"
 )
 
 // ParsedTag represents a parsed tag value with its metadata
@@ -245,7 +247,8 @@ func parseCurveType(data []byte) CurveData {
 		if len(data) < 6 {
 			return CurveData{IsGamma: true, Gamma: 1.0}
 		}
-		gamma := parseU8Fixed8(data[4:6])
+		gammaSlice, _ := common.SafeSlice(data, 4, 2)
+		gamma, _ := common.ParseU8Fixed8(gammaSlice)
 		return CurveData{IsGamma: true, Gamma: gamma}
 	}
 
@@ -284,38 +287,58 @@ func parseParametricCurveType(data []byte) ParametricCurveData {
 	switch funcType {
 	case 0: // Y = X^g
 		if len(data) >= offset+4 {
-			curve.Gamma = parseS15Fixed16(data[offset:])
+			s, _ := common.SafeSlice(data, offset, 4)
+			curve.Gamma, _ = common.ParseS15Fixed16(s)
 		}
 	case 1: // Y = (aX+b)^g if X >= -b/a, else 0
 		if len(data) >= offset+12 {
-			curve.Gamma = parseS15Fixed16(data[offset:])
-			curve.A = parseS15Fixed16(data[offset+4:])
-			curve.B = parseS15Fixed16(data[offset+8:])
+			s, _ := common.SafeSlice(data, offset, 4)
+			curve.Gamma, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+4, 4)
+			curve.A, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+8, 4)
+			curve.B, _ = common.ParseS15Fixed16(s)
 		}
 	case 2: // Y = (aX+b)^g + c if X >= -b/a, else c
 		if len(data) >= offset+16 {
-			curve.Gamma = parseS15Fixed16(data[offset:])
-			curve.A = parseS15Fixed16(data[offset+4:])
-			curve.B = parseS15Fixed16(data[offset+8:])
-			curve.C = parseS15Fixed16(data[offset+12:])
+			s, _ := common.SafeSlice(data, offset, 4)
+			curve.Gamma, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+4, 4)
+			curve.A, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+8, 4)
+			curve.B, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+12, 4)
+			curve.C, _ = common.ParseS15Fixed16(s)
 		}
 	case 3: // Y = (aX+b)^g if X >= d, else cX
 		if len(data) >= offset+20 {
-			curve.Gamma = parseS15Fixed16(data[offset:])
-			curve.A = parseS15Fixed16(data[offset+4:])
-			curve.B = parseS15Fixed16(data[offset+8:])
-			curve.C = parseS15Fixed16(data[offset+12:])
-			curve.D = parseS15Fixed16(data[offset+16:])
+			s, _ := common.SafeSlice(data, offset, 4)
+			curve.Gamma, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+4, 4)
+			curve.A, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+8, 4)
+			curve.B, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+12, 4)
+			curve.C, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+16, 4)
+			curve.D, _ = common.ParseS15Fixed16(s)
 		}
 	case 4: // Y = (aX+b)^g + e if X >= d, else cX + f
 		if len(data) >= offset+28 {
-			curve.Gamma = parseS15Fixed16(data[offset:])
-			curve.A = parseS15Fixed16(data[offset+4:])
-			curve.B = parseS15Fixed16(data[offset+8:])
-			curve.C = parseS15Fixed16(data[offset+12:])
-			curve.D = parseS15Fixed16(data[offset+16:])
-			curve.E = parseS15Fixed16(data[offset+20:])
-			curve.F = parseS15Fixed16(data[offset+24:])
+			s, _ := common.SafeSlice(data, offset, 4)
+			curve.Gamma, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+4, 4)
+			curve.A, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+8, 4)
+			curve.B, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+12, 4)
+			curve.C, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+16, 4)
+			curve.D, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+20, 4)
+			curve.E, _ = common.ParseS15Fixed16(s)
+			s, _ = common.SafeSlice(data, offset+24, 4)
+			curve.F, _ = common.ParseS15Fixed16(s)
 		}
 	}
 
@@ -392,7 +415,8 @@ func parseMeasurementType(data []byte) MeasurementData {
 	}
 
 	// Flare
-	m.Flare = parseU16Fixed16(data[20:24])
+	flareSlice, _ := common.SafeSlice(data, 20, 4)
+	m.Flare, _ = common.ParseU16Fixed16(flareSlice)
 
 	// Illuminant type
 	illuminant := binary.BigEndian.Uint32(data[24:28])
@@ -471,7 +495,8 @@ func parseS15Fixed16ArrayType(data []byte) []float64 {
 
 	values := make([]float64, count)
 	for i := 0; i < count; i++ {
-		values[i] = parseS15Fixed16(data[i*4:])
+		s, _ := common.SafeSlice(data, i*4, 4)
+		values[i], _ = common.ParseS15Fixed16(s)
 	}
 
 	return values
@@ -486,7 +511,8 @@ func parseU16Fixed16ArrayType(data []byte) []float64 {
 
 	values := make([]float64, count)
 	for i := 0; i < count; i++ {
-		values[i] = parseU16Fixed16(data[i*4:])
+		s, _ := common.SafeSlice(data, i*4, 4)
+		values[i], _ = common.ParseU16Fixed16(s)
 	}
 
 	return values
@@ -525,8 +551,10 @@ func parseChromaticityType(data []byte) ChromaticityData {
 	// Parse chromaticity coordinates (u16Fixed16Number pairs)
 	for i := uint16(0); i < c.Channels && int(4+i*8+8) <= len(data); i++ {
 		offset := 4 + int(i)*8
-		x := parseU16Fixed16(data[offset:])
-		y := parseU16Fixed16(data[offset+4:])
+		xSlice, _ := common.SafeSlice(data, offset, 4)
+		x, _ := common.ParseU16Fixed16(xSlice)
+		ySlice, _ := common.SafeSlice(data, offset+4, 4)
+		y, _ := common.ParseU16Fixed16(ySlice)
 		c.Coordinates = append(c.Coordinates, [2]float64{x, y})
 	}
 

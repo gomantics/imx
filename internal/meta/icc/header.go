@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"time"
+
+	"github.com/gomantics/imx/internal/common"
 )
 
 const (
@@ -26,10 +28,12 @@ func parseHeader(data []byte) (*Header, error) {
 	h := &Header{}
 
 	// Bytes 0-3: Profile size
-	h.ProfileSize = binary.BigEndian.Uint32(data[0:4])
+	profileSize, _ := common.ReadUint32(data, 0, binary.BigEndian)
+	h.ProfileSize = profileSize
 
 	// Bytes 4-7: Preferred CMM type (4-char signature)
-	h.PreferredCMM = string(data[4:8])
+	cmmSlice, _ := common.SafeSlice(data, 4, 4)
+	h.PreferredCMM = string(cmmSlice)
 
 	// Bytes 8-11: Profile version
 	// Major version in byte 8, minor/bugfix in high/low nibbles of byte 9
@@ -40,51 +44,64 @@ func parseHeader(data []byte) (*Header, error) {
 	}
 
 	// Bytes 12-15: Profile/Device class
-	h.ProfileClass = ProfileClass(binary.BigEndian.Uint32(data[12:16]))
+	profileClass, _ := common.ReadUint32(data, 12, binary.BigEndian)
+	h.ProfileClass = ProfileClass(profileClass)
 
 	// Bytes 16-19: Data color space
-	h.DataColorSpace = ColorSpace(binary.BigEndian.Uint32(data[16:20]))
+	dataColorSpace, _ := common.ReadUint32(data, 16, binary.BigEndian)
+	h.DataColorSpace = ColorSpace(dataColorSpace)
 
 	// Bytes 20-23: Profile Connection Space (PCS)
-	h.PCS = ColorSpace(binary.BigEndian.Uint32(data[20:24]))
+	pcs, _ := common.ReadUint32(data, 20, binary.BigEndian)
+	h.PCS = ColorSpace(pcs)
 
 	// Bytes 24-35: Creation date/time (dateTimeNumber)
-	h.Created = parseDateTimeNumber(data[24:36])
+	dateSlice, _ := common.SafeSlice(data, 24, 12)
+	h.Created = parseDateTimeNumber(dateSlice)
 
 	// Bytes 36-39: Profile signature (should be 'acsp')
-	sig := binary.BigEndian.Uint32(data[36:40])
+	sig, _ := common.ReadUint32(data, 36, binary.BigEndian)
 	h.Signature = signatureToString(sig)
 	if sig != ICCSignature {
 		return nil, fmt.Errorf("invalid ICC signature: expected 'acsp', got '%s'", h.Signature)
 	}
 
 	// Bytes 40-43: Primary platform
-	h.Platform = Platform(binary.BigEndian.Uint32(data[40:44]))
+	platform, _ := common.ReadUint32(data, 40, binary.BigEndian)
+	h.Platform = Platform(platform)
 
 	// Bytes 44-47: Profile flags
-	h.Flags = ProfileFlags(binary.BigEndian.Uint32(data[44:48]))
+	flags, _ := common.ReadUint32(data, 44, binary.BigEndian)
+	h.Flags = ProfileFlags(flags)
 
 	// Bytes 48-51: Device manufacturer
-	h.DeviceManufacturer = string(data[48:52])
+	manufSlice, _ := common.SafeSlice(data, 48, 4)
+	h.DeviceManufacturer = string(manufSlice)
 
 	// Bytes 52-55: Device model
-	h.DeviceModel = string(data[52:56])
+	modelSlice, _ := common.SafeSlice(data, 52, 4)
+	h.DeviceModel = string(modelSlice)
 
 	// Bytes 56-63: Device attributes
-	h.DeviceAttributes = DeviceAttributes(binary.BigEndian.Uint64(data[56:64]))
+	devAttr, _ := common.ReadUint64(data, 56, binary.BigEndian)
+	h.DeviceAttributes = DeviceAttributes(devAttr)
 
 	// Bytes 64-67: Rendering intent
-	h.RenderingIntent = RenderingIntent(binary.BigEndian.Uint32(data[64:68]))
+	renderIntent, _ := common.ReadUint32(data, 64, binary.BigEndian)
+	h.RenderingIntent = RenderingIntent(renderIntent)
 
 	// Bytes 68-79: PCS illuminant (XYZ, s15Fixed16Number format)
-	h.PCSIlluminant = parseXYZNumber(data[68:80])
+	xyzSlice, _ := common.SafeSlice(data, 68, 12)
+	h.PCSIlluminant = parseXYZNumber(xyzSlice)
 
 	// Bytes 80-83: Profile creator
-	h.Creator = string(data[80:84])
+	creatorSlice, _ := common.SafeSlice(data, 80, 4)
+	h.Creator = string(creatorSlice)
 
 	// Bytes 84-99: Profile ID (MD5 checksum, version 4+)
+	profileIDSlice, _ := common.SafeSlice(data, 84, 16)
 	h.ProfileID = make([]byte, 16)
-	copy(h.ProfileID, data[84:100])
+	copy(h.ProfileID, profileIDSlice)
 
 	// Bytes 100-127: Reserved (should be zeros)
 
@@ -97,12 +114,19 @@ func parseDateTimeNumber(data []byte) time.Time {
 		return time.Time{}
 	}
 
-	year := int(binary.BigEndian.Uint16(data[0:2]))
-	month := int(binary.BigEndian.Uint16(data[2:4]))
-	day := int(binary.BigEndian.Uint16(data[4:6]))
-	hour := int(binary.BigEndian.Uint16(data[6:8]))
-	minute := int(binary.BigEndian.Uint16(data[8:10]))
-	second := int(binary.BigEndian.Uint16(data[10:12]))
+	year16, _ := common.ReadUint16(data, 0, binary.BigEndian)
+	month16, _ := common.ReadUint16(data, 2, binary.BigEndian)
+	day16, _ := common.ReadUint16(data, 4, binary.BigEndian)
+	hour16, _ := common.ReadUint16(data, 6, binary.BigEndian)
+	minute16, _ := common.ReadUint16(data, 8, binary.BigEndian)
+	second16, _ := common.ReadUint16(data, 10, binary.BigEndian)
+
+	year := int(year16)
+	month := int(month16)
+	day := int(day16)
+	hour := int(hour16)
+	minute := int(minute16)
+	second := int(second16)
 
 	// Validate ranges
 	if year == 0 || month < 1 || month > 12 || day < 1 || day > 31 {
@@ -118,27 +142,17 @@ func parseXYZNumber(data []byte) XYZNumber {
 		return XYZNumber{}
 	}
 
+	xSlice, _ := common.SafeSlice(data, 0, 4)
+	ySlice, _ := common.SafeSlice(data, 4, 4)
+	zSlice, _ := common.SafeSlice(data, 8, 4)
+
+	x, _ := common.ParseS15Fixed16(xSlice)
+	y, _ := common.ParseS15Fixed16(ySlice)
+	z, _ := common.ParseS15Fixed16(zSlice)
+
 	return XYZNumber{
-		X: parseS15Fixed16(data[0:4]),
-		Y: parseS15Fixed16(data[4:8]),
-		Z: parseS15Fixed16(data[8:12]),
+		X: x,
+		Y: y,
+		Z: z,
 	}
-}
-
-// parseS15Fixed16 parses a signed 15.16 fixed-point number
-func parseS15Fixed16(data []byte) float64 {
-	val := int32(binary.BigEndian.Uint32(data))
-	return float64(val) / 65536.0
-}
-
-// parseU16Fixed16 parses an unsigned 16.16 fixed-point number
-func parseU16Fixed16(data []byte) float64 {
-	val := binary.BigEndian.Uint32(data)
-	return float64(val) / 65536.0
-}
-
-// parseU8Fixed8 parses an unsigned 8.8 fixed-point number
-func parseU8Fixed8(data []byte) float64 {
-	val := binary.BigEndian.Uint16(data)
-	return float64(val) / 256.0
 }
