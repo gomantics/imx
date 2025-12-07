@@ -1,3 +1,6 @@
+// Package common provides shared types and utilities used across the imx library.
+// This package eliminates circular dependencies by centralizing common types
+// that are used by both format parsers and metadata parsers.
 package common
 
 // Spec represents a metadata specification type

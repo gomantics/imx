@@ -78,7 +78,10 @@ meta, err := imx.MetadataFromBytes(data)
 meta, err := imx.MetadataFromURL("https://example.com/photo.jpg")
 
 // With options
-meta, err := imx.MetadataFromFile("photo.jpg", imx.WithSpecs(imx.SpecEXIF))
+meta, err := imx.MetadataFromFile("photo.jpg",
+    imx.WithMaxBytes(5<<20),     // Limit to 5MB
+    imx.WithBufferSize(64*1024), // 64KB buffer
+)
 ```
 
 ### Using the Extractor
@@ -87,8 +90,10 @@ For more control or when processing many files, create a reusable `Extractor`.
 
 ```go
 extractor := imx.New(
-    imx.WithSpecs(imx.SpecEXIF, imx.SpecXMP),  // Only extract EXIF and XMP
-    imx.WithMaxBytes(10 << 20),                 // Limit to 10MB
+    imx.WithMaxBytes(10<<20),              // Limit to 10MB
+    imx.WithBufferSize(128*1024),          // 128KB buffer
+    imx.WithStopOnFirstError(true),        // Stop on first parser error
+    imx.WithHTTPTimeout(30*time.Second),   // HTTP timeout for URLs
 )
 
 meta, err := extractor.MetadataFromFile("photo.jpg")
@@ -171,9 +176,49 @@ imx is designed for high performance:
 - **Early termination** - Stops parsing after metadata segments
 - **Concurrent safe** - Extractor can be shared across goroutines
 
+### Benchmarks
+
+**Latest Results** *(Apple M4 Pro, Go 1.23)*:
+
+```
+BenchmarkMetadataFromFile-12         4308      279μs/op     583KB/op     3616 allocs/op
+BenchmarkMetadataFromBytes-12        4707      250μs/op     583KB/op     3614 allocs/op
+BenchmarkMetadata_Tag-12        168282322        7ns/op        0B/op        0 allocs/op
+BenchmarkParser_EXIF-12           154510       6.9μs/op      16KB/op      219 allocs/op
+BenchmarkParser_IPTC-12           729804       1.6μs/op     4.6KB/op       54 allocs/op
+BenchmarkParser_XMP-12             47097        25μs/op      34KB/op      462 allocs/op
+BenchmarkParser_ICC-12         263156931       4.6ns/op        0B/op        0 allocs/op
+BenchmarkParser_JPEG-12           481448       2.5μs/op      48KB/op       24 allocs/op
+```
+
+**Continuous Benchmarking**:
+- View [historical performance graphs](../../benchmarks) (auto-updated on every commit)
+- Automatic regression detection with 120% threshold
+- Performance alerts on PRs
+
+**Run Benchmarks Locally**:
+```bash
+make bench              # Quick benchmark run
+make bench-all          # Detailed output with 3s timing
+make bench-report       # Generate formatted report
+make bench-compare OLD=commit1 NEW=commit2  # Compare commits
+```
+
+**Tools**:
+- Results tracked via [github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark)
+- Statistical comparison using [benchstat](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat)
+
 ## Contributing
 
-Contributions are welcome! Please see [CLAUDE.md](CLAUDE.md) for development guidelines.
+Contributions are welcome!
+
+- **Development guidelines**: See [CONTRIBUTING.md](CONTRIBUTING.md)
+- **AI assistance setup**: See [CLAUDE.md](CLAUDE.md)
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting PRs - it contains important information about:
+- Commit message format (serves as changelog)
+- Benchmarking guidelines
+- Code style and testing requirements
 
 ## License
 

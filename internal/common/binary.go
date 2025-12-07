@@ -1,3 +1,5 @@
+// Package common provides shared types and utilities for the imx library.
+// This file contains binary parsing helpers with bounds checking.
 package common
 
 import (

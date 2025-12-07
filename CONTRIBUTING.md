@@ -109,29 +109,108 @@ make coverage-html
 
 ### Commit Messages
 
-Follow conventional commits format:
+**IMPORTANT**: Commit messages serve as the project's changelog. Write detailed, informative messages that explain the what, why, and impact of changes.
+
+#### Format
 
 ```
-type(scope): description
+type(scope): short description (max 72 chars)
 
-[optional body]
+Detailed explanation of changes:
+- What was changed and why
+- Any breaking changes (BREAKING:)
+- Performance impact (if any)
+- Related issues (#123)
+
+[optional footer with breaking changes, deprecations]
 ```
 
-Types:
-- `feat` - New feature
-- `fix` - Bug fix
-- `docs` - Documentation
-- `test` - Tests
-- `refactor` - Code refactoring
-- `chore` - Maintenance
+#### Types
+- `feat` - New feature (adds functionality)
+- `fix` - Bug fix (fixes broken functionality)
+- `refactor` - Code restructuring (no functional changes)
+- `perf` - Performance improvement
+- `test` - Add/update tests
+- `docs` - Documentation only
+- `chore` - Maintenance (deps, build, etc.)
+- `style` - Code style/formatting
 
-Examples:
+#### Breaking Changes
+
+Prefix breaking changes with `BREAKING:` in the commit body:
+
 ```
-feat(meta): add IPTC parser
-fix(exif): handle malformed IFD entries
-docs: update API documentation
-test(icc): add ICC profile parsing tests
+feat(api): simplify Tag() method signature
+
+BREAKING: Removed spec parameter from Metadata.Tag()
+
+Old: meta.Tag(imx.SpecEXIF, imx.TagMake)
+New: meta.Tag(imx.TagMake)
+
+The spec is now automatically extracted from the TagID.
+This simplifies the API and makes tag lookup more intuitive.
 ```
+
+#### Good Examples
+
+```
+feat(bench): add comprehensive benchmark suite
+
+Added 38 benchmarks covering all major code paths:
+- High-level API benchmarks (MetadataFromFile, etc.)
+- Parser-specific benchmarks (EXIF, IPTC, XMP, ICC)
+- Metadata operation benchmarks (Tag lookup, iteration)
+
+Also added:
+- GitHub Actions workflow for continuous benchmarking
+- Makefile targets: bench, bench-all, bench-report, bench-compare
+- Scripts for benchmark comparison using benchstat
+
+Performance on Apple M4 Pro:
+- MetadataFromFile: 279μs/op
+- Tag lookup: 7ns/op
+- EXIF parsing: 6.9μs/op
+```
+
+```
+refactor(exif): reduce parseValue() complexity using strategy pattern
+
+Reduced parseValue() from 107 lines to 32 lines (-70%) by:
+- Creating TIFFTypeParser interface
+- Implementing 10 type-specific parsers
+- Moving parsers to internal/common/tiff_types.go
+
+Benefits:
+- Easier to test (each parser isolated)
+- More maintainable (single responsibility)
+- Reusable for future TIFF format support
+
+No functional changes, all tests pass.
+```
+
+```
+fix(iptc): handle extended dataset sizes correctly
+
+Fixed parsing of IPTC datasets with sizes >32KB by properly
+handling the extended size format (high bit set).
+
+Added DatasetReader to encapsulate byte-level parsing and
+reduce parseIPTCIIM() complexity from 75 to 20 lines (-73%).
+
+Fixes #123
+```
+
+#### Bad Examples
+
+```
+❌ fix bug
+❌ update code
+❌ refactor
+❌ wip
+❌ fixes
+```
+
+These don't explain what was changed or why.
 
 ### Adding a New Metadata Parser
 
@@ -209,6 +288,54 @@ data := make([]byte, size)
 
 The `Extractor` type clones configuration per call and is safe for concurrent use.
 
+## Benchmarking
+
+### Running Benchmarks
+
+```bash
+make bench              # Quick benchmark run
+make bench-all          # Detailed output (3s timing, saved to bench.txt)
+make bench-report       # Generate formatted report
+make bench-compare OLD=commit1 NEW=commit2  # Compare commits
+```
+
+### Continuous Benchmarking
+
+Every commit to `main` and every PR automatically runs benchmarks via GitHub Actions:
+- Results stored in `gh-pages` branch
+- Visualized at `https://gomantics.github.io/imx/benchmarks`
+- Regression detection (>120% slowdown alerts on PRs)
+
+### Comparing Performance
+
+```bash
+# Compare your changes vs main
+make bench-compare OLD=main NEW=your-branch
+
+# Or manually with benchstat
+go test -bench=. -benchmem ./... > new.txt
+git stash
+git checkout main
+go test -bench=. -benchmem ./... > old.txt
+benchstat old.txt new.txt
+```
+
+### Benchmark Coverage
+
+38 benchmarks covering:
+- High-level operations (MetadataFromFile, Tag lookup, etc.)
+- Parser performance (EXIF, IPTC, XMP, ICC)
+- Format parsing (JPEG)
+- Memory allocations
+
+### Performance Goals
+
+| Operation | Target | Current |
+|-----------|--------|---------|
+| MetadataFromFile | <300μs | 279μs ✅ |
+| Tag lookup | <10ns | 7ns ✅ |
+| EXIF parsing | <10μs | 6.9μs ✅ |
+
 ## Make Targets
 
 ```bash
@@ -224,6 +351,10 @@ make clean         # Remove build artifacts
 make install       # Install CLI to GOPATH/bin
 make coverage      # Show coverage report
 make coverage-html # Generate HTML coverage report
+make bench         # Run benchmarks
+make bench-all     # Run benchmarks with detailed output
+make bench-report  # Generate benchmark report
+make bench-compare # Compare benchmarks between commits
 make example       # Build and run example
 ```
 
