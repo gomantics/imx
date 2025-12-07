@@ -94,6 +94,9 @@ func (e *Extractor) MetadataFromReader(r io.Reader, opts ...Option) (Metadata, e
 
 	// Step 3: Parse metadata from blocks
 	var allDirs []common.Directory
+	partialErr := &PartialError{
+		SpecErrs: make(map[Spec]error),
+	}
 
 	for _, metaParser := range e.metaParsers {
 		spec := metaParser.Spec()
@@ -115,6 +118,8 @@ func (e *Extractor) MetadataFromReader(r io.Reader, opts ...Option) (Metadata, e
 			if cfg.StopOnFirstErr {
 				return Metadata{}, fmt.Errorf("imx: parse %s: %w", spec, err)
 			}
+			// Collect error but continue parsing other specs
+			partialErr.SpecErrs[spec] = err
 			continue
 		}
 
@@ -124,6 +129,11 @@ func (e *Extractor) MetadataFromReader(r io.Reader, opts ...Option) (Metadata, e
 	// Step 4: Build result
 	result := Metadata{Directories: allDirs}
 	result.BuildIndex()
+
+	// Return partial error if any specs failed
+	if len(partialErr.SpecErrs) > 0 {
+		return result, partialErr
+	}
 
 	return result, nil
 }

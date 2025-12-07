@@ -379,12 +379,43 @@ func TestExtractor_ParseErrorContinue(t *testing.T) {
 	r := bytes.NewReader(jpegBadExif)
 	metadata, err := e.MetadataFromReader(r)
 
-	if err != nil {
-		t.Errorf("returned unexpected error with StopOnFirstError=false: %v", err)
+	// Should return PartialError when parser fails without StopOnFirstErr
+	if err == nil {
+		t.Error("expected PartialError when parsing fails")
 	}
 
-	// Continued past the error, should have no directories
+	var partialErr *PartialError
+	if !errors.As(err, &partialErr) {
+		t.Errorf("expected PartialError, got %T", err)
+	}
+
+	// Should have error for the spec that failed
+	if partialErr != nil && len(partialErr.SpecErrs) == 0 {
+		t.Error("expected SpecErrs in PartialError")
+	}
+
+	// Should still have no directories since parsing failed
 	if len(metadata.Directories) != 0 {
 		t.Errorf("returned %d directories, want 0 when parsing fails", len(metadata.Directories))
+	}
+}
+
+func TestExtractor_PartialError_WithPartialResults(t *testing.T) {
+	// Create a JPEG with no EXIF - should parse format successfully but have no metadata
+	data := buildJPEGWithNoEXIF()
+
+	e := New()
+	_, err := e.MetadataFromBytes(data)
+
+	// Should succeed with no error since format parsing works
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	// This test verifies that no PartialError is returned when all parsers succeed
+	// (even if they find nothing)
+	var partialErr *PartialError
+	if errors.As(err, &partialErr) {
+		t.Error("should not return PartialError when parsers succeed")
 	}
 }
