@@ -172,57 +172,57 @@ const (
 
 // IPTC Core Identification Tags
 const (
-	TagIPTCObjectName           TagID = "IPTC:ObjectName"           // Title/shorthand reference
-	TagIPTCUrgency              TagID = "IPTC:Urgency"              // 1=most urgent, 8=least
-	TagIPTCCategory             TagID = "IPTC:Category"             // Subject category code
+	TagIPTCObjectName             TagID = "IPTC:ObjectName"             // Title/shorthand reference
+	TagIPTCUrgency                TagID = "IPTC:Urgency"                // 1=most urgent, 8=least
+	TagIPTCCategory               TagID = "IPTC:Category"               // Subject category code
 	TagIPTCSupplementalCategories TagID = "IPTC:SupplementalCategories" // Additional categories
-	TagIPTCKeywords             TagID = "IPTC:Keywords"             // Keywords for indexing
-	TagIPTCFixtureIdentifier    TagID = "IPTC:FixtureIdentifier"    // Identifies recurring events
-	TagIPTCEditStatus           TagID = "IPTC:EditStatus"           // Status of object
-	TagIPTCSpecialInstructions  TagID = "IPTC:SpecialInstructions"  // Special instructions
-	TagIPTCSubjectReference     TagID = "IPTC:SubjectReference"     // Structured subject reference
+	TagIPTCKeywords               TagID = "IPTC:Keywords"               // Keywords for indexing
+	TagIPTCFixtureIdentifier      TagID = "IPTC:FixtureIdentifier"      // Identifies recurring events
+	TagIPTCEditStatus             TagID = "IPTC:EditStatus"             // Status of object
+	TagIPTCSpecialInstructions    TagID = "IPTC:SpecialInstructions"    // Special instructions
+	TagIPTCSubjectReference       TagID = "IPTC:SubjectReference"       // Structured subject reference
 )
 
 // IPTC Date/Time Tags
 const (
-	TagIPTCDateCreated        TagID = "IPTC:DateCreated"        // Intellectual content created
-	TagIPTCTimeCreated        TagID = "IPTC:TimeCreated"        // Time content created
+	TagIPTCDateCreated         TagID = "IPTC:DateCreated"         // Intellectual content created
+	TagIPTCTimeCreated         TagID = "IPTC:TimeCreated"         // Time content created
 	TagIPTCDigitalCreationDate TagID = "IPTC:DigitalCreationDate" // Digital file created
 	TagIPTCDigitalCreationTime TagID = "IPTC:DigitalCreationTime" // Digital file time
-	TagIPTCReleaseDate        TagID = "IPTC:ReleaseDate"        // Earliest release date
-	TagIPTCReleaseTime        TagID = "IPTC:ReleaseTime"        // Earliest release time
-	TagIPTCExpirationDate     TagID = "IPTC:ExpirationDate"     // Latest use date
-	TagIPTCExpirationTime     TagID = "IPTC:ExpirationTime"     // Latest use time
+	TagIPTCReleaseDate         TagID = "IPTC:ReleaseDate"         // Earliest release date
+	TagIPTCReleaseTime         TagID = "IPTC:ReleaseTime"         // Earliest release time
+	TagIPTCExpirationDate      TagID = "IPTC:ExpirationDate"      // Latest use date
+	TagIPTCExpirationTime      TagID = "IPTC:ExpirationTime"      // Latest use time
 )
 
 // IPTC Creator/Author Tags
 const (
-	TagIPTCByline         TagID = "IPTC:Byline"         // Creator/author name
-	TagIPTCBylineTitle    TagID = "IPTC:BylineTitle"    // Creator's title/position
-	TagIPTCCredit         TagID = "IPTC:Credit"         // Provider credit line
-	TagIPTCSource         TagID = "IPTC:Source"         // Original owner/creator
+	TagIPTCByline          TagID = "IPTC:Byline"          // Creator/author name
+	TagIPTCBylineTitle     TagID = "IPTC:BylineTitle"     // Creator's title/position
+	TagIPTCCredit          TagID = "IPTC:Credit"          // Provider credit line
+	TagIPTCSource          TagID = "IPTC:Source"          // Original owner/creator
 	TagIPTCCopyrightNotice TagID = "IPTC:CopyrightNotice" // Copyright notice
-	TagIPTCContact        TagID = "IPTC:Contact"        // Contact information
-	TagIPTCWriterEditor   TagID = "IPTC:Writer-Editor"  // Caption writer name
+	TagIPTCContact         TagID = "IPTC:Contact"         // Contact information
+	TagIPTCWriterEditor    TagID = "IPTC:Writer-Editor"   // Caption writer name
 )
 
 // IPTC Location Tags
 const (
-	TagIPTCCity                    TagID = "IPTC:City"                       // City of origin
-	TagIPTCSublocation             TagID = "IPTC:Sublocation"                // Location within city
-	TagIPTCProvinceState           TagID = "IPTC:Province-State"             // Province/State of origin
-	TagIPTCCountryCode             TagID = "IPTC:Country-PrimaryLocationCode" // ISO 3166 country code
-	TagIPTCCountryName             TagID = "IPTC:Country-PrimaryLocationName" // Full country name
-	TagIPTCContentLocationCode     TagID = "IPTC:ContentLocationCode"        // Content location code
-	TagIPTCContentLocationName     TagID = "IPTC:ContentLocationName"        // Content location name
+	TagIPTCCity                TagID = "IPTC:City"                        // City of origin
+	TagIPTCSublocation         TagID = "IPTC:Sublocation"                 // Location within city
+	TagIPTCProvinceState       TagID = "IPTC:Province-State"              // Province/State of origin
+	TagIPTCCountryCode         TagID = "IPTC:Country-PrimaryLocationCode" // ISO 3166 country code
+	TagIPTCCountryName         TagID = "IPTC:Country-PrimaryLocationName" // Full country name
+	TagIPTCContentLocationCode TagID = "IPTC:ContentLocationCode"         // Content location code
+	TagIPTCContentLocationName TagID = "IPTC:ContentLocationName"         // Content location name
 )
 
 // IPTC Description Tags
 const (
-	TagIPTCHeadline                    TagID = "IPTC:Headline"                    // Publishable headline
-	TagIPTCCaptionAbstract             TagID = "IPTC:Caption-Abstract"            // Description/caption
-	TagIPTCOriginatingProgram          TagID = "IPTC:OriginatingProgram"          // Program that created file
-	TagIPTCProgramVersion              TagID = "IPTC:ProgramVersion"              // Version of program
+	TagIPTCHeadline                      TagID = "IPTC:Headline"                      // Publishable headline
+	TagIPTCCaptionAbstract               TagID = "IPTC:Caption-Abstract"              // Description/caption
+	TagIPTCOriginatingProgram            TagID = "IPTC:OriginatingProgram"            // Program that created file
+	TagIPTCProgramVersion                TagID = "IPTC:ProgramVersion"                // Version of program
 	TagIPTCOriginalTransmissionReference TagID = "IPTC:OriginalTransmissionReference" // Original reference/job ID
 )
 
@@ -260,28 +260,28 @@ const (
 
 // XMP Rights (xmpRights) Tags
 const (
-	TagXMPCertificate   TagID = "XMP-xmpRights:Certificate"   // Rights certificate
-	TagXMPMarked        TagID = "XMP-xmpRights:Marked"        // Copyright marked
-	TagXMPOwner         TagID = "XMP-xmpRights:Owner"         // Rights owner
-	TagXMPUsageTerms    TagID = "XMP-xmpRights:UsageTerms"    // Usage terms
-	TagXMPWebStatement  TagID = "XMP-xmpRights:WebStatement"  // Web rights statement
+	TagXMPCertificate  TagID = "XMP-xmpRights:Certificate"  // Rights certificate
+	TagXMPMarked       TagID = "XMP-xmpRights:Marked"       // Copyright marked
+	TagXMPOwner        TagID = "XMP-xmpRights:Owner"        // Rights owner
+	TagXMPUsageTerms   TagID = "XMP-xmpRights:UsageTerms"   // Usage terms
+	TagXMPWebStatement TagID = "XMP-xmpRights:WebStatement" // Web rights statement
 )
 
 // XMP Photoshop Tags
 const (
-	TagXMPPhotoshopCity        TagID = "XMP-photoshop:City"            // City
-	TagXMPPhotoshopState       TagID = "XMP-photoshop:State"           // State/Province
-	TagXMPPhotoshopCountry     TagID = "XMP-photoshop:Country"         // Country
-	TagXMPPhotoshopCredit      TagID = "XMP-photoshop:Credit"          // Credit line
-	TagXMPPhotoshopSource      TagID = "XMP-photoshop:Source"          // Source
-	TagXMPPhotoshopHeadline    TagID = "XMP-photoshop:Headline"        // Headline
-	TagXMPPhotoshopInstructions TagID = "XMP-photoshop:Instructions"    // Instructions
-	TagXMPPhotoshopDateCreated TagID = "XMP-photoshop:DateCreated"     // Date created
-	TagXMPPhotoshopAuthorsPos  TagID = "XMP-photoshop:AuthorsPosition" // Author's position
-	TagXMPPhotoshopCaptionWriter TagID = "XMP-photoshop:CaptionWriter" // Caption writer
-	TagXMPPhotoshopCategory    TagID = "XMP-photoshop:Category"        // Category
-	TagXMPPhotoshopColorMode   TagID = "XMP-photoshop:ColorMode"       // Color mode
-	TagXMPPhotoshopICCProfile  TagID = "XMP-photoshop:ICCProfile"      // ICC profile name
+	TagXMPPhotoshopCity          TagID = "XMP-photoshop:City"            // City
+	TagXMPPhotoshopState         TagID = "XMP-photoshop:State"           // State/Province
+	TagXMPPhotoshopCountry       TagID = "XMP-photoshop:Country"         // Country
+	TagXMPPhotoshopCredit        TagID = "XMP-photoshop:Credit"          // Credit line
+	TagXMPPhotoshopSource        TagID = "XMP-photoshop:Source"          // Source
+	TagXMPPhotoshopHeadline      TagID = "XMP-photoshop:Headline"        // Headline
+	TagXMPPhotoshopInstructions  TagID = "XMP-photoshop:Instructions"    // Instructions
+	TagXMPPhotoshopDateCreated   TagID = "XMP-photoshop:DateCreated"     // Date created
+	TagXMPPhotoshopAuthorsPos    TagID = "XMP-photoshop:AuthorsPosition" // Author's position
+	TagXMPPhotoshopCaptionWriter TagID = "XMP-photoshop:CaptionWriter"   // Caption writer
+	TagXMPPhotoshopCategory      TagID = "XMP-photoshop:Category"        // Category
+	TagXMPPhotoshopColorMode     TagID = "XMP-photoshop:ColorMode"       // Color mode
+	TagXMPPhotoshopICCProfile    TagID = "XMP-photoshop:ICCProfile"      // ICC profile name
 )
 
 // XMP TIFF Tags (via XMP)
@@ -297,15 +297,15 @@ const (
 
 // XMP EXIF Tags (via XMP)
 const (
-	TagXMPExifDateTimeOriginal  TagID = "XMP-exif:DateTimeOriginal"  // Date/time taken
-	TagXMPExifExposureTime      TagID = "XMP-exif:ExposureTime"      // Exposure time
-	TagXMPExifFNumber           TagID = "XMP-exif:FNumber"           // Aperture
-	TagXMPExifISOSpeedRatings   TagID = "XMP-exif:ISOSpeedRatings"   // ISO
-	TagXMPExifFocalLength       TagID = "XMP-exif:FocalLength"       // Focal length
-	TagXMPExifFlash             TagID = "XMP-exif:Flash"             // Flash info
-	TagXMPExifGPSLatitude       TagID = "XMP-exif:GPSLatitude"       // GPS latitude
-	TagXMPExifGPSLongitude      TagID = "XMP-exif:GPSLongitude"      // GPS longitude
-	TagXMPExifGPSAltitude       TagID = "XMP-exif:GPSAltitude"       // GPS altitude
+	TagXMPExifDateTimeOriginal TagID = "XMP-exif:DateTimeOriginal" // Date/time taken
+	TagXMPExifExposureTime     TagID = "XMP-exif:ExposureTime"     // Exposure time
+	TagXMPExifFNumber          TagID = "XMP-exif:FNumber"          // Aperture
+	TagXMPExifISOSpeedRatings  TagID = "XMP-exif:ISOSpeedRatings"  // ISO
+	TagXMPExifFocalLength      TagID = "XMP-exif:FocalLength"      // Focal length
+	TagXMPExifFlash            TagID = "XMP-exif:Flash"            // Flash info
+	TagXMPExifGPSLatitude      TagID = "XMP-exif:GPSLatitude"      // GPS latitude
+	TagXMPExifGPSLongitude     TagID = "XMP-exif:GPSLongitude"     // GPS longitude
+	TagXMPExifGPSAltitude      TagID = "XMP-exif:GPSAltitude"      // GPS altitude
 )
 
 // =============================================================================
@@ -334,10 +334,10 @@ const (
 
 // ICC Parsed Tag Values (human-readable names from knownTags)
 const (
-	TagICCProfileDescription TagID = "ICC:Profile Description" // Profile description
-	TagICCProfileCopyright   TagID = "ICC:Profile Copyright"   // Copyright notice
-	TagICCMediaWhitePoint    TagID = "ICC:Media White Point"   // Media white point XYZ
-	TagICCMediaBlackPoint    TagID = "ICC:Media Black Point"   // Media black point XYZ
+	TagICCProfileDescription  TagID = "ICC:Profile Description"  // Profile description
+	TagICCProfileCopyright    TagID = "ICC:Profile Copyright"    // Copyright notice
+	TagICCMediaWhitePoint     TagID = "ICC:Media White Point"    // Media white point XYZ
+	TagICCMediaBlackPoint     TagID = "ICC:Media Black Point"    // Media black point XYZ
 	TagICCChromaticAdaptation TagID = "ICC:Chromatic Adaptation" // Chromatic adaptation matrix
 )
 
@@ -358,10 +358,10 @@ const (
 
 // ICC Device Description Tags
 const (
-	TagICCDeviceMfgDesc       TagID = "ICC:Device Manufacturer Description" // Device mfg description
-	TagICCDeviceModelDesc     TagID = "ICC:Device Model Description"        // Device model description
-	TagICCTechnology          TagID = "ICC:Technology"                      // Device technology
-	TagICCViewingConditionsDesc TagID = "ICC:Viewing Conditions Description" // Viewing conditions
-	TagICCLuminance           TagID = "ICC:Luminance"                       // Luminance value
-	TagICCMeasurement         TagID = "ICC:Measurement"                     // Measurement info
+	TagICCDeviceMfgDesc         TagID = "ICC:Device Manufacturer Description" // Device mfg description
+	TagICCDeviceModelDesc       TagID = "ICC:Device Model Description"        // Device model description
+	TagICCTechnology            TagID = "ICC:Technology"                      // Device technology
+	TagICCViewingConditionsDesc TagID = "ICC:Viewing Conditions Description"  // Viewing conditions
+	TagICCLuminance             TagID = "ICC:Luminance"                       // Luminance value
+	TagICCMeasurement           TagID = "ICC:Measurement"                     // Measurement info
 )

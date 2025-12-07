@@ -1,64 +1,112 @@
-.PHONY: build test lint fmt clean install example coverage help
+.PHONY: build test test-lib lint fmt clean install coverage coverage-html check help
+
+# Go settings
+GOCMD = go
+GOTEST = $(GOCMD) test
+GOBUILD = $(GOCMD) build
+GOVET = $(GOCMD) vet
+GOFMT = $(GOCMD) fmt
+
+# Directories
+BIN_DIR = bin
+COVERAGE_FILE = coverage.out
+COVERAGE_HTML = coverage.html
+
+# Library packages (excluding cmd and examples)
+LIB_PKGS = ./internal/... .
+
+# All packages
+ALL_PKGS = ./...
 
 # Default target
-all: lint test build
+all: check
+
+# Full check: lint, test, build
+check: lint test build
+	@echo "✓ All checks passed"
 
 # Build the library, CLI, and examples
 build:
 	@echo "Building..."
-	go build ./...
-	go build -o bin/imx ./cmd/imx
-	go build -o bin/basic ./examples/basic
-	go build -o bin/advanced ./examples/advanced
+	@mkdir -p $(BIN_DIR)
+	$(GOBUILD) $(ALL_PKGS)
+	$(GOBUILD) -o $(BIN_DIR)/imx ./cmd/imx
+	$(GOBUILD) -o $(BIN_DIR)/basic ./examples/basic
+	$(GOBUILD) -o $(BIN_DIR)/advanced ./examples/advanced
+	@echo "✓ Build complete"
 
-# Run tests with race detector and coverage
+# Run all tests with race detector
 test:
 	@echo "Running tests..."
-	go test -race -coverprofile=coverage.out ./...
+	$(GOTEST) -race $(ALL_PKGS)
+	@echo "✓ All tests passed"
 
-# Run linter
+# Run library tests only with coverage (excludes cmd and examples)
+test-lib:
+	@echo "Running library tests with coverage..."
+	$(GOTEST) -race -coverprofile=$(COVERAGE_FILE) -covermode=atomic $(LIB_PKGS)
+	@echo "✓ Library tests passed"
+
+# Run linter (go vet)
 lint:
 	@echo "Running linter..."
-	go vet ./...
+	$(GOVET) $(ALL_PKGS)
+	@echo "✓ Linting passed"
 
 # Format code
 fmt:
 	@echo "Formatting code..."
-	go fmt ./...
+	$(GOFMT) $(ALL_PKGS)
+	@echo "✓ Formatting complete"
 
 # Clean build artifacts
 clean:
 	@echo "Cleaning..."
-	rm -rf bin/
-	rm -f coverage.out coverage.html
+	rm -rf $(BIN_DIR)
+	rm -f $(COVERAGE_FILE) $(COVERAGE_HTML)
+	@echo "✓ Clean complete"
 
 # Install CLI to GOPATH/bin
 install:
 	@echo "Installing CLI..."
-	go install ./cmd/imx
+	$(GOCMD) install ./cmd/imx
+	@echo "✓ Installed imx to GOPATH/bin"
 
-# Build and run basic example
+# Generate coverage report for library (100% target)
+coverage: test-lib
+	@echo "Coverage report:"
+	@$(GOCMD) tool cover -func=$(COVERAGE_FILE) | tail -1
+	@echo ""
+	@$(GOCMD) tool cover -func=$(COVERAGE_FILE) | grep -v "100.0%" || echo "✓ 100% coverage achieved!"
+
+# Generate HTML coverage report
+coverage-html: test-lib
+	@echo "Generating HTML coverage report..."
+	$(GOCMD) tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML)
+	@echo "✓ Coverage report: $(COVERAGE_HTML)"
+
+# Run basic example
 example: build
 	@echo "Running example..."
-	./bin/imx testdata/goldens/jpeg/canon_xmp.jpg
-
-# Generate coverage report
-coverage: test
-	@echo "Generating coverage report..."
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report: coverage.html"
+	./$(BIN_DIR)/imx testdata/goldens/jpeg/google_iptc.jpg
 
 # Show help
 help:
-	@echo "Available targets:"
-	@echo "  all       - Run lint, test, and build (default)"
-	@echo "  build     - Build the library and CLI"
-	@echo "  test      - Run tests with race detector and coverage"
-	@echo "  lint      - Run go vet"
-	@echo "  fmt       - Format code with go fmt"
-	@echo "  clean     - Remove build artifacts"
-	@echo "  install   - Install CLI to GOPATH/bin"
-	@echo "  example   - Build and run example"
-	@echo "  coverage  - Generate HTML coverage report"
-	@echo "  help      - Show this help"
-
+	@echo "imx - Image Metadata Extraction Library"
+	@echo ""
+	@echo "Usage: make [target]"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all          - Run check (default)"
+	@echo "  check        - Run lint, test, and build"
+	@echo "  build        - Build library, CLI, and examples"
+	@echo "  test         - Run all tests with race detector"
+	@echo "  test-lib     - Run library tests with coverage"
+	@echo "  lint         - Run go vet"
+	@echo "  fmt          - Format code with go fmt"
+	@echo "  clean        - Remove build artifacts"
+	@echo "  install      - Install CLI to GOPATH/bin"
+	@echo "  coverage     - Show coverage report (100% target)"
+	@echo "  coverage-html- Generate HTML coverage report"
+	@echo "  example      - Build and run example"
+	@echo "  help         - Show this help"
