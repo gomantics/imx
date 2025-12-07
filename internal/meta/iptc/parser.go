@@ -88,72 +88,17 @@ func parseIPTCIIM(data []byte) ([]Dataset, error) {
 		return nil, nil
 	}
 
+	reader := NewDatasetReader(data)
 	var datasets []Dataset
-	offset := 0
 
-	for offset+5 <= len(data) {
-		// Tag marker (0x1C)
-		if data[offset] != iptcTagMarker {
-			offset++
-			continue
-		}
-		offset++
-
-		// Record number (1 byte)
-		record := Record(data[offset])
-		offset++
-
-		// Dataset number (1 byte)
-		datasetID := data[offset]
-		offset++
-
-		// Data size (2 bytes for standard, 4 bytes for extended)
-		// Loop guard ensures at least 5 bytes from offset; we've read 3, so 2 remain
-		// Safe: loop guard ensures offset+5 <= len(data), we've consumed 3 bytes, 2 remain
-		var dataSize int
-		sizeBytes, _ := common.ReadUint16(data, offset, binary.BigEndian)
-		offset += 2
-
-		if sizeBytes&0x8000 != 0 {
-			// Extended size (bit 15 set means extended)
-			// Next bytes indicate actual size
-			extLen := int(sizeBytes & 0x7FFF)
-			if extLen > 4 || offset+extLen > len(data) {
-				break
-			}
-			// Read extended size
-			dataSize = 0
-			for i := 0; i < extLen; i++ {
-				dataSize = (dataSize << 8) | int(data[offset])
-				offset++
-			}
-		} else {
-			dataSize = int(sizeBytes)
-		}
-
-		// Read dataset value
-		value, err := common.SafeSlice(data, offset, dataSize)
+	for !reader.EOF() {
+		ds, err := reader.ReadNext()
 		if err != nil {
+			// EOF or other error - stop reading
 			break
 		}
-		offset += dataSize
 
-		// Get dataset name
-		name := getDatasetName(record, datasetID)
-		if name == "" {
-			name = fmt.Sprintf("Dataset%d:%d", record, datasetID)
-		}
-
-		// Parse value based on dataset
-		parsedValue := parseDatasetValue(record, datasetID, value)
-
-		datasets = append(datasets, Dataset{
-			Record:    record,
-			DatasetID: datasetID,
-			Name:      name,
-			Value:     parsedValue,
-			Raw:       value,
-		})
+		datasets = append(datasets, *ds)
 	}
 
 	return datasets, nil
