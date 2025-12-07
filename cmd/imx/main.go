@@ -27,9 +27,10 @@ func main() {
 
 // App holds CLI state
 type App struct {
-	opts      Options
-	colors    Colorizer
-	extractor *imx.Extractor
+	opts             Options
+	colors           Colorizer
+	extractor        *imx.Extractor
+	csvHeaderWritten bool // Track if CSV header has been written
 }
 
 // Options holds all CLI options
@@ -639,8 +640,11 @@ func (a *App) outputCSV(path string, tags []TagInfo) error {
 	w := csv.NewWriter(os.Stdout)
 	defer w.Flush()
 
-	// Header (only for first file)
-	w.Write([]string{"File", "Spec", "Tag", "Value"})
+	// Write header only for first file
+	if !a.csvHeaderWritten {
+		w.Write([]string{"File", "Spec", "Tag", "Value"})
+		a.csvHeaderWritten = true
+	}
 
 	for _, t := range tags {
 		w.Write([]string{
