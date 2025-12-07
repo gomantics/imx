@@ -324,7 +324,6 @@ func TestMetadata_EachInSpec(t *testing.T) {
 	})
 }
 
-
 // Verify type aliases work correctly
 func TestTypeAliases(t *testing.T) {
 	// Spec alias
@@ -357,7 +356,7 @@ func TestMetadata_BuildIndex_EdgeCases(t *testing.T) {
 		m := Metadata{Directories: []Directory{}}
 		m.BuildIndex()
 		// Should not panic and create empty index
-		if m.index != nil && len(m.index) != 0 {
+		if len(m.index) != 0 {
 			t.Error("BuildIndex() on empty directories should create empty or nil index")
 		}
 	})
@@ -386,7 +385,7 @@ func TestMetadata_BuildIndex_EdgeCases(t *testing.T) {
 		}
 		m.BuildIndex()
 		// Should not panic
-		if m.index != nil && len(m.index) != 0 {
+		if len(m.index) != 0 {
 			t.Error("BuildIndex() on empty tags should create empty index")
 		}
 	})

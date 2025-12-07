@@ -49,7 +49,7 @@ func main() {
 	// Print all EXIF tags using iterator
 	fmt.Println("\n=== All EXIF Tags ===")
 	meta.Each(func(dir imx.Directory, tag imx.Tag) bool {
-		fmt.Printf("%s:%s = %v (%s)\n", dir.Name, tag.Name, tag.Value, tag.DataType)
+		fmt.Printf("%s:%s = %v (%s)\n", dir.Name, tag.ID, tag.Value, tag.DataType)
 		return true
 	})
 

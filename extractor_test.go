@@ -12,7 +12,7 @@ import (
 )
 
 // testJPEGPath is the path to the test JPEG file
-const testJPEGPath = "testdata/DSC_1631.jpg"
+const testJPEGPath = "testdata/goldens/jpeg/canon_xmp.jpg"
 
 // loadTestJPEG loads the test JPEG file for testing
 func loadTestJPEG(t *testing.T) []byte {
