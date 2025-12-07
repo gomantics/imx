@@ -30,8 +30,8 @@ func main() {
 
 // App holds CLI state
 type App struct {
-	opts    Options
-	colors  Colorizer
+	opts      Options
+	colors    Colorizer
 	extractor *imx.Extractor
 }
 
