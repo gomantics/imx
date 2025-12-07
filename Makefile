@@ -1,4 +1,4 @@
-.PHONY: build test test-lib lint fmt clean install coverage coverage-html check help
+.PHONY: build test test-lib lint fmt clean install coverage coverage-html check help bench bench-all bench-report bench-compare
 
 # Go settings
 GOCMD = go
@@ -90,6 +90,30 @@ example: build
 	@echo "Running example..."
 	./$(BIN_DIR)/imx testdata/goldens/jpeg/google_iptc.jpg
 
+# Run benchmarks
+bench:
+	@echo "Running benchmarks..."
+	$(GOTEST) -bench=. -benchmem -run=^$$ . ./internal/meta/... ./internal/format/...
+	@echo "✓ Benchmarks complete"
+
+# Run benchmarks with detailed output
+bench-all:
+	@echo "Running all benchmarks with detailed output..."
+	$(GOTEST) -bench=. -benchmem -benchtime=3s -run=^$$ . ./internal/meta/... ./internal/format/... | tee bench.txt
+	@echo "✓ Benchmarks saved to bench.txt"
+
+# Generate detailed benchmark report
+bench-report:
+	@echo "Generating benchmark report..."
+	@./scripts/bench-report.sh
+	@echo "✓ Benchmark report generated"
+
+# Compare benchmarks between commits
+bench-compare:
+	@echo "Comparing benchmarks between commits..."
+	@./scripts/bench-compare.sh $(OLD) $(NEW)
+	@echo "Usage: make bench-compare OLD=commit1 NEW=commit2"
+
 # Show help
 help:
 	@echo "imx - Image Metadata Extraction Library"
@@ -108,5 +132,9 @@ help:
 	@echo "  install      - Install CLI to GOPATH/bin"
 	@echo "  coverage     - Show coverage report (100% target)"
 	@echo "  coverage-html- Generate HTML coverage report"
+	@echo "  bench        - Run all benchmarks"
+	@echo "  bench-all    - Run benchmarks with detailed output"
+	@echo "  bench-report - Generate detailed benchmark report"
+	@echo "  bench-compare- Compare benchmarks between commits"
 	@echo "  example      - Build and run example"
 	@echo "  help         - Show this help"
