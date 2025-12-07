@@ -196,39 +196,44 @@ BenchmarkParser_JPEG-12           481448       2.5μs/op      48KB/op       24 a
 - Automatic regression detection with 120% threshold
 - Performance alerts on PRs
 
-**Run Benchmarks Locally**:
+**Run Benchmarks**:
 ```bash
-make bench              # Quick benchmark run
-make bench-all          # Detailed output with 3s timing
-make bench-report       # Generate formatted report
-make bench-compare OLD=commit1 NEW=commit2  # Compare commits
-make bench-viz N=50     # Generate performance graphs across last 50 commits
+# Run benchmarks with comprehensive human-readable report
+make bench
+
+# Run benchmarks + generate historical performance graphs
+make bench N=50         # Last 50 commits
 ```
 
-**Performance Visualization**:
+The benchmark tool provides:
+- **Human-readable report** with performance metrics grouped by category
+- **Summary statistics** showing fastest/slowest benchmarks
+- **Multiple metrics**:
+  - **Ops/Sec** - Operations per second (throughput)
+  - **ns/op** - Nanoseconds per operation (latency)
+  - **MB/s** - Megabytes per second (data throughput)
+  - **B/op** - Bytes allocated per operation (memory usage)
+  - **allocs/op** - Number of allocations per operation
 
-Generate performance graphs showing how benchmarks evolved over time:
+**Historical Performance Graphs**:
+
+Generate performance trend graphs across git history:
 
 ```bash
-# Generate graphs for last 50 commits
-make bench-viz N=50
+make bench N=50     # Creates graphs in out/ directory
 ```
 
-This creates visualizations in `out/` directory showing:
-- **ns/op** - Nanoseconds per operation over time
-- **B/op** - Bytes allocated per operation over time
-- **allocs/op** - Number of allocations per operation over time
+Generates graphs showing trends over time:
+- `out/ops_per_sec.png` - Operations per second across commits
+- `out/ns_per_op.png` - Latency across commits
+- `out/throughput.png` - MB/s throughput across commits
+- `out/bytes_per_op.png` - Memory allocations across commits
+- `out/allocs_per_op.png` - Allocation count across commits
 
-Example graphs (run `make bench-viz` to generate):
-
-![High-Level API Performance](out/summary_HighLevelAPI.png)
-![Parser Performance](out/summary_ParserEXIF.png)
-
-**Requirements**: Python 3 with matplotlib (`pip3 install matplotlib`)
+**Requirements**: Python 3 with matplotlib for graphs (`pip3 install matplotlib`)
 
 **Tools**:
 - Results tracked via [github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark)
-- Statistical comparison using [benchstat](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat)
 - Historical visualization using Python + matplotlib
 
 ## Contributing

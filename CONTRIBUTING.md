@@ -293,40 +293,43 @@ The `Extractor` type clones configuration per call and is safe for concurrent us
 ### Running Benchmarks
 
 ```bash
-make bench              # Quick benchmark run
-make bench-all          # Detailed output (3s timing, saved to bench.txt)
-make bench-report       # Generate formatted report
-make bench-compare OLD=commit1 NEW=commit2  # Compare commits
-make bench-viz N=50     # Generate performance graphs across last N commits
+# Run benchmarks with comprehensive report
+make bench
+
+# Run benchmarks + generate historical graphs
+make bench N=50         # Last 50 commits
+make bench N=100        # Last 100 commits
 ```
 
-### Performance Visualization
+**Benchmark Report Includes**:
+- Human-readable performance metrics grouped by category (API, Parsers, Format)
+- Multiple metrics per benchmark:
+  - **Ops/Sec** - Operations per second (throughput)
+  - **ns/op** - Nanoseconds per operation (latency)
+  - **MB/s** - Megabytes per second (data throughput)
+  - **B/op** - Bytes allocated per operation (memory usage)
+  - **allocs/op** - Number of allocations per operation
+- Summary statistics (fastest/slowest, averages)
 
-Generate graphs showing how performance evolved over time:
+**Historical Performance Graphs**:
 
-```bash
-# Generate graphs for last 50 commits
-make bench-viz N=50
+When you specify `N=commits`, the tool will:
+1. Run benchmarks on current commit and show results
+2. Checkout each of the last N commits
+3. Run benchmarks (skip commits where benchmarks fail)
+4. Generate graphs in `out/` directory showing performance trends
 
-# Custom number of commits
-make bench-viz N=100
-```
+**Graph Files Generated**:
+- `out/ops_per_sec.png` - Throughput over time
+- `out/ns_per_op.png` - Latency over time
+- `out/throughput.png` - Data throughput (MB/s) over time
+- `out/bytes_per_op.png` - Memory allocations over time
+- `out/allocs_per_op.png` - Allocation count over time
 
-**Requirements**: Python 3 with matplotlib
+**Requirements**: Python 3 + matplotlib (only for historical graphs)
 ```bash
 pip3 install matplotlib
 ```
-
-The tool will:
-1. Checkout each commit in git history
-2. Run benchmarks (skip if they fail to compile)
-3. Collect performance metrics
-4. Generate graphs in `out/` directory showing trends over time
-
-Graphs are generated for each benchmark showing:
-- Nanoseconds per operation (ns/op)
-- Bytes allocated per operation (B/op)
-- Allocations per operation (allocs/op)
 
 ### Continuous Benchmarking
 

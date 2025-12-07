@@ -24,10 +24,6 @@ go.work.sum
 debug/
 
 # Benchmark outputs
-bench.txt
-bench-report.txt
-bench_output.txt
-bench_results.json
 *.prof
 *.test
 trace.out
