@@ -13,6 +13,7 @@ import (
 	"github.com/gomantics/imx/internal/meta"
 	"github.com/gomantics/imx/internal/meta/exif"
 	"github.com/gomantics/imx/internal/meta/icc"
+	"github.com/gomantics/imx/internal/meta/iptc"
 	"github.com/gomantics/imx/internal/meta/xmp"
 )
 
@@ -43,6 +44,7 @@ func New(opts ...Option) *Extractor {
 			exif.New(),
 			xmp.New(),
 			icc.New(),
+			iptc.New(),
 		},
 	}
 
