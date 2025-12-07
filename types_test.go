@@ -86,8 +86,8 @@ func TestMetadata_Tag(t *testing.T) {
 				Spec: SpecEXIF,
 				Name: "IFD0",
 				Tags: map[TagID]Tag{
-					"Exif:Make":  makeTag("Exif:Make", "Canon"),
-					"Exif:Model": makeTag("Exif:Model", "EOS 5D"),
+					"EXIF:Make":  makeTag("EXIF:Make", "Canon"),
+					"EXIF:Model": makeTag("EXIF:Model", "EOS 5D"),
 				},
 			},
 		},
@@ -103,20 +103,20 @@ func TestMetadata_Tag(t *testing.T) {
 		{
 			name:   "find existing tag",
 			spec:   SpecEXIF,
-			id:     "Exif:Make",
+			id:     "EXIF:Make",
 			wantOk: true,
 			want:   "Canon",
 		},
 		{
 			name:   "tag not found",
 			spec:   SpecEXIF,
-			id:     "Exif:ISO",
+			id:     "EXIF:ISO",
 			wantOk: false,
 		},
 		{
 			name:   "wrong spec",
 			spec:   SpecXMP,
-			id:     "Exif:Make",
+			id:     "EXIF:Make",
 			wantOk: false,
 		},
 	}
@@ -141,7 +141,7 @@ func TestMetadata_Tag_WithIndex(t *testing.T) {
 				Spec: SpecEXIF,
 				Name: "IFD0",
 				Tags: map[TagID]Tag{
-					"Exif:Make": {Spec: SpecEXIF, ID: "Exif:Make", Value: "Canon"},
+					"EXIF:Make": {Spec: SpecEXIF, ID: "EXIF:Make", Value: "Canon"},
 				},
 			},
 		},
@@ -149,7 +149,7 @@ func TestMetadata_Tag_WithIndex(t *testing.T) {
 	metadata.BuildIndex()
 
 	// Test with index
-	tag, ok := metadata.Tag(SpecEXIF, "Exif:Make")
+	tag, ok := metadata.Tag(SpecEXIF, "EXIF:Make")
 	if !ok {
 		t.Error("Tag() with index should find tag")
 	}
@@ -158,7 +158,7 @@ func TestMetadata_Tag_WithIndex(t *testing.T) {
 	}
 
 	// Test not found with different spec
-	_, ok = metadata.Tag(SpecXMP, "Exif:Make")
+	_, ok = metadata.Tag(SpecXMP, "EXIF:Make")
 	if ok {
 		t.Error("Tag() should not find tag with wrong spec even with index")
 	}
@@ -171,9 +171,9 @@ func TestMetadata_GetAll(t *testing.T) {
 				Spec: SpecEXIF,
 				Name: "IFD0",
 				Tags: map[TagID]Tag{
-					"Exif:Make":  {Spec: SpecEXIF, ID: "Exif:Make", Value: "Canon"},
-					"Exif:Model": {Spec: SpecEXIF, ID: "Exif:Model", Value: "EOS 5D"},
-					"Exif:ISO":   {Spec: SpecEXIF, ID: "Exif:ISO", Value: 100},
+					"EXIF:Make":  {Spec: SpecEXIF, ID: "EXIF:Make", Value: "Canon"},
+					"EXIF:Model": {Spec: SpecEXIF, ID: "EXIF:Model", Value: "EOS 5D"},
+					"EXIF:ISO":   {Spec: SpecEXIF, ID: "EXIF:ISO", Value: 100},
 				},
 			},
 		},
@@ -188,13 +188,13 @@ func TestMetadata_GetAll(t *testing.T) {
 		{
 			name:    "get multiple existing tags",
 			useIdx:  false,
-			ids:     []TagID{"Exif:Make", "Exif:Model"},
+			ids:     []TagID{"EXIF:Make", "EXIF:Model"},
 			wantLen: 2,
 		},
 		{
 			name:    "get with some missing",
 			useIdx:  false,
-			ids:     []TagID{"Exif:Make", "Exif:Unknown"},
+			ids:     []TagID{"EXIF:Make", "EXIF:Unknown"},
 			wantLen: 1,
 		},
 		{
@@ -206,7 +206,7 @@ func TestMetadata_GetAll(t *testing.T) {
 		{
 			name:    "get with index",
 			useIdx:  true,
-			ids:     []TagID{"Exif:Make", "Exif:ISO"},
+			ids:     []TagID{"EXIF:Make", "EXIF:ISO"},
 			wantLen: 2,
 		},
 	}
@@ -232,15 +232,15 @@ func TestMetadata_Each(t *testing.T) {
 				Spec: SpecEXIF,
 				Name: "IFD0",
 				Tags: map[TagID]Tag{
-					"Exif:Make":  {ID: "Exif:Make", Value: "Canon"},
-					"Exif:Model": {ID: "Exif:Model", Value: "EOS 5D"},
+					"EXIF:Make":  {ID: "EXIF:Make", Value: "Canon"},
+					"EXIF:Model": {ID: "EXIF:Model", Value: "EOS 5D"},
 				},
 			},
 			{
 				Spec: SpecEXIF,
 				Name: "ExifIFD",
 				Tags: map[TagID]Tag{
-					"Exif:ISO": {ID: "Exif:ISO", Value: 100},
+					"EXIF:ISO": {ID: "EXIF:ISO", Value: 100},
 				},
 			},
 		},
@@ -276,8 +276,8 @@ func TestMetadata_EachInSpec(t *testing.T) {
 				Spec: SpecEXIF,
 				Name: "IFD0",
 				Tags: map[TagID]Tag{
-					"Exif:Make":  {Spec: SpecEXIF, ID: "Exif:Make", Value: "Canon"},
-					"Exif:Model": {Spec: SpecEXIF, ID: "Exif:Model", Value: "EOS 5D"},
+					"EXIF:Make":  {Spec: SpecEXIF, ID: "EXIF:Make", Value: "Canon"},
+					"EXIF:Model": {Spec: SpecEXIF, ID: "EXIF:Model", Value: "EOS 5D"},
 				},
 			},
 			{
@@ -333,14 +333,14 @@ func TestTypeAliases(t *testing.T) {
 	}
 
 	// TagID alias
-	var tagID TagID = "Exif:Make"
-	if tagID != meta.TagID("Exif:Make") {
+	var tagID TagID = "EXIF:Make"
+	if tagID != meta.TagID("EXIF:Make") {
 		t.Error("TagID alias not working correctly")
 	}
 
 	// Tag alias
-	var tag Tag = meta.Tag{ID: "Exif:Make"}
-	if tag.ID != "Exif:Make" {
+	var tag Tag = meta.Tag{ID: "EXIF:Make"}
+	if tag.ID != "EXIF:Make" {
 		t.Error("Tag alias not working correctly")
 	}
 
@@ -397,7 +397,7 @@ func TestMetadata_BuildIndex_EdgeCases(t *testing.T) {
 					Spec: SpecEXIF,
 					Name: "IFD0",
 					Tags: map[TagID]Tag{
-						"Exif:Make": {ID: "Exif:Make", Value: "Canon"},
+						"EXIF:Make": {ID: "EXIF:Make", Value: "Canon"},
 					},
 				},
 			},
@@ -405,7 +405,7 @@ func TestMetadata_BuildIndex_EdgeCases(t *testing.T) {
 		m.BuildIndex()
 		m.BuildIndex()
 		m.BuildIndex()
-		tag, ok := m.Tag(SpecEXIF, "Exif:Make")
+		tag, ok := m.Tag(SpecEXIF, "EXIF:Make")
 		if !ok || tag.Value != "Canon" {
 			t.Error("Multiple BuildIndex() calls should be idempotent")
 		}
@@ -418,23 +418,23 @@ func TestMetadata_BuildIndex_EdgeCases(t *testing.T) {
 					Spec: SpecEXIF,
 					Name: "IFD0",
 					Tags: map[TagID]Tag{
-						"Exif:Make": {ID: "Exif:Make", Value: "Canon"},
+						"EXIF:Make": {ID: "EXIF:Make", Value: "Canon"},
 					},
 				},
 				{
 					Spec: SpecEXIF,
 					Name: "ExifIFD",
 					Tags: map[TagID]Tag{
-						"Exif:Make": {ID: "Exif:Make", Value: "Nikon"},
+						"EXIF:Make": {ID: "EXIF:Make", Value: "Nikon"},
 					},
 				},
 			},
 		}
 		m.BuildIndex()
 		// Should find one of them (first one encountered)
-		tag, ok := m.Tag(SpecEXIF, "Exif:Make")
+		tag, ok := m.Tag(SpecEXIF, "EXIF:Make")
 		if !ok {
-			t.Error("Should find at least one Exif:Make tag")
+			t.Error("Should find at least one EXIF:Make tag")
 		}
 		// Value should be from one of the directories
 		val, ok := tag.Value.(string)

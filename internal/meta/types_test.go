@@ -51,9 +51,9 @@ func TestDirectory(t *testing.T) {
 		Spec: SpecEXIF,
 		Name: "IFD0",
 		Tags: map[TagID]Tag{
-			"Exif:Make": {
+			"EXIF:Make": {
 				Spec:     SpecEXIF,
-				ID:       "Exif:Make",
+				ID:       "EXIF:Make",
 				Name:     "Make",
 				DataType: "string",
 				Value:    "Canon",
@@ -72,9 +72,9 @@ func TestDirectory(t *testing.T) {
 		t.Errorf("len(Directory.Tags) = %d, want 1", len(dir.Tags))
 	}
 
-	tag, ok := dir.Tags["Exif:Make"]
+	tag, ok := dir.Tags["EXIF:Make"]
 	if !ok {
-		t.Fatal("Directory.Tags[\"Exif:Make\"] not found")
+		t.Fatal("Directory.Tags[\"EXIF:Make\"] not found")
 	}
 	if tag.Value != "Canon" {
 		t.Errorf("Tag.Value = %v, want %q", tag.Value, "Canon")
@@ -85,7 +85,7 @@ func TestTag(t *testing.T) {
 	// Test Tag struct creation and fields
 	tag := Tag{
 		Spec:     SpecEXIF,
-		ID:       "Exif:ISO",
+		ID:       "EXIF:ISO",
 		Name:     "ISO",
 		DataType: "short",
 		Value:    100,
@@ -95,8 +95,8 @@ func TestTag(t *testing.T) {
 	if tag.Spec != SpecEXIF {
 		t.Errorf("Tag.Spec = %v, want %v", tag.Spec, SpecEXIF)
 	}
-	if tag.ID != "Exif:ISO" {
-		t.Errorf("Tag.ID = %q, want %q", tag.ID, "Exif:ISO")
+	if tag.ID != "EXIF:ISO" {
+		t.Errorf("Tag.ID = %q, want %q", tag.ID, "EXIF:ISO")
 	}
 	if tag.Name != "ISO" {
 		t.Errorf("Tag.Name = %q, want %q", tag.Name, "ISO")
@@ -114,17 +114,17 @@ func TestTag(t *testing.T) {
 
 func TestTagID(t *testing.T) {
 	// Test TagID type
-	var id TagID = "Exif:DateTimeOriginal"
-	if id != "Exif:DateTimeOriginal" {
-		t.Errorf("TagID = %q, want %q", id, "Exif:DateTimeOriginal")
+	var id TagID = "EXIF:DateTimeOriginal"
+	if id != "EXIF:DateTimeOriginal" {
+		t.Errorf("TagID = %q, want %q", id, "EXIF:DateTimeOriginal")
 	}
 
 	// Test as map key
 	m := make(map[TagID]string)
-	m["Exif:Make"] = "Canon"
-	m["Exif:Model"] = "EOS 5D"
+	m["EXIF:Make"] = "Canon"
+	m["EXIF:Model"] = "EOS 5D"
 
-	if m["Exif:Make"] != "Canon" {
+	if m["EXIF:Make"] != "Canon" {
 		t.Errorf("map[TagID] lookup failed")
 	}
 }

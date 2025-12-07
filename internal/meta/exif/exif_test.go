@@ -234,7 +234,7 @@ func TestParser_ParseWithTags(t *testing.T) {
 	}
 
 	// Check for Make tag
-	if tag, ok := dirs[0].Tags["Exif:Make"]; ok {
+	if tag, ok := dirs[0].Tags["EXIF:Make"]; ok {
 		if tag.Value != "Canon" {
 			t.Errorf("Make value = %v, want %q", tag.Value, "Canon")
 		}
@@ -681,7 +681,7 @@ func TestParser_ParseWithGPSSubIFD(t *testing.T) {
 	// Check GPS tag was parsed correctly
 	for _, dir := range dirs {
 		if dir.Name == "GPS" {
-			if tag, ok := dir.Tags["Exif:GPSLatitudeRef"]; ok {
+			if tag, ok := dir.Tags["EXIF:GPSLatitudeRef"]; ok {
 				if tag.Value != "N" {
 					t.Errorf("GPSLatitudeRef = %v, want %q", tag.Value, "N")
 				}

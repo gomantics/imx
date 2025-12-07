@@ -8,162 +8,162 @@ package imx
 
 // Camera and Device Tags
 const (
-	TagMake         TagID = "Exif:Make"
-	TagModel        TagID = "Exif:Model"
-	TagSoftware     TagID = "Exif:Software"
-	TagOrientation  TagID = "Exif:Orientation"
-	TagSerialNumber TagID = "Exif:SerialNumber"
-	TagOwnerName    TagID = "Exif:OwnerName"
+	TagMake         TagID = "EXIF:Make"
+	TagModel        TagID = "EXIF:Model"
+	TagSoftware     TagID = "EXIF:Software"
+	TagOrientation  TagID = "EXIF:Orientation"
+	TagSerialNumber TagID = "EXIF:SerialNumber"
+	TagOwnerName    TagID = "EXIF:OwnerName"
 )
 
 // Lens Tags
 const (
-	TagLensMake         TagID = "Exif:LensMake"
-	TagLensModel        TagID = "Exif:LensModel"
-	TagLensSerialNumber TagID = "Exif:LensSerialNumber"
-	TagLensInfo         TagID = "Exif:LensInfo"
+	TagLensMake         TagID = "EXIF:LensMake"
+	TagLensModel        TagID = "EXIF:LensModel"
+	TagLensSerialNumber TagID = "EXIF:LensSerialNumber"
+	TagLensInfo         TagID = "EXIF:LensInfo"
 )
 
 // Image Description Tags
 const (
-	TagImageDescription TagID = "Exif:ImageDescription"
-	TagImageTitle       TagID = "Exif:ImageTitle"
-	TagArtist           TagID = "Exif:Artist"
-	TagPhotographer     TagID = "Exif:Photographer"
-	TagCopyright        TagID = "Exif:Copyright"
-	TagUserComment      TagID = "Exif:UserComment"
+	TagImageDescription TagID = "EXIF:ImageDescription"
+	TagImageTitle       TagID = "EXIF:ImageTitle"
+	TagArtist           TagID = "EXIF:Artist"
+	TagPhotographer     TagID = "EXIF:Photographer"
+	TagCopyright        TagID = "EXIF:Copyright"
+	TagUserComment      TagID = "EXIF:UserComment"
 )
 
 // Date and Time Tags
 const (
-	TagDateTimeOriginal    TagID = "Exif:DateTimeOriginal"
-	TagCreateDate          TagID = "Exif:CreateDate"
-	TagModifyDate          TagID = "Exif:ModifyDate"
-	TagOffsetTime          TagID = "Exif:OffsetTime"
-	TagOffsetTimeOriginal  TagID = "Exif:OffsetTimeOriginal"
-	TagSubSecTime          TagID = "Exif:SubSecTime"
-	TagSubSecTimeOriginal  TagID = "Exif:SubSecTimeOriginal"
-	TagSubSecTimeDigitized TagID = "Exif:SubSecTimeDigitized"
+	TagDateTimeOriginal    TagID = "EXIF:DateTimeOriginal"
+	TagCreateDate          TagID = "EXIF:CreateDate"
+	TagModifyDate          TagID = "EXIF:ModifyDate"
+	TagOffsetTime          TagID = "EXIF:OffsetTime"
+	TagOffsetTimeOriginal  TagID = "EXIF:OffsetTimeOriginal"
+	TagSubSecTime          TagID = "EXIF:SubSecTime"
+	TagSubSecTimeOriginal  TagID = "EXIF:SubSecTimeOriginal"
+	TagSubSecTimeDigitized TagID = "EXIF:SubSecTimeDigitized"
 )
 
 // Image Dimensions Tags
 const (
-	TagImageWidth      TagID = "Exif:ImageWidth"
-	TagImageHeight     TagID = "Exif:ImageHeight"
-	TagExifImageWidth  TagID = "Exif:ExifImageWidth"
-	TagExifImageHeight TagID = "Exif:ExifImageHeight"
+	TagImageWidth      TagID = "EXIF:ImageWidth"
+	TagImageHeight     TagID = "EXIF:ImageHeight"
+	TagExifImageWidth  TagID = "EXIF:ExifImageWidth"
+	TagExifImageHeight TagID = "EXIF:ExifImageHeight"
 )
 
 // Exposure Tags
 const (
-	TagExposureTime         TagID = "Exif:ExposureTime"
-	TagShutterSpeedValue    TagID = "Exif:ShutterSpeedValue"
-	TagFNumber              TagID = "Exif:FNumber"
-	TagApertureValue        TagID = "Exif:ApertureValue"
-	TagExposureProgram      TagID = "Exif:ExposureProgram"
-	TagExposureMode         TagID = "Exif:ExposureMode"
-	TagExposureCompensation TagID = "Exif:ExposureCompensation"
-	TagBrightnessValue      TagID = "Exif:BrightnessValue"
+	TagExposureTime         TagID = "EXIF:ExposureTime"
+	TagShutterSpeedValue    TagID = "EXIF:ShutterSpeedValue"
+	TagFNumber              TagID = "EXIF:FNumber"
+	TagApertureValue        TagID = "EXIF:ApertureValue"
+	TagExposureProgram      TagID = "EXIF:ExposureProgram"
+	TagExposureMode         TagID = "EXIF:ExposureMode"
+	TagExposureCompensation TagID = "EXIF:ExposureCompensation"
+	TagBrightnessValue      TagID = "EXIF:BrightnessValue"
 )
 
 // ISO Tags
 const (
-	TagISO                       TagID = "Exif:ISO"
-	TagISOSpeed                  TagID = "Exif:ISOSpeed"
-	TagSensitivityType           TagID = "Exif:SensitivityType"
-	TagStandardOutputSensitivity TagID = "Exif:StandardOutputSensitivity"
-	TagRecommendedExposureIndex  TagID = "Exif:RecommendedExposureIndex"
+	TagISO                       TagID = "EXIF:ISO"
+	TagISOSpeed                  TagID = "EXIF:ISOSpeed"
+	TagSensitivityType           TagID = "EXIF:SensitivityType"
+	TagStandardOutputSensitivity TagID = "EXIF:StandardOutputSensitivity"
+	TagRecommendedExposureIndex  TagID = "EXIF:RecommendedExposureIndex"
 )
 
 // Focus and Lens Settings Tags
 const (
-	TagFocalLength             TagID = "Exif:FocalLength"
-	TagFocalLengthIn35mmFormat TagID = "Exif:FocalLengthIn35mmFormat"
-	TagMaxApertureValue        TagID = "Exif:MaxApertureValue"
-	TagSubjectDistance         TagID = "Exif:SubjectDistance"
-	TagSubjectDistanceRange    TagID = "Exif:SubjectDistanceRange"
+	TagFocalLength             TagID = "EXIF:FocalLength"
+	TagFocalLengthIn35mmFormat TagID = "EXIF:FocalLengthIn35mmFormat"
+	TagMaxApertureValue        TagID = "EXIF:MaxApertureValue"
+	TagSubjectDistance         TagID = "EXIF:SubjectDistance"
+	TagSubjectDistanceRange    TagID = "EXIF:SubjectDistanceRange"
 )
 
 // Flash Tags
 const (
-	TagFlash       TagID = "Exif:Flash"
-	TagFlashEnergy TagID = "Exif:FlashEnergy"
+	TagFlash       TagID = "EXIF:Flash"
+	TagFlashEnergy TagID = "EXIF:FlashEnergy"
 )
 
 // Metering and Lighting Tags
 const (
-	TagMeteringMode TagID = "Exif:MeteringMode"
-	TagLightSource  TagID = "Exif:LightSource"
-	TagWhiteBalance TagID = "Exif:WhiteBalance"
+	TagMeteringMode TagID = "EXIF:MeteringMode"
+	TagLightSource  TagID = "EXIF:LightSource"
+	TagWhiteBalance TagID = "EXIF:WhiteBalance"
 )
 
 // Image Quality Tags
 const (
-	TagColorSpace       TagID = "Exif:ColorSpace"
-	TagContrast         TagID = "Exif:Contrast"
-	TagSaturation       TagID = "Exif:Saturation"
-	TagSharpness        TagID = "Exif:Sharpness"
-	TagDigitalZoomRatio TagID = "Exif:DigitalZoomRatio"
+	TagColorSpace       TagID = "EXIF:ColorSpace"
+	TagContrast         TagID = "EXIF:Contrast"
+	TagSaturation       TagID = "EXIF:Saturation"
+	TagSharpness        TagID = "EXIF:Sharpness"
+	TagDigitalZoomRatio TagID = "EXIF:DigitalZoomRatio"
 )
 
 // Scene Tags
 const (
-	TagSceneCaptureType TagID = "Exif:SceneCaptureType"
-	TagSceneType        TagID = "Exif:SceneType"
+	TagSceneCaptureType TagID = "EXIF:SceneCaptureType"
+	TagSceneType        TagID = "EXIF:SceneType"
 )
 
 // GPS Tags
 const (
-	TagGPSVersionID         TagID = "Exif:GPSVersionID"
-	TagGPSLatitudeRef       TagID = "Exif:GPSLatitudeRef"
-	TagGPSLatitude          TagID = "Exif:GPSLatitude"
-	TagGPSLongitudeRef      TagID = "Exif:GPSLongitudeRef"
-	TagGPSLongitude         TagID = "Exif:GPSLongitude"
-	TagGPSAltitudeRef       TagID = "Exif:GPSAltitudeRef"
-	TagGPSAltitude          TagID = "Exif:GPSAltitude"
-	TagGPSTimeStamp         TagID = "Exif:GPSTimeStamp"
-	TagGPSDateStamp         TagID = "Exif:GPSDateStamp"
-	TagGPSSatellites        TagID = "Exif:GPSSatellites"
-	TagGPSStatus            TagID = "Exif:GPSStatus"
-	TagGPSMeasureMode       TagID = "Exif:GPSMeasureMode"
-	TagGPSDOP               TagID = "Exif:GPSDOP"
-	TagGPSSpeed             TagID = "Exif:GPSSpeed"
-	TagGPSSpeedRef          TagID = "Exif:GPSSpeedRef"
-	TagGPSTrack             TagID = "Exif:GPSTrack"
-	TagGPSTrackRef          TagID = "Exif:GPSTrackRef"
-	TagGPSImgDirection      TagID = "Exif:GPSImgDirection"
-	TagGPSImgDirectionRef   TagID = "Exif:GPSImgDirectionRef"
-	TagGPSMapDatum          TagID = "Exif:GPSMapDatum"
-	TagGPSDestLatitude      TagID = "Exif:GPSDestLatitude"
-	TagGPSDestLatitudeRef   TagID = "Exif:GPSDestLatitudeRef"
-	TagGPSDestLongitude     TagID = "Exif:GPSDestLongitude"
-	TagGPSDestLongitudeRef  TagID = "Exif:GPSDestLongitudeRef"
-	TagGPSDestBearing       TagID = "Exif:GPSDestBearing"
-	TagGPSDestBearingRef    TagID = "Exif:GPSDestBearingRef"
-	TagGPSDestDistance      TagID = "Exif:GPSDestDistance"
-	TagGPSDestDistanceRef   TagID = "Exif:GPSDestDistanceRef"
-	TagGPSProcessingMethod  TagID = "Exif:GPSProcessingMethod"
-	TagGPSAreaInformation   TagID = "Exif:GPSAreaInformation"
-	TagGPSDifferential      TagID = "Exif:GPSDifferential"
-	TagGPSHPositioningError TagID = "Exif:GPSHPositioningError"
+	TagGPSVersionID         TagID = "EXIF:GPSVersionID"
+	TagGPSLatitudeRef       TagID = "EXIF:GPSLatitudeRef"
+	TagGPSLatitude          TagID = "EXIF:GPSLatitude"
+	TagGPSLongitudeRef      TagID = "EXIF:GPSLongitudeRef"
+	TagGPSLongitude         TagID = "EXIF:GPSLongitude"
+	TagGPSAltitudeRef       TagID = "EXIF:GPSAltitudeRef"
+	TagGPSAltitude          TagID = "EXIF:GPSAltitude"
+	TagGPSTimeStamp         TagID = "EXIF:GPSTimeStamp"
+	TagGPSDateStamp         TagID = "EXIF:GPSDateStamp"
+	TagGPSSatellites        TagID = "EXIF:GPSSatellites"
+	TagGPSStatus            TagID = "EXIF:GPSStatus"
+	TagGPSMeasureMode       TagID = "EXIF:GPSMeasureMode"
+	TagGPSDOP               TagID = "EXIF:GPSDOP"
+	TagGPSSpeed             TagID = "EXIF:GPSSpeed"
+	TagGPSSpeedRef          TagID = "EXIF:GPSSpeedRef"
+	TagGPSTrack             TagID = "EXIF:GPSTrack"
+	TagGPSTrackRef          TagID = "EXIF:GPSTrackRef"
+	TagGPSImgDirection      TagID = "EXIF:GPSImgDirection"
+	TagGPSImgDirectionRef   TagID = "EXIF:GPSImgDirectionRef"
+	TagGPSMapDatum          TagID = "EXIF:GPSMapDatum"
+	TagGPSDestLatitude      TagID = "EXIF:GPSDestLatitude"
+	TagGPSDestLatitudeRef   TagID = "EXIF:GPSDestLatitudeRef"
+	TagGPSDestLongitude     TagID = "EXIF:GPSDestLongitude"
+	TagGPSDestLongitudeRef  TagID = "EXIF:GPSDestLongitudeRef"
+	TagGPSDestBearing       TagID = "EXIF:GPSDestBearing"
+	TagGPSDestBearingRef    TagID = "EXIF:GPSDestBearingRef"
+	TagGPSDestDistance      TagID = "EXIF:GPSDestDistance"
+	TagGPSDestDistanceRef   TagID = "EXIF:GPSDestDistanceRef"
+	TagGPSProcessingMethod  TagID = "EXIF:GPSProcessingMethod"
+	TagGPSAreaInformation   TagID = "EXIF:GPSAreaInformation"
+	TagGPSDifferential      TagID = "EXIF:GPSDifferential"
+	TagGPSHPositioningError TagID = "EXIF:GPSHPositioningError"
 )
 
 // Version Tags
 const (
-	TagExifVersion     TagID = "Exif:ExifVersion"
-	TagFlashpixVersion TagID = "Exif:FlashpixVersion"
+	TagExifVersion     TagID = "EXIF:ExifVersion"
+	TagFlashpixVersion TagID = "EXIF:FlashpixVersion"
 )
 
 // Other Common Tags
 const (
-	TagCompression               TagID = "Exif:Compression"
-	TagPhotometricInterpretation TagID = "Exif:PhotometricInterpretation"
-	TagXResolution               TagID = "Exif:XResolution"
-	TagYResolution               TagID = "Exif:YResolution"
-	TagResolutionUnit            TagID = "Exif:ResolutionUnit"
-	TagYCbCrPositioning          TagID = "Exif:YCbCrPositioning"
-	TagRating                    TagID = "Exif:Rating"
-	TagRatingPercent             TagID = "Exif:RatingPercent"
+	TagCompression               TagID = "EXIF:Compression"
+	TagPhotometricInterpretation TagID = "EXIF:PhotometricInterpretation"
+	TagXResolution               TagID = "EXIF:XResolution"
+	TagYResolution               TagID = "EXIF:YResolution"
+	TagResolutionUnit            TagID = "EXIF:ResolutionUnit"
+	TagYCbCrPositioning          TagID = "EXIF:YCbCrPositioning"
+	TagRating                    TagID = "EXIF:Rating"
+	TagRatingPercent             TagID = "EXIF:RatingPercent"
 )
 
 // =============================================================================

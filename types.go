@@ -26,7 +26,7 @@ const (
 	SpecICC  = meta.SpecICC
 )
 
-// TagID is a unique identifier for a metadata tag (e.g. "Exif:DateTimeOriginal")
+// TagID is a unique identifier for a metadata tag (e.g. "EXIF:DateTimeOriginal")
 type TagID = meta.TagID
 
 // Tag represents a single metadata attribute
