@@ -334,34 +334,34 @@ const (
 
 // ICC Parsed Tag Values (human-readable names from knownTags)
 const (
-	TagICCProfileDescription  TagID = "ICC:Profile Description"  // Profile description
-	TagICCProfileCopyright    TagID = "ICC:Profile Copyright"    // Copyright notice
-	TagICCMediaWhitePoint     TagID = "ICC:Media White Point"    // Media white point XYZ
-	TagICCMediaBlackPoint     TagID = "ICC:Media Black Point"    // Media black point XYZ
-	TagICCChromaticAdaptation TagID = "ICC:Chromatic Adaptation" // Chromatic adaptation matrix
+	TagICCProfileDescription  TagID = "ICC:ProfileDescription"  // Profile description
+	TagICCProfileCopyright    TagID = "ICC:ProfileCopyright"    // Copyright notice
+	TagICCMediaWhitePoint     TagID = "ICC:MediaWhitePoint"     // Media white point XYZ
+	TagICCMediaBlackPoint     TagID = "ICC:MediaBlackPoint"     // Media black point XYZ
+	TagICCChromaticAdaptation TagID = "ICC:ChromaticAdaptation" // Chromatic adaptation matrix
 )
 
 // ICC Color Matrix Tags
 const (
-	TagICCRedMatrixColumn   TagID = "ICC:Red Matrix Column"   // Red matrix column XYZ
-	TagICCGreenMatrixColumn TagID = "ICC:Green Matrix Column" // Green matrix column XYZ
-	TagICCBlueMatrixColumn  TagID = "ICC:Blue Matrix Column"  // Blue matrix column XYZ
+	TagICCRedMatrixColumn   TagID = "ICC:RedMatrixColumn"   // Red matrix column XYZ
+	TagICCGreenMatrixColumn TagID = "ICC:GreenMatrixColumn" // Green matrix column XYZ
+	TagICCBlueMatrixColumn  TagID = "ICC:BlueMatrixColumn"  // Blue matrix column XYZ
 )
 
 // ICC Tone Reproduction Curve Tags
 const (
-	TagICCRedTRC   TagID = "ICC:Red Tone Reproduction Curve"   // Red TRC
-	TagICCGreenTRC TagID = "ICC:Green Tone Reproduction Curve" // Green TRC
-	TagICCBlueTRC  TagID = "ICC:Blue Tone Reproduction Curve"  // Blue TRC
-	TagICCGrayTRC  TagID = "ICC:Gray Tone Reproduction Curve"  // Gray TRC
+	TagICCRedTRC   TagID = "ICC:RedToneReproductionCurve"   // Red TRC
+	TagICCGreenTRC TagID = "ICC:GreenToneReproductionCurve" // Green TRC
+	TagICCBlueTRC  TagID = "ICC:BlueToneReproductionCurve"  // Blue TRC
+	TagICCGrayTRC  TagID = "ICC:GrayToneReproductionCurve"  // Gray TRC
 )
 
 // ICC Device Description Tags
 const (
-	TagICCDeviceMfgDesc         TagID = "ICC:Device Manufacturer Description" // Device mfg description
-	TagICCDeviceModelDesc       TagID = "ICC:Device Model Description"        // Device model description
-	TagICCTechnology            TagID = "ICC:Technology"                      // Device technology
-	TagICCViewingConditionsDesc TagID = "ICC:Viewing Conditions Description"  // Viewing conditions
+	TagICCDeviceMfgDesc         TagID = "ICC:DeviceManufacturerDescription" // Device mfg description
+	TagICCDeviceModelDesc       TagID = "ICC:DeviceModelDescription"        // Device model description
+	TagICCTechnology            TagID = "ICC:Technology"                    // Device technology
+	TagICCViewingConditionsDesc TagID = "ICC:ViewingConditionsDescription"  // Viewing conditions
 	TagICCLuminance             TagID = "ICC:Luminance"                       // Luminance value
 	TagICCMeasurement           TagID = "ICC:Measurement"                     // Measurement info
 )

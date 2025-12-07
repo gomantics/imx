@@ -176,3 +176,99 @@ func TestTagID(t *testing.T) {
 		t.Errorf("map[TagID] lookup failed")
 	}
 }
+
+func TestTagID_Spec(t *testing.T) {
+	tests := []struct {
+		id   TagID
+		want string
+	}{
+		{"EXIF:Make", "EXIF"},
+		{"XMP-dc:Title", "XMP"},
+		{"IPTC:Byline", "IPTC"},
+		{"ICC:ProfileDescription", "ICC"},
+		{"Invalid", ""},
+		{"NoColon", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.id), func(t *testing.T) {
+			got := tt.id.Spec()
+			if got != tt.want {
+				t.Errorf("Spec() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTagID_Name(t *testing.T) {
+	tests := []struct {
+		id   TagID
+		want string
+	}{
+		{"EXIF:Make", "Make"},
+		{"XMP-dc:Title", "Title"},
+		{"IPTC:Byline", "Byline"},
+		{"ICC:ProfileDescription", "ProfileDescription"},
+		{"NoColon", "NoColon"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.id), func(t *testing.T) {
+			got := tt.id.Name()
+			if got != tt.want {
+				t.Errorf("Name() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTagID_Namespace(t *testing.T) {
+	tests := []struct {
+		id   TagID
+		want string
+	}{
+		{"XMP-dc:Title", "dc"},
+		{"XMP-photoshop:Credit", "photoshop"},
+		{"XMP-xmp:CreateDate", "xmp"},
+		{"EXIF:Make", ""},
+		{"IPTC:Byline", ""},
+		{"ICC:ProfileDescription", ""},
+		{"NoColon", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.id), func(t *testing.T) {
+			got := tt.id.Namespace()
+			if got != tt.want {
+				t.Errorf("Namespace() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTagID_IsValid(t *testing.T) {
+	tests := []struct {
+		id    TagID
+		valid bool
+	}{
+		{"EXIF:Make", true},
+		{"XMP-dc:Title", true},
+		{"ICC:ProfileDescription", true},
+		{"IPTC:Byline", true},
+		{"EXIF:Profile Description", false}, // Has space
+		{"exif:Make", false},                // Lowercase spec
+		{"NoColon", false},                  // No colon
+		{"EXIF:", false},                    // Empty name
+		{"", false},                         // Empty string
+		{"XMP-DC:Title", true},              // Namespace can be uppercase
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.id), func(t *testing.T) {
+			got := tt.id.IsValid()
+			if got != tt.valid {
+				t.Errorf("%q.IsValid() = %v, want %v", tt.id, got, tt.valid)
+			}
+		})
+	}
+}

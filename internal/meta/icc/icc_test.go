@@ -546,8 +546,8 @@ func TestParser_BuildDirectory_DuplicateTags(t *testing.T) {
 	dir := p.buildDirectory(profile, 0)
 
 	// Verify we have expected tags
-	if _, ok := dir.Tags["ICC:Profile Description"]; !ok {
-		t.Error("Missing Profile Description tag")
+	if _, ok := dir.Tags["ICC:ProfileDescription"]; !ok {
+		t.Error("Missing ProfileDescription tag")
 	}
 }
 
@@ -830,8 +830,8 @@ func TestParser_BuildDirectory_DuplicateHeaderTag(t *testing.T) {
 	dir := p.buildDirectory(profile, 0)
 
 	// Should have the tag (first one wins, second is skipped)
-	if _, ok := dir.Tags["ICC:Profile Description"]; !ok {
-		t.Error("Should have Profile Description tag")
+	if _, ok := dir.Tags["ICC:ProfileDescription"]; !ok {
+		t.Error("Should have ProfileDescription tag")
 	}
 }
 
