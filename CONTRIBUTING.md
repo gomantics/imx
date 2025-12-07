@@ -6,7 +6,6 @@ Thank you for considering contributing to imx! This document provides guidelines
 
 `imx` is a zero-dependency Go library for fast image metadata extraction. It supports EXIF, IPTC, XMP, and ICC color profiles from JPEG images (with more formats planned).
 
-**For detailed specifications, see [docs/SPEC.md](docs/SPEC.md).**
 
 ## Development Setup
 
@@ -61,8 +60,7 @@ imx/
 │
 ├── testdata/goldens/   # Test images with expected metadata
 │
-├── Makefile            # Build automation
-└── docs/SPEC.md        # Detailed specification
+└── Makefile            # Build automation
 ```
 
 ## Architecture
@@ -254,7 +252,6 @@ Run `imx --help` for full documentation.
 
 ## Questions?
 
-- Check [docs/SPEC.md](docs/SPEC.md) for technical details
 - Open an issue for bugs or feature requests
 - Submit a PR for contributions
 
