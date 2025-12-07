@@ -83,7 +83,7 @@ meta, err := imx.MetadataFromFile("photo.jpg", imx.WithSpecs(imx.SpecEXIF))
 
 ### Using the Extractor
 
-For more control or when processing many files, create a reusable `Extractor`. Once created, an Extractor is safe for concurrent use across goroutines:
+For more control or when processing many files, create a reusable `Extractor`.
 
 ```go
 extractor := imx.New(
