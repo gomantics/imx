@@ -13,10 +13,10 @@ func buildValidProfile() []byte {
 	data := make([]byte, 200)
 
 	// Header (128 bytes)
-	binary.BigEndian.PutUint32(data[0:4], 200)        // profile size
-	copy(data[4:8], "APPL")                           // CMM
-	data[8] = 4                                       // version major
-	data[9] = 0x30                                    // version minor/bugfix
+	binary.BigEndian.PutUint32(data[0:4], 200) // profile size
+	copy(data[4:8], "APPL")                    // CMM
+	data[8] = 4                                // version major
+	data[9] = 0x30                             // version minor/bugfix
 	binary.BigEndian.PutUint32(data[12:16], uint32(ClassDisplay))
 	binary.BigEndian.PutUint32(data[16:20], uint32(SpaceRGB))
 	binary.BigEndian.PutUint32(data[20:24], uint32(SpaceXYZ))
@@ -62,13 +62,13 @@ func buildValidProfile() []byte {
 
 	// Tag data (MLUC for desc)
 	copy(data[144:148], "mluc")
-	binary.BigEndian.PutUint32(data[148:152], 0) // reserved
-	binary.BigEndian.PutUint32(data[152:156], 1) // 1 record
+	binary.BigEndian.PutUint32(data[148:152], 0)  // reserved
+	binary.BigEndian.PutUint32(data[152:156], 1)  // 1 record
 	binary.BigEndian.PutUint32(data[156:160], 12) // record size
 	// Record
 	copy(data[160:162], "en")
 	copy(data[162:164], "US")
-	binary.BigEndian.PutUint32(data[164:168], 10) // string length
+	binary.BigEndian.PutUint32(data[164:168], 10)  // string length
 	binary.BigEndian.PutUint32(data[168:172], 172) // string offset
 	// String "Test" in UTF-16BE
 	binary.BigEndian.PutUint16(data[172:174], 'T')
@@ -732,10 +732,10 @@ func TestParser_ReassembleSegments_ShortButValidProfile(t *testing.T) {
 
 func TestParser_BuildDirectory_TagWithNilValue(t *testing.T) {
 	p := New()
-	
+
 	// Create a profile with a tag that will parse to nil
 	profileData := make([]byte, 200)
-	
+
 	// Header
 	binary.BigEndian.PutUint32(profileData[0:4], 200)
 	copy(profileData[4:8], "APPL")
@@ -746,23 +746,23 @@ func TestParser_BuildDirectory_TagWithNilValue(t *testing.T) {
 	binary.BigEndian.PutUint32(profileData[36:40], ICCSignature)
 	copy(profileData[48:52], "GOOG")
 	copy(profileData[80:84], "GOOG")
-	
+
 	// Tag table
 	binary.BigEndian.PutUint32(profileData[128:132], 1)
 	copy(profileData[132:136], "test")
 	binary.BigEndian.PutUint32(profileData[136:140], 144)
 	binary.BigEndian.PutUint32(profileData[140:144], 20)
-	
+
 	// Tag data with invalid type (will return nil)
 	copy(profileData[144:148], "xxxx")
-	
+
 	profile, err := p.parseProfile(profileData)
 	if err != nil {
 		t.Fatalf("parseProfile() error = %v", err)
 	}
-	
+
 	dir := p.buildDirectory(profile, 0)
-	
+
 	// Should still build directory without the nil-valued tag
 	if dir.Spec != meta.SpecICC {
 		t.Error("Directory should still be valid")
@@ -771,10 +771,10 @@ func TestParser_BuildDirectory_TagWithNilValue(t *testing.T) {
 
 func TestParser_BuildDirectory_DuplicateHeaderTag(t *testing.T) {
 	p := New()
-	
+
 	// Create a profile with TWO tags with the same signature (duplicates)
 	profileData := make([]byte, 260)
-	
+
 	// Header
 	binary.BigEndian.PutUint32(profileData[0:4], 260)
 	copy(profileData[4:8], "APPL")
@@ -785,7 +785,7 @@ func TestParser_BuildDirectory_DuplicateHeaderTag(t *testing.T) {
 	binary.BigEndian.PutUint32(profileData[36:40], ICCSignature)
 	copy(profileData[48:52], "GOOG")
 	copy(profileData[80:84], "GOOG")
-	
+
 	// Tag table - TWO tags with same name to trigger duplicate check
 	binary.BigEndian.PutUint32(profileData[128:132], 2)
 	// First desc tag
@@ -796,7 +796,7 @@ func TestParser_BuildDirectory_DuplicateHeaderTag(t *testing.T) {
 	copy(profileData[144:148], "desc")
 	binary.BigEndian.PutUint32(profileData[148:152], 206)
 	binary.BigEndian.PutUint32(profileData[152:156], 50)
-	
+
 	// First MLUC tag data
 	copy(profileData[156:160], "mluc")
 	binary.BigEndian.PutUint32(profileData[164:168], 1)
@@ -809,7 +809,7 @@ func TestParser_BuildDirectory_DuplicateHeaderTag(t *testing.T) {
 	binary.BigEndian.PutUint16(profileData[186:188], 'A')
 	binary.BigEndian.PutUint16(profileData[188:190], 'A')
 	binary.BigEndian.PutUint16(profileData[190:192], 'A')
-	
+
 	// Second MLUC tag data
 	copy(profileData[206:210], "mluc")
 	binary.BigEndian.PutUint32(profileData[214:218], 1)
@@ -822,14 +822,14 @@ func TestParser_BuildDirectory_DuplicateHeaderTag(t *testing.T) {
 	binary.BigEndian.PutUint16(profileData[236:238], 'B')
 	binary.BigEndian.PutUint16(profileData[238:240], 'B')
 	binary.BigEndian.PutUint16(profileData[240:242], 'B')
-	
+
 	profile, err := p.parseProfile(profileData)
 	if err != nil {
 		t.Fatalf("parseProfile() error = %v", err)
 	}
-	
+
 	dir := p.buildDirectory(profile, 0)
-	
+
 	// Should have the tag (first one wins, second is skipped)
 	if _, ok := dir.Tags["ICC:Profile Description"]; !ok {
 		t.Error("Should have Profile Description tag")
@@ -845,11 +845,11 @@ func TestParser_ReassembleSegments_MultiSegmentMissingMiddle(t *testing.T) {
 	seg1a := make([]byte, 102)
 	seg1a[0] = 1
 	seg1a[1] = 3
-	
-	seg1b := make([]byte, 102) 
+
+	seg1b := make([]byte, 102)
 	seg1b[0] = 1 // Duplicate segment 1!
 	seg1b[1] = 3
-	
+
 	seg3 := make([]byte, 102)
 	seg3[0] = 3
 	seg3[1] = 3
@@ -871,10 +871,10 @@ func TestParser_ReassembleSegments_MultiSegmentMissingMiddle(t *testing.T) {
 
 func TestParser_BuildDirectory_TagWithNilValue2(t *testing.T) {
 	p := New()
-	
+
 	// Create a profile with a tag that has empty/short data that parses to nil
 	profileData := make([]byte, 180)
-	
+
 	// Header
 	binary.BigEndian.PutUint32(profileData[0:4], 180)
 	copy(profileData[4:8], "APPL")
@@ -885,26 +885,25 @@ func TestParser_BuildDirectory_TagWithNilValue2(t *testing.T) {
 	binary.BigEndian.PutUint32(profileData[36:40], ICCSignature)
 	copy(profileData[48:52], "GOOG")
 	copy(profileData[80:84], "GOOG")
-	
+
 	// Tag table with a tag that has short/invalid data
 	binary.BigEndian.PutUint32(profileData[128:132], 1)
 	copy(profileData[132:136], "test")
 	binary.BigEndian.PutUint32(profileData[136:140], 144)
 	binary.BigEndian.PutUint32(profileData[140:144], 5) // Only 5 bytes - too short
-	
+
 	// Tag data - too short for valid parsing
 	copy(profileData[144:149], "xxxxx")
-	
+
 	profile, err := p.parseProfile(profileData)
 	if err != nil {
 		t.Fatalf("parseProfile() error = %v", err)
 	}
-	
+
 	dir := p.buildDirectory(profile, 0)
-	
+
 	// Should skip the nil-valued tag but still build directory
 	if dir.Spec != meta.SpecICC {
 		t.Error("Directory should still be valid")
 	}
 }
-

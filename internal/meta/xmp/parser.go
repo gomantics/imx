@@ -175,9 +175,6 @@ func parsePacket(data []byte, nodeMap NodeMap, namespaces map[string]string) err
 				}
 			}
 
-			if newCtx == nil {
-				newCtx = &ContextFrame{Type: CTX_ROOT}
-			}
 			ctxStack = append(ctxStack, newCtx)
 
 		case xml.EndElement:
