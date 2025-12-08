@@ -5,7 +5,6 @@ import (
 )
 
 // ContextType represents the current state in the XMP state machine.
-
 type ContextType int
 
 const (
@@ -17,6 +16,28 @@ const (
 	CTX_LI
 	CTX_STRUCT_FIELD // For when a property is treated as a struct field (nested)
 )
+
+// String returns the string representation of the context type.
+func (ct ContextType) String() string {
+	switch ct {
+	case CTX_ROOT:
+		return "ROOT"
+	case CTX_RDF:
+		return "RDF"
+	case CTX_DESCRIPTION:
+		return "DESCRIPTION"
+	case CTX_PROPERTY:
+		return "PROPERTY"
+	case CTX_ARRAY:
+		return "ARRAY"
+	case CTX_LI:
+		return "LI"
+	case CTX_STRUCT_FIELD:
+		return "STRUCT_FIELD"
+	default:
+		return "UNKNOWN"
+	}
+}
 
 // NSFrame tracks namespaces at a specific depth
 type NSFrame struct {
@@ -48,6 +69,20 @@ const (
 	KindArray
 	KindStruct
 )
+
+// String returns the string representation of the property kind.
+func (pk PropKind) String() string {
+	switch pk {
+	case KindSimple:
+		return "Simple"
+	case KindArray:
+		return "Array"
+	case KindStruct:
+		return "Struct"
+	default:
+		return "Unknown"
+	}
+}
 
 type PropertyValue struct {
 	Kind   PropKind

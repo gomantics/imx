@@ -26,10 +26,32 @@ var wellKnownPrefixes = map[string]string{
 }
 
 func replaceNSFrame(parent *NSFrame, attrs []xml.Attr) *NSFrame {
-	// Clone or Create
+	// Quick check: if no xmlns attributes, return parent frame (lazy cloning)
+	// This avoids unnecessary map cloning for elements without namespace declarations
+	hasXMLNS := false
+	for _, attr := range attrs {
+		if attr.Name.Space == "xmlns" || (attr.Name.Local == "xmlns" && attr.Name.Space == "") {
+			hasXMLNS = true
+			break
+		}
+	}
+
+	// If no xmlns attributes and parent exists, reuse parent frame
+	if !hasXMLNS && parent != nil {
+		return parent
+	}
+
+	// Pre-size maps based on expected final size (parent entries + new attributes)
+	// This reduces reallocations during map growth
+	parentSize := 0
+	if parent != nil {
+		parentSize = len(parent.prefixToURI)
+	}
+	expectedSize := parentSize + len(attrs)
+
 	newFrame := &NSFrame{
-		prefixToURI: make(map[string]string),
-		uriToPrefix: make(map[string]string),
+		prefixToURI: make(map[string]string, expectedSize),
+		uriToPrefix: make(map[string]string, expectedSize),
 	}
 
 	if parent != nil {
@@ -148,4 +170,42 @@ func isFloat(s string) bool {
 		}
 	}
 	return hasDot
+}
+
+// isArrayContainer checks if an element is an RDF array container (Bag, Seq, Alt).
+func isArrayContainer(space, local string) bool {
+	return space == nsRDF && (local == "Bag" || local == "Seq" || local == "Alt")
+}
+
+// isRDFDescription checks if an element is an RDF Description.
+func isRDFDescription(space, local string) bool {
+	return space == nsRDF && local == "Description"
+}
+
+// isRDFLi checks if an element is an RDF li (list item).
+func isRDFLi(space, local string) bool {
+	return space == nsRDF && local == "li"
+}
+
+// createStructFieldContext creates a new struct field context frame.
+// This helper reduces duplication across multiple state handlers.
+func createStructFieldContext(space, local string, ns *NSFrame, attrs []xml.Attr, namespaces map[string]string) *ContextFrame {
+	prefix := resolvePrefix(space, ns)
+	namespaces[space] = prefix
+
+	ctx := &ContextFrame{
+		Type:       CTX_STRUCT_FIELD,
+		propURI:    space,
+		propLocal:  local,
+		propPrefix: prefix,
+	}
+
+	// Check for struct attributes (shorthand struct notation)
+	fields := parsePropertyAttrs(attrs, ns, namespaces)
+	if len(fields) > 0 {
+		ctx.propKind = KindStruct
+		ctx.fields = fields
+	}
+
+	return ctx
 }

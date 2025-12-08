@@ -335,3 +335,747 @@ func TestParse_EdgeCases(t *testing.T) {
 		}
 	})
 }
+func TestParsePacket_EdgeCases(t *testing.T) {
+	t.Run("Nested array in struct field", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:container>
+    <rdf:Description>
+     <ns:items>
+      <rdf:Bag>
+       <rdf:li>item1</rdf:li>
+       <rdf:li>item2</rdf:li>
+      </rdf:Bag>
+     </ns:items>
+    </rdf:Description>
+   </ns:container>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+
+		if len(nodeMap) == 0 {
+			t.Error("Expected parsed data")
+		}
+	})
+
+	t.Run("Array inside list item", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:outer>
+    <rdf:Seq>
+     <rdf:li>
+      <rdf:Bag>
+       <rdf:li>nested1</rdf:li>
+      </rdf:Bag>
+     </rdf:li>
+    </rdf:Seq>
+   </ns:outer>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Struct field with nested struct", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:outer>
+    <rdf:Description>
+     <ns:inner>
+      <rdf:Description ns:field="value"/>
+     </ns:inner>
+    </rdf:Description>
+   </ns:outer>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("CharData in various contexts", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <dc:title>Simple Text</dc:title>
+   <dc:subject>
+    <rdf:Bag>
+     <rdf:li>keyword</rdf:li>
+    </rdf:Bag>
+   </dc:subject>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+
+		// Verify dc:title has simple text
+		key := PropertyKey{URI: "http://purl.org/dc/elements/1.1/", Local: "title"}
+		if val, ok := nodeMap[key]; !ok || len(val) == 0 || val[0].Scalar != "Simple Text" {
+			t.Errorf("dc:title not parsed correctly")
+		}
+	})
+
+	t.Run("Multiple Description blocks at RDF level", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+          xmlns:dc="http://purl.org/dc/elements/1.1/"
+          xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+  <rdf:Description rdf:about="" dc:format="jpeg"/>
+  <rdf:Description rdf:about="" xmp:Rating="4"/>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+
+		if len(nodeMap) != 2 {
+			t.Errorf("Expected 2 properties from multiple Description blocks")
+		}
+	})
+
+	t.Run("Empty elements", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <dc:empty></dc:empty>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+
+		key := PropertyKey{URI: "http://purl.org/dc/elements/1.1/", Local: "empty"}
+		if val, ok := nodeMap[key]; !ok || len(val) == 0 || val[0].Scalar != "" {
+			t.Errorf("Empty element not parsed correctly")
+		}
+	})
+
+	t.Run("Malformed XML", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta><broken>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err == nil {
+			t.Error("Expected error for malformed XML")
+		}
+	})
+
+	t.Run("Non-RDF element under root", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <x:other>content</x:other>
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" dc:test="value"/>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Non-Description element under RDF", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Other>content</rdf:Other>
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" dc:test="value"/>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("RDF element directly in property", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <dc:prop>
+    <rdf:Description dc:inner="value"/>
+   </dc:prop>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Unknown element in array context", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <dc:array>
+    <rdf:Bag>
+     <rdf:unknown>should fallback to root</rdf:unknown>
+    </rdf:Bag>
+   </dc:array>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("LI with Description and attributes", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+          xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#">
+  <rdf:Description rdf:about="" xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/">
+   <xmpMM:History>
+    <rdf:Seq>
+     <rdf:li>
+      <rdf:Description stEvt:action="saved" stEvt:when="2023-01-01"/>
+     </rdf:li>
+    </rdf:Seq>
+   </xmpMM:History>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("LI with nested property element", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:items>
+    <rdf:Seq>
+     <rdf:li>
+      <ns:field>value</ns:field>
+     </rdf:li>
+    </rdf:Seq>
+   </ns:items>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Struct field without propLocal", func(t *testing.T) {
+		// This tests the case where STRUCT_FIELD has propLocal == ""
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:outer>
+    <rdf:Description>
+     <rdf:Description ns:inner="value"/>
+    </rdf:Description>
+   </ns:outer>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Array item transfer to property", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <dc:subject>
+    <rdf:Bag>
+     <rdf:li>item1</rdf:li>
+     <rdf:li>item2</rdf:li>
+     <rdf:li>item3</rdf:li>
+    </rdf:Bag>
+   </dc:subject>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+
+		key := PropertyKey{URI: "http://purl.org/dc/elements/1.1/", Local: "subject"}
+		if val, ok := nodeMap[key]; !ok || len(val) == 0 || len(val[0].Items) != 3 {
+			t.Errorf("Array items not properly transferred to property")
+		}
+	})
+
+	t.Run("Property with non-RDF non-Description child", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:container>
+    <ns:nested>value</ns:nested>
+   </ns:container>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Property with attributes becomes struct", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:prop ns:attr1="val1" ns:attr2="val2">text</ns:prop>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+
+		key := PropertyKey{URI: "http://example.com/ns/", Local: "prop"}
+		if val, ok := nodeMap[key]; !ok || len(val) == 0 || val[0].Kind != KindStruct {
+			t.Errorf("Property with attributes should be KindStruct")
+		}
+	})
+
+	t.Run("LI with attributes becomes struct", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:items>
+    <rdf:Seq>
+     <rdf:li ns:attr="value">text</rdf:li>
+    </rdf:Seq>
+   </ns:items>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Struct field with attributes", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:outer>
+    <rdf:Description>
+     <ns:inner ns:attr="attrval">text</ns:inner>
+    </rdf:Description>
+   </ns:outer>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Struct field with array child", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:outer>
+    <rdf:Description>
+     <ns:items>
+      <rdf:Bag>
+       <rdf:li>item</rdf:li>
+      </rdf:Bag>
+     </ns:items>
+    </rdf:Description>
+   </ns:outer>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Struct field parent is LI", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:array>
+    <rdf:Seq>
+     <rdf:li>
+      <rdf:Description>
+       <ns:field>val</ns:field>
+      </rdf:Description>
+     </rdf:li>
+    </rdf:Seq>
+   </ns:array>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Deeply nested struct fields", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:level1>
+    <rdf:Description>
+     <ns:level2>
+      <rdf:Description>
+       <ns:level3>value</ns:level3>
+      </rdf:Description>
+     </ns:level2>
+    </rdf:Description>
+   </ns:level1>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("LI containing Bag/Seq/Alt", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:outer>
+    <rdf:Seq>
+     <rdf:li>
+      <rdf:Bag>
+       <rdf:li>nested</rdf:li>
+      </rdf:Bag>
+     </rdf:li>
+    </rdf:Seq>
+   </ns:outer>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Array end with non-Property parent", func(t *testing.T) {
+		// Test CTX_ARRAY ending when parent is not CTX_PROPERTY
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:items>
+    <rdf:Seq>
+     <rdf:li>item1</rdf:li>
+     <rdf:li>item2</rdf:li>
+    </rdf:Seq>
+   </ns:items>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("LI with non-Array parent", func(t *testing.T) {
+		// This shouldn't normally happen in well-formed XMP but tests the else branch
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <dc:subject>
+    <rdf:Bag>
+     <rdf:li>keyword1</rdf:li>
+     <rdf:li>keyword2</rdf:li>
+    </rdf:Bag>
+   </dc:subject>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Struct field parent is STRUCT_FIELD", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:outer>
+    <rdf:Description>
+     <ns:middle>
+      <rdf:Description>
+       <ns:inner>value</ns:inner>
+      </rdf:Description>
+     </ns:middle>
+    </rdf:Description>
+   </ns:outer>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Parse type resource in LI", func(t *testing.T) {
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+          xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#">
+  <rdf:Description rdf:about="" xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/">
+   <xmpMM:History>
+    <rdf:Seq>
+     <rdf:li rdf:parseType="Resource" stEvt:action="created" stEvt:when="2023"/>
+    </rdf:Seq>
+   </xmpMM:History>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("RDF non-Description under Description (line 83-85)", func(t *testing.T) {
+		// Test the else branch at line 83-85: RDF element under Description that's not Description
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <dc:valid>test</dc:valid>
+   <rdf:SomeWeirdElement>ignored</rdf:SomeWeirdElement>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("Property struct field with attributes (line 108-111)", func(t *testing.T) {
+		// Test line 108-111: struct field with attributes under Property
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:container>
+    <ns:nested ns:attr1="val1" ns:attr2="val2">text</ns:nested>
+   </ns:container>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+
+	t.Run("LI struct field with attributes (line 145-148)", func(t *testing.T) {
+		// Test line 145-148: struct field with attributes under LI
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:ns="http://example.com/ns/">
+   <ns:array>
+    <rdf:Seq>
+     <rdf:li>
+      <ns:field ns:attr1="val1" ns:attr2="val2">text</ns:field>
+     </rdf:li>
+    </rdf:Seq>
+   </ns:array>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>`)
+
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+		p := New()
+		err := p.parsePacket(payload, nodeMap, namespaces)
+		if err != nil {
+			t.Fatalf("parsePacket error: %v", err)
+		}
+	})
+}
+
+func TestParsePacket_Validation(t *testing.T) {
+	t.Run("Empty data error", func(t *testing.T) {
+		p := New()
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+
+		err := p.parsePacket([]byte{}, nodeMap, namespaces)
+		if err == nil {
+			t.Error("Expected error for empty data")
+		}
+		if err != nil && err.Error() != "empty XMP data" {
+			t.Errorf("Expected 'empty XMP data' error, got: %v", err)
+		}
+	})
+
+	t.Run("Nil nodeMap error", func(t *testing.T) {
+		p := New()
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/"/>`)
+		namespaces := make(map[string]string)
+
+		err := p.parsePacket(payload, nil, namespaces)
+		if err == nil {
+			t.Error("Expected error for nil nodeMap")
+		}
+		if err != nil && err.Error() != "nodeMap cannot be nil" {
+			t.Errorf("Expected 'nodeMap cannot be nil' error, got: %v", err)
+		}
+	})
+
+	t.Run("Nil namespaces error", func(t *testing.T) {
+		p := New()
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/"/>`)
+		nodeMap := make(NodeMap)
+
+		err := p.parsePacket(payload, nodeMap, nil)
+		if err == nil {
+			t.Error("Expected error for nil namespaces")
+		}
+		if err != nil && err.Error() != "namespaces map cannot be nil" {
+			t.Errorf("Expected 'namespaces map cannot be nil' error, got: %v", err)
+		}
+	})
+}
