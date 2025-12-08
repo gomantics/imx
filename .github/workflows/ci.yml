@@ -110,19 +110,8 @@ jobs:
           tool: 'go'
           output-file-path: bench-output.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          save-data-file: true
+          auto-push: true
           alert-threshold: '120%'
           comment-on-alert: true
           fail-on-alert: false
-          skip-fetch-gh-pages: true
-
-      - name: Deploy to GitHub Pages
-        if: success()
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./benchmark-data-repository
-          destination_dir: dev/bench
-          keep_files: true
 
