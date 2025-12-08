@@ -1,11 +1,6 @@
 # Contributing to imx
 
-Thank you for considering contributing to imx! This document provides guidelines and information for contributors.
-
-## Project Overview
-
-`imx` is a zero-dependency Go library for fast image metadata extraction. It supports EXIF, IPTC, XMP, and ICC color profiles from JPEG images (with more formats planned).
-
+Thank you for considering contributing to imx! This document provides guidelines for contributors.
 
 ## Development Setup
 
@@ -23,232 +18,100 @@ cd imx
 
 # Run all checks (lint, test, build)
 make check
-
-# Or without make:
-go vet ./...
-go test -race ./...
-go build ./...
 ```
 
 ## Project Structure
 
 ```
 imx/
-├── api.go              # Package-level convenience functions
-├── config.go           # Configuration and options
-├── errors.go           # Sentinel errors
-├── extractor.go        # Core Extractor type
-├── types.go            # Metadata, Directory, Tag types
-├── tags.go             # Tag ID constants (TagMake, TagModel, etc.)
-│
+├── *.go                # Public API (api.go, config.go, extractor.go, types.go, tags.go)
 ├── cmd/imx/            # CLI tool
-│   └── main.go         # Rich command-line interface
-│
-├── examples/           # Usage examples
-│   ├── basic/          # Simple metadata extraction
-│   └── advanced/       # Advanced features demo
-│
+├── examples/           # Usage examples (basic & advanced)
 ├── internal/
-│   ├── format/         # Container format parsers
-│   │   └── jpeg/       # JPEG marker parsing
-│   │
-│   └── meta/           # Metadata specification parsers
-│       ├── exif/       # EXIF TIFF/IFD parsing
-│       ├── iptc/       # IPTC-IIM parsing
-│       ├── xmp/        # XMP XML parsing
-│       └── icc/        # ICC color profile parsing
-│
+│   ├── format/         # Container format parsers (JPEG, etc.)
+│   └── meta/           # Metadata parsers (EXIF, IPTC, XMP, ICC)
 ├── testdata/goldens/   # Test images with expected metadata
-│
 └── Makefile            # Build automation
 ```
 
-## Architecture
+### Architecture
 
-### Three-Layer Pipeline
-
-1. **Format Layer** (`internal/format/`) - Extracts raw metadata blocks from container formats (JPEG APP markers, etc.)
-2. **Meta Layer** (`internal/meta/`) - Parses raw blocks into structured tags (EXIF IFDs, XMP XML, etc.)
-3. **API Layer** (root package) - Provides user-facing types and functions
-
-### Data Flow
-
-```
-File/Reader → Format Parser → RawBlocks → Meta Parsers → Directories → Metadata
-     ↓              ↓              ↓            ↓              ↓
-   JPEG         APP1/APP2/     EXIF/IPTC/    Parsed      User-facing
-               APP13 data      XMP/ICC       Tags         result
-```
+Three-layer pipeline:
+1. **Format Layer** - Extracts raw metadata blocks from container formats
+2. **Meta Layer** - Parses raw blocks into structured tags
+3. **API Layer** - Provides user-facing types and functions
 
 ## Development Guidelines
 
 ### Code Style
 
 - Follow standard Go conventions (`go fmt`, `go vet`)
-- Use meaningful variable and function names
 - Add comments for exported types and functions
 - Keep functions focused and small
 
 ### Testing
 
 ```bash
-# Run all tests
-make test
-
-# Run library tests with coverage
-make test-lib
-
-# Generate coverage report
-make coverage
-
-# Generate HTML coverage report
-make coverage-html
+make test          # Run all tests
+make coverage      # Show coverage report (target: 100%)
 ```
-
-**Coverage Target: 100% for library code** (internal/ and root packages)
 
 ### Commit Messages
 
-**IMPORTANT**: Commit messages serve as the project's changelog. Write detailed, informative messages that explain the what, why, and impact of changes.
+Commit messages serve as the project's changelog. Write clear, informative messages.
 
-#### Format
-
+**Format:**
 ```
-type(scope): short description (max 72 chars)
+type(scope): short description
 
-Detailed explanation of changes:
+Detailed explanation:
 - What was changed and why
-- Any breaking changes (BREAKING:)
-- Performance impact (if any)
+- Breaking changes (BREAKING:)
 - Related issues (#123)
-
-[optional footer with breaking changes, deprecations]
 ```
 
-#### Types
-- `feat` - New feature (adds functionality)
-- `fix` - Bug fix (fixes broken functionality)
-- `refactor` - Code restructuring (no functional changes)
+**Types:**
+- `feat` - New feature
+- `fix` - Bug fix
+- `refactor` - Code restructuring
 - `perf` - Performance improvement
 - `test` - Add/update tests
-- `docs` - Documentation only
-- `chore` - Maintenance (deps, build, etc.)
-- `style` - Code style/formatting
+- `docs` - Documentation
+- `chore` - Maintenance
 
-#### Breaking Changes
-
-Prefix breaking changes with `BREAKING:` in the commit body:
-
+**Example:**
 ```
-feat(api): simplify Tag() method signature
+feat(exif): add GPS coordinate parsing
 
-BREAKING: Removed spec parameter from Metadata.Tag()
+Added support for extracting GPS latitude/longitude from EXIF tags.
+Handles both degrees/minutes/seconds and decimal formats.
 
-Old: meta.Tag(imx.SpecEXIF, imx.TagMake)
-New: meta.Tag(imx.TagMake)
-
-The spec is now automatically extracted from the TagID.
-This simplifies the API and makes tag lookup more intuitive.
+Closes #45
 ```
 
-#### Good Examples
+### Adding a New Parser
 
-```
-feat(bench): add comprehensive benchmark suite
-
-Added 38 benchmarks covering all major code paths:
-- High-level API benchmarks (MetadataFromFile, etc.)
-- Parser-specific benchmarks (EXIF, IPTC, XMP, ICC)
-- Metadata operation benchmarks (Tag lookup, iteration)
-
-Also added:
-- GitHub Actions workflow for continuous benchmarking
-- Makefile targets: bench, bench-all, bench-report, bench-compare
-- Scripts for benchmark comparison using benchstat
-
-Performance on Apple M4 Pro:
-- MetadataFromFile: 279μs/op
-- Tag lookup: 7ns/op
-- EXIF parsing: 6.9μs/op
-```
-
-```
-refactor(exif): reduce parseValue() complexity using strategy pattern
-
-Reduced parseValue() from 107 lines to 32 lines (-70%) by:
-- Creating TIFFTypeParser interface
-- Implementing 10 type-specific parsers
-- Moving parsers to internal/common/tiff_types.go
-
-Benefits:
-- Easier to test (each parser isolated)
-- More maintainable (single responsibility)
-- Reusable for future TIFF format support
-
-No functional changes, all tests pass.
-```
-
-```
-fix(iptc): handle extended dataset sizes correctly
-
-Fixed parsing of IPTC datasets with sizes >32KB by properly
-handling the extended size format (high bit set).
-
-Added DatasetReader to encapsulate byte-level parsing and
-reduce parseIPTCIIM() complexity from 75 to 20 lines (-73%).
-
-Fixes #123
-```
-
-#### Bad Examples
-
-```
-❌ fix bug
-❌ update code
-❌ refactor
-❌ wip
-❌ fixes
-```
-
-These don't explain what was changed or why.
-
-### Adding a New Metadata Parser
-
+**Metadata Parser:**
 1. Create package in `internal/meta/<spec>/`
-2. Implement `meta.Parser` interface:
-   ```go
-   type Parser interface {
-       Spec() meta.Spec
-       Parse(blocks []format.RawBlock) ([]meta.Directory, error)
-   }
-   ```
-3. Register in `extractor.go` metaParsers slice
+2. Implement `meta.Parser` interface
+3. Register in `extractor.go`
 4. Add tests with 100% coverage
-5. Update documentation
 
-### Adding a New Format Parser
-
+**Format Parser:**
 1. Create package in `internal/format/<format>/`
-2. Implement `format.Parser` interface:
-   ```go
-   type Parser interface {
-       Detect(peek []byte) bool
-       Parse(r *bufio.Reader) ([]RawBlock, error)
-   }
-   ```
-3. Register in `extractor.go` formatParsers slice
+2. Implement `format.Parser` interface
+3. Register in `extractor.go`
 4. Add tests with 100% coverage
-5. Update documentation
 
-## Critical Constraints
+## Core Principles
 
 ### No External Dependencies
 
-The library uses only the Go standard library. This is a core design principle.
+Use only the Go standard library. This is a core design principle.
 
 ### Never Panic
 
-Always return errors instead of panicking. Use sentinel errors where appropriate:
+Always return errors instead of panicking:
 
 ```go
 var ErrTruncatedData = errors.New("imx: truncated data")
@@ -284,135 +147,30 @@ if size > MaxAllowedSize {
 data := make([]byte, size)
 ```
 
-### Concurrent Safety
-
-The `Extractor` type clones configuration per call and is safe for concurrent use.
-
 ## Benchmarking
 
-### Running Benchmarks
-
 ```bash
-# Run benchmarks with comprehensive report
+# Run benchmarks
 make bench
 
-# Run benchmarks + generate historical graphs
+# Run with historical analysis
 make bench N=50         # Last 50 commits
-make bench N=100        # Last 100 commits
 ```
 
-**Benchmark Report Includes**:
-- Human-readable performance metrics grouped by category (API, Parsers, Format)
-- Multiple metrics per benchmark:
-  - **Ops/Sec** - Operations per second (throughput)
-  - **ns/op** - Nanoseconds per operation (latency)
-  - **MB/s** - Megabytes per second (data throughput)
-  - **B/op** - Bytes allocated per operation (memory usage)
-  - **allocs/op** - Number of allocations per operation
-- Summary statistics (fastest/slowest, averages)
-
-**Historical Performance Graphs**:
-
-When you specify `N=commits`, the tool will:
-1. Run benchmarks on current commit and show results
-2. Checkout each of the last N commits
-3. Run benchmarks (skip commits where benchmarks fail)
-4. Generate graphs in `out/` directory showing performance trends
-
-**Graph Files Generated**:
-- `out/ops_per_sec.png` - Throughput over time
-- `out/ns_per_op.png` - Latency over time
-- `out/throughput.png` - Data throughput (MB/s) over time
-- `out/bytes_per_op.png` - Memory allocations over time
-- `out/allocs_per_op.png` - Allocation count over time
-
-**Requirements**: Python 3 + matplotlib (only for historical graphs)
-```bash
-pip3 install matplotlib
-```
-
-### Continuous Benchmarking
-
-Every commit to `main` and every PR automatically runs benchmarks via GitHub Actions:
-- Results stored in `gh-pages` branch
-- Visualized at `https://gomantics.github.io/imx/benchmarks`
-- Regression detection (>120% slowdown alerts on PRs)
-
-### Comparing Performance
-
-```bash
-# Compare your changes vs main
-make bench-compare OLD=main NEW=your-branch
-
-# Or manually with benchstat
-go test -bench=. -benchmem ./... > new.txt
-git stash
-git checkout main
-go test -bench=. -benchmem ./... > old.txt
-benchstat old.txt new.txt
-```
-
-### Benchmark Coverage
-
-38 benchmarks covering:
-- High-level operations (MetadataFromFile, Tag lookup, etc.)
-- Parser performance (EXIF, IPTC, XMP, ICC)
-- Format parsing (JPEG)
-- Memory allocations
-
-### Performance Goals
-
-| Operation | Target | Current |
-|-----------|--------|---------|
-| MetadataFromFile | <300μs | 279μs ✅ |
-| Tag lookup | <10ns | 7ns ✅ |
-| EXIF parsing | <10μs | 6.9μs ✅ |
+See benchmark results in the README.
 
 ## Make Targets
 
 ```bash
 make help          # Show all targets
-
-make check         # Run lint, test, and build (default)
+make check         # Run lint, test, and build
 make build         # Build library, CLI, and examples
-make test          # Run all tests with race detector
-make test-lib      # Run library tests with coverage
+make test          # Run all tests
 make lint          # Run go vet
-make fmt           # Format code
 make clean         # Remove build artifacts
-make install       # Install CLI to GOPATH/bin
 make coverage      # Show coverage report
-make coverage-html # Generate HTML coverage report
 make bench         # Run benchmarks
-make bench-all     # Run benchmarks with detailed output
-make bench-report  # Generate benchmark report
-make bench-compare # Compare benchmarks between commits
-make bench-viz     # Generate performance graphs across git history
-make example       # Build and run example
 ```
-
-## CLI Tool
-
-The `imx` CLI provides a rich interface for metadata extraction:
-
-```bash
-# Build CLI
-make build
-
-# Or install globally
-make install
-
-# Usage examples
-imx photo.jpg                    # Show all metadata
-imx -S photo.jpg                 # Quick summary
-imx --json photo.jpg             # JSON output
-imx --get=Make photo.jpg         # Get specific tag
-imx --spec=exif photo.jpg        # Filter by spec
-imx https://example.com/img.jpg  # From URL
-imx -r --stats ./photos/         # Batch with stats
-```
-
-Run `imx --help` for full documentation.
 
 ## Questions?
 
@@ -422,4 +180,3 @@ Run `imx --help` for full documentation.
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
-

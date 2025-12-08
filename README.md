@@ -267,15 +267,7 @@ Generates graphs showing trends over time:
 
 ## Contributing
 
-Contributions are welcome!
-
-- **Development guidelines**: See [CONTRIBUTING.md](CONTRIBUTING.md)
-- **AI assistance setup**: See [CLAUDE.md](CLAUDE.md)
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting PRs - it contains important information about:
-- Commit message format (serves as changelog)
-- Benchmarking guidelines
-- Code style and testing requirements
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines
 
 ## License
 
