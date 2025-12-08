@@ -1,4 +1,4 @@
-.PHONY: build test lint fmt clean install coverage coverage-html check help bench
+.PHONY: build test lint fmt clean install coverage coverage-html check help bench fuzz
 
 # Go settings
 GOCMD = go
@@ -99,6 +99,22 @@ bench:
 	$(GOTEST) -bench=. -benchmem -benchtime=2s $(ALL_PKGS)
 	cd cmd/imx && $(GOTEST) -bench=. -benchmem -benchtime=2s ./...
 
+# Run fuzz tests
+fuzz:
+	@echo "Running fuzz tests..."
+	@$(GOTEST) -fuzz='^FuzzJPEGParse$$' -fuzztime=10s ./internal/format/jpeg
+	@$(GOTEST) -fuzz='^FuzzJPEGDetect$$' -fuzztime=10s ./internal/format/jpeg
+	@$(GOTEST) -fuzz='^FuzzEXIFParse$$' -fuzztime=10s ./internal/meta/exif
+	@$(GOTEST) -fuzz='^FuzzEXIFParseIFD$$' -fuzztime=10s ./internal/meta/exif
+	@$(GOTEST) -fuzz='^FuzzIPTCParse$$' -fuzztime=10s ./internal/meta/iptc
+	@$(GOTEST) -fuzz='^FuzzIPTCParseIPTCIIM$$' -fuzztime=10s ./internal/meta/iptc
+	@$(GOTEST) -fuzz='^FuzzXMPParse$$' -fuzztime=10s ./internal/meta/xmp
+	@$(GOTEST) -fuzz='^FuzzXMPParsePacket$$' -fuzztime=10s ./internal/meta/xmp
+	@$(GOTEST) -fuzz='^FuzzICCParse$$' -fuzztime=10s ./internal/meta/icc
+	@$(GOTEST) -fuzz='^FuzzICCParseHeader$$' -fuzztime=10s ./internal/meta/icc
+	@$(GOTEST) -fuzz='^FuzzICCParseTagTable$$' -fuzztime=10s ./internal/meta/icc
+	@echo "✓ All fuzz tests complete"
+
 # Show help
 help:
 	@echo "imx - Image Metadata Extraction Library"
@@ -117,5 +133,6 @@ help:
 	@echo "  coverage     - Run tests with coverage (library + CLI)"
 	@echo "  coverage-html- Generate HTML coverage report (library + CLI)"
 	@echo "  bench        - Run benchmarks"
+	@echo "  fuzz         - Run fuzz tests"
 	@echo "  example      - Build and run example"
 	@echo "  help         - Show this help"
