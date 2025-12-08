@@ -95,10 +95,6 @@ bench:
 	@echo "Running benchmarks..."
 	$(GOTEST) -bench=. -benchmem -benchtime=1s $(ALL_PKGS)
 
-# Run benchmarks with historical analysis and graphs
-bench-history:
-	@./scripts/bench.py $(if $(N),-n $(N),)
-
 # Show help
 help:
 	@echo "imx - Image Metadata Extraction Library"
@@ -118,6 +114,5 @@ help:
 	@echo "  coverage     - Show coverage report (100% target)"
 	@echo "  coverage-html- Generate HTML coverage report"
 	@echo "  bench        - Run benchmarks"
-	@echo "  bench-history- Run benchmarks with historical analysis (use N=commits)"
 	@echo "  example      - Build and run example"
 	@echo "  help         - Show this help"

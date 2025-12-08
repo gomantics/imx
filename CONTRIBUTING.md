@@ -149,19 +149,10 @@ data := make([]byte, size)
 
 ## Benchmarking
 
-### Running Benchmarks Locally
+### Running Benchmarks
 
 ```bash
-# Run benchmarks (simple output)
 make bench
-
-# Run with historical analysis and graphs
-make bench-history N=50         # Last 50 commits
-```
-
-**Historical analysis** requires Python 3 with matplotlib:
-```bash
-pip3 install matplotlib
 ```
 
 ### Continuous Benchmarking
@@ -169,15 +160,9 @@ pip3 install matplotlib
 Performance is automatically tracked on every commit to `main`:
 
 - **Dashboard**: [https://gomantics.github.io/imx/dev/bench/](https://gomantics.github.io/imx/dev/bench/)
-- **Auto-tracked**: Benchmarks run on every push to main
+- **Benchmarks run** on every push to main
 - **Regression alerts**: Warns if performance degrades >20%
-- **Historical graphs**: Interactive charts showing trends over time
-
-The CI automatically:
-1. Runs `make bench` on every main branch commit
-2. Stores results in the `gh-pages` branch
-3. Generates interactive performance graphs
-4. Comments on PRs if regressions are detected
+- **Historical trends**: Interactive charts showing performance over time
 
 ## Make Targets
 
@@ -190,7 +175,6 @@ make lint          # Run go vet
 make clean         # Remove build artifacts
 make coverage      # Show coverage report
 make bench         # Run benchmarks
-make bench-history # Run benchmarks with historical analysis
 ```
 
 ## Questions?

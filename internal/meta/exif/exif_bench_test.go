@@ -6,8 +6,8 @@ import (
 	"github.com/gomantics/imx/internal/common"
 )
 
-// BenchmarkParser_Parse benchmarks EXIF parsing with typical camera data
-func BenchmarkParser_Parse(b *testing.B) {
+// BenchmarkEXIFParse benchmarks EXIF parsing with typical camera data
+func BenchmarkEXIFParse(b *testing.B) {
 	// Create a realistic TIFF structure with typical camera metadata
 	data := buildTIFF(true, []ifdEntry{
 		{tagID: 0x010F, dataType: 2, count: 6, valueOrOffset: []byte("Canon\x00\x00\x00")},        // Make

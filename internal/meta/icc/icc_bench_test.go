@@ -7,8 +7,8 @@ import (
 	"github.com/gomantics/imx/internal/common"
 )
 
-// BenchmarkParser_Parse benchmarks ICC color profile parsing
-func BenchmarkParser_Parse(b *testing.B) {
+// BenchmarkICCParse benchmarks ICC color profile parsing
+func BenchmarkICCParse(b *testing.B) {
 	// Create realistic ICC profile data with typical tags
 	data := buildICCProfileWithTags(10)
 

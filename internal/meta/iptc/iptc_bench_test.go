@@ -6,8 +6,8 @@ import (
 	"github.com/gomantics/imx/internal/common"
 )
 
-// BenchmarkParser_Parse benchmarks IPTC parsing with typical metadata
-func BenchmarkParser_Parse(b *testing.B) {
+// BenchmarkIPTCParse benchmarks IPTC parsing with typical metadata
+func BenchmarkIPTCParse(b *testing.B) {
 	// Create realistic IPTC-IIM data with typical news/media metadata
 	data := buildIPTCData([]dataset{
 		{record: RecordApplication, id: 80, value: []byte("Test Byline")},

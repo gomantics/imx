@@ -6,8 +6,8 @@ import (
 	"github.com/gomantics/imx/internal/common"
 )
 
-// BenchmarkParser_Parse benchmarks XMP parsing with typical Adobe metadata
-func BenchmarkParser_Parse(b *testing.B) {
+// BenchmarkXMPParse benchmarks XMP parsing with typical Adobe metadata
+func BenchmarkXMPParse(b *testing.B) {
 	// Realistic XMP packet with common metadata fields
 	xmpData := []byte(`<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
