@@ -5,43 +5,67 @@ import (
 )
 
 func TestContextType(t *testing.T) {
-	// Ensure all context types are defined and distinct
-	types := []ContextType{
-		CTX_ROOT,
-		CTX_RDF,
-		CTX_DESCRIPTION,
-		CTX_PROPERTY,
-		CTX_ARRAY,
-		CTX_LI,
-		CTX_STRUCT_FIELD,
+	tests := []struct {
+		name     string
+		val      ContextType
+		expected string
+	}{
+		{"ROOT", CTX_ROOT, "ROOT"},
+		{"RDF", CTX_RDF, "RDF"},
+		{"DESCRIPTION", CTX_DESCRIPTION, "DESCRIPTION"},
+		{"PROPERTY", CTX_PROPERTY, "PROPERTY"},
+		{"ARRAY", CTX_ARRAY, "ARRAY"},
+		{"LI", CTX_LI, "LI"},
+		{"STRUCT_FIELD", CTX_STRUCT_FIELD, "STRUCT_FIELD"},
+		{"UNKNOWN", ContextType(999), "UNKNOWN"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.val.String(); got != tt.expected {
+				t.Errorf("ContextType.String() = %q, want %q", got, tt.expected)
+			}
+		})
 	}
 
 	// Verify they're all different values
 	seen := make(map[ContextType]bool)
-	for _, ct := range types {
-		if seen[ct] {
-			t.Errorf("Duplicate ContextType value: %d", ct)
+	for _, tt := range tests[:7] { // Exclude unknown
+		if seen[tt.val] {
+			t.Errorf("Duplicate ContextType value: %d", tt.val)
 		}
-		seen[ct] = true
+		seen[tt.val] = true
 	}
 }
 
 func TestPropKind(t *testing.T) {
-	// Ensure all prop kinds are defined and distinct
-	kinds := []PropKind{
-		KindUnknown,
-		KindSimple,
-		KindArray,
-		KindStruct,
+	tests := []struct {
+		name     string
+		val      PropKind
+		expected string
+	}{
+		{"Unknown", KindUnknown, "Unknown"},
+		{"Simple", KindSimple, "Simple"},
+		{"Array", KindArray, "Array"},
+		{"Struct", KindStruct, "Struct"},
+		{"Invalid", PropKind(999), "Unknown"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.val.String(); got != tt.expected {
+				t.Errorf("PropKind.String() = %q, want %q", got, tt.expected)
+			}
+		})
 	}
 
 	// Verify they're all different values
 	seen := make(map[PropKind]bool)
-	for _, k := range kinds {
-		if seen[k] {
-			t.Errorf("Duplicate PropKind value: %d", k)
+	for _, tt := range tests[:4] { // Exclude invalid
+		if seen[tt.val] {
+			t.Errorf("Duplicate PropKind value: %d", tt.val)
 		}
-		seen[k] = true
+		seen[tt.val] = true
 	}
 }
 

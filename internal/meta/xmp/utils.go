@@ -149,3 +149,41 @@ func isFloat(s string) bool {
 	}
 	return hasDot
 }
+
+// isArrayContainer checks if an element is an RDF array container (Bag, Seq, Alt).
+func isArrayContainer(space, local string) bool {
+	return space == nsRDF && (local == "Bag" || local == "Seq" || local == "Alt")
+}
+
+// isRDFDescription checks if an element is an RDF Description.
+func isRDFDescription(space, local string) bool {
+	return space == nsRDF && local == "Description"
+}
+
+// isRDFLi checks if an element is an RDF li (list item).
+func isRDFLi(space, local string) bool {
+	return space == nsRDF && local == "li"
+}
+
+// createStructFieldContext creates a new struct field context frame.
+// This helper reduces duplication across multiple state handlers.
+func createStructFieldContext(space, local string, ns *NSFrame, attrs []xml.Attr, namespaces map[string]string) *ContextFrame {
+	prefix := resolvePrefix(space, ns)
+	namespaces[space] = prefix
+
+	ctx := &ContextFrame{
+		Type:       CTX_STRUCT_FIELD,
+		propURI:    space,
+		propLocal:  local,
+		propPrefix: prefix,
+	}
+
+	// Check for struct attributes (shorthand struct notation)
+	fields := parsePropertyAttrs(attrs, ns, namespaces)
+	if len(fields) > 0 {
+		ctx.propKind = KindStruct
+		ctx.fields = fields
+	}
+
+	return ctx
+}
