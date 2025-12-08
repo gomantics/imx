@@ -60,7 +60,7 @@ class BenchmarkRunner:
         """Run benchmarks and return metrics (for historical analysis)"""
         try:
             result = subprocess.run(
-                ["go", "test", "-bench=.", "-benchmem", "-benchtime=2s", "-run=^$",
+                ["go", "test", "-bench=.", "-benchmem", "-benchtime=1s", "-run=^$",
                  ".", "./internal/meta/...", "./internal/format/..."],
                 cwd=self.repo_path,
                 capture_output=True,
@@ -86,7 +86,7 @@ class BenchmarkRunner:
         """Run benchmarks with streaming formatted output"""
         try:
             process = subprocess.Popen(
-                ["go", "test", "-bench=.", "-benchmem", "-benchtime=2s", "-run=^$",
+                ["go", "test", "-bench=.", "-benchmem", "-benchtime=1s", "-run=^$",
                 ".", "./internal/meta/...", "./internal/format/..."],
                 cwd=self.repo_path,
                 stdout=subprocess.PIPE,
@@ -557,21 +557,22 @@ class GraphGenerator:
 
         return False
 
-    def _organize_by_benchmark(self, commits: List[CommitBenchmark]) -> Dict[str, List[Tuple[datetime, BenchmarkMetrics]]]:
-        """Organize results by benchmark name, filtering to top-level benchmarks only"""
+    def _organize_by_benchmark(self, commits: List[CommitBenchmark]) -> Dict[str, List[Tuple[int, BenchmarkMetrics]]]:
+        """Organize results by benchmark name + package, filtering to top-level benchmarks only"""
         by_benchmark = defaultdict(list)
 
-        for commit in commits:
+        # Reverse commits so index 0 is oldest (left side of graph)
+        commits_reversed = list(reversed(commits))
+
+        for idx, commit in enumerate(commits_reversed):
             if not commit.success:
                 continue
             for metric in commit.metrics:
                 # Only include top-level benchmarks for cleaner graphs
                 if self._is_top_level_benchmark(metric.name):
-                    by_benchmark[metric.name].append((commit.commit_date, metric))
-
-        # Sort by date
-        for name in by_benchmark:
-            by_benchmark[name].sort(key=lambda x: x[0])
+                    # Create unique key: package + benchmark name
+                    key = f"{metric.package}::{metric.name}"
+                    by_benchmark[key].append((idx, metric))
 
         return dict(by_benchmark)
 
@@ -595,29 +596,46 @@ class GraphGenerator:
         """Generate a single metric graph with all benchmarks"""
         plt.figure(figsize=(16, 10))
 
-        # Group benchmarks by category for better colors
-        categories = {
-            "API": [],
-            "EXIF": [],
-            "IPTC": [],
-            "XMP": [],
-            "ICC": [],
-            "JPEG": [],
-        }
+        # Helper to extract category and label from package::name key
+        def get_category_and_label(key: str) -> Tuple[str, str]:
+            package, name = key.split("::", 1)
 
-        for name in by_benchmark.keys():
-            if name.startswith("MetadataFrom") or name.startswith("Metadata_"):
-                categories["API"].append(name)
-            elif "exif" in name.lower() or "IFD" in name:
-                categories["EXIF"].append(name)
-            elif "iptc" in name.lower():
-                categories["IPTC"].append(name)
-            elif "xmp" in name.lower():
-                categories["XMP"].append(name)
-            elif "icc" in name.lower():
-                categories["ICC"].append(name)
+            # Determine category
+            if "internal/meta/exif" in package:
+                category = "EXIF"
+                label = f"EXIF: {name}"
+            elif "internal/meta/iptc" in package:
+                category = "IPTC"
+                label = f"IPTC: {name}"
+            elif "internal/meta/xmp" in package:
+                category = "XMP"
+                label = f"XMP: {name}"
+            elif "internal/meta/icc" in package:
+                category = "ICC"
+                label = f"ICC: {name}"
+            elif "internal/format/jpeg" in package or "internal/container/jpeg" in package:
+                category = "JPEG"
+                label = f"JPEG: {name}"
+            elif package.endswith("/imx") or package == "github.com/gomantics/imx":
+                category = "API"
+                # Simplify API labels
+                if name.startswith("MetadataFrom"):
+                    label = name.replace("MetadataFrom", "")
+                elif name.startswith("Metadata_"):
+                    label = name.replace("Metadata_", "")
+                else:
+                    label = name
             else:
-                categories["JPEG"].append(name)
+                category = "Other"
+                label = name
+
+            return category, label
+
+        # Group benchmarks by category for consistent colors
+        categories = defaultdict(list)
+        for key in by_benchmark.keys():
+            category, _ = get_category_and_label(key)
+            categories[category].append(key)
 
         color_map = {
             "API": "tab:blue",
@@ -626,15 +644,17 @@ class GraphGenerator:
             "XMP": "tab:red",
             "ICC": "tab:purple",
             "JPEG": "tab:brown",
+            "Other": "tab:gray",
         }
 
-        for category, bench_names in categories.items():
-            for bench_name in bench_names:
-                data = by_benchmark.get(bench_name, [])
+        # Plot each benchmark
+        for category in sorted(categories.keys()):
+            for key in sorted(categories[category]):
+                data = by_benchmark.get(key, [])
                 if not data:
                     continue
 
-                dates = [d for d, _ in data]
+                indices = [idx for idx, _ in data]
 
                 if metric_name == "iterations":
                     values = [m.iterations for _, m in data]
@@ -651,15 +671,19 @@ class GraphGenerator:
                 if all(v == 0 for v in values):
                     continue
 
-                # Cleaner label without redundant category
-                label = bench_name.replace("Parser_", "").replace("Metadata_", "").replace("MetadataFrom", "")
-                plt.plot(dates, values, marker='o', label=label,
+                _, label = get_category_and_label(key)
+                plt.plot(indices, values, marker='o', label=label,
                         linewidth=2.5, markersize=6, color=color_map[category], alpha=0.8)
 
-        # Format Y-axis based on metric type
+        # Format axes
         ax = plt.gca()
+
+        # X-axis: commit indices
+        ax.set_xlabel('Commit (oldest → newest)', fontsize=12, fontweight='bold')
+        ax.set_xticks(range(len(set(idx for data in by_benchmark.values() for idx, _ in data))))
+
+        # Y-axis: format based on metric type
         if metric_name == "ns_per_op":
-            # Custom formatter for latency to show in human-readable units
             def format_latency(value, pos):
                 if value >= 1_000_000_000:
                     return f'{value/1_000_000_000:.1f}s'
@@ -672,7 +696,6 @@ class GraphGenerator:
             ax.yaxis.set_major_formatter(plt.FuncFormatter(format_latency))
             ylabel = "Latency per Operation"
         elif metric_name == "bytes_per_op":
-            # Custom formatter for memory
             def format_bytes(value, pos):
                 if value >= 1024*1024:
                     return f'{value/(1024*1024):.1f}MB'
@@ -683,7 +706,6 @@ class GraphGenerator:
             ax.yaxis.set_major_formatter(plt.FuncFormatter(format_bytes))
             ylabel = "Memory per Operation"
         elif metric_name == "iterations":
-            # Custom formatter for iterations
             def format_iterations(value, pos):
                 if value >= 1_000_000:
                     return f'{value/1_000_000:.1f}M'
@@ -696,13 +718,10 @@ class GraphGenerator:
         else:  # allocs_per_op
             ylabel = "Allocations per Operation"
 
-        plt.xlabel('Date', fontsize=12)
         plt.ylabel(ylabel, fontsize=12, fontweight='bold')
         plt.title(f'Performance History - {ylabel}', fontsize=14, fontweight='bold', pad=20)
-        plt.legend(loc='best', fontsize=10, framealpha=0.9)
+        plt.legend(loc='best', fontsize=9, framealpha=0.9, ncol=2)
         plt.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
-        plt.gcf().autofmt_xdate()
         plt.tight_layout()
         plt.savefig(self.output_dir / filename, dpi=120, bbox_inches='tight')
         plt.close()
