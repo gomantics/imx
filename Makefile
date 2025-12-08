@@ -83,7 +83,7 @@ coverage:
 	@$(GOTEST) -coverprofile=$(COVERAGE_FILE) -covermode=atomic ./... ./cmd/imx/...
 	@rm -f go.work go.work.sum
 	@echo ""
-	@$(GOTEST) -cover ./... ./cmd/imx/... 2>&1 | grep "coverage:" | grep -v "no test files"
+	@$(GOTEST) -cover ./... ./cmd/imx/... 2>&1 | grep "coverage:" | grep -v "no test files" || true
 
 # Generate HTML coverage report
 coverage-html: coverage
