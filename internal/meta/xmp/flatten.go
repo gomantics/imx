@@ -12,21 +12,22 @@ import (
 func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) common.Directory {
 	dir := common.Directory{
 		Spec: common.SpecXMP,
-		Name: "XMP",
+		Name: directoryName,
 		Tags: make(map[common.TagID]common.Tag),
 	}
 
 	for key, values := range nodeMap {
-		prefix := namespaces[key.URI]
-		if prefix == "" {
-			// Fallback if not captured? should be captured.
-			prefix = wellKnownPrefixes[key.URI]
-			if prefix == "" {
-				prefix = "ns"
+		// Resolve prefix: first from runtime namespaces, then well-known, finally fallback
+		prefix, ok := namespaces[key.URI]
+		if !ok {
+			if wellKnown, found := wellKnownPrefixes[key.URI]; found {
+				prefix = wellKnown
+			} else {
+				prefix = defaultPrefix // Fallback for unknown namespaces
 			}
 		}
 
-		tagID := common.TagID(fmt.Sprintf("XMP-%s:%s", prefix, key.Local))
+		tagID := common.TagID(fmt.Sprintf(tagIDFormat, prefix, key.Local))
 
 		var finalVal any
 		var dataType string
@@ -54,6 +55,11 @@ func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) common.Direct
 	return dir
 }
 
+// flattenVal recursively converts a PropertyValue into a Go value suitable for the public API.
+// Simple values are type-inferred (bool, int, float, or string).
+// Array values become []any with recursive flattening of items.
+// Struct values become map[string]any with field keys as "prefix:name".
+// Returns the flattened value and a string describing its data type.
 func flattenVal(v PropertyValue) (any, string) {
 	switch v.Kind {
 	case KindSimple:
@@ -75,5 +81,5 @@ func flattenVal(v PropertyValue) (any, string) {
 		}
 		return m, "struct"
 	}
-	return nil, "unknown"
+	return nil, unknownDataType
 }

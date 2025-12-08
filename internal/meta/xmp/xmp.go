@@ -1,6 +1,8 @@
 package xmp
 
 import (
+	"fmt"
+
 	"github.com/gomantics/imx/internal/common"
 )
 
@@ -26,8 +28,9 @@ func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
 
 	foundAny := false
 	var lastErr error
+	var lastBlockIdx int
 
-	for _, block := range blocks {
+	for idx, block := range blocks {
 		if block.Spec != common.SpecXMP {
 			continue
 		}
@@ -39,6 +42,7 @@ func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
 
 		if err := parsePacket(payload, nodeMap, namespaces); err != nil {
 			lastErr = err
+			lastBlockIdx = idx
 			continue // Skip malformed, try next
 		}
 		foundAny = true
@@ -46,7 +50,8 @@ func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
 
 	if !foundAny && lastErr != nil {
 		// If we tried parsing and failed everything
-		return nil, lastErr
+		return nil, fmt.Errorf("parse XMP block %d (size=%d bytes): %w",
+			lastBlockIdx, len(blocks[lastBlockIdx].Payload), lastErr)
 	}
 
 	if len(nodeMap) == 0 {

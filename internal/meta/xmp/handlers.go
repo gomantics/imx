@@ -61,11 +61,21 @@ func NewHandlerRegistry() *HandlerRegistry {
 }
 
 // Get returns the handler for the given context type.
-// Returns a no-op handler if the context type is not registered.
+// Returns the root handler as fallback if the context type is not registered.
+// Panics if the registry is corrupted (should never happen in normal operation).
 func (r *HandlerRegistry) Get(ctx ContextType) StateHandler {
-	if handler, ok := r.handlers[ctx]; ok {
+	if r == nil || r.handlers == nil {
+		panic("handler registry is nil or uninitialized")
+	}
+
+	if handler, ok := r.handlers[ctx]; ok && handler != nil {
 		return handler
 	}
+
 	// Fallback to root handler for unknown contexts
-	return r.handlers[CTX_ROOT]
+	if root := r.handlers[CTX_ROOT]; root != nil {
+		return root
+	}
+
+	panic("handler registry corrupted: missing root handler")
 }
