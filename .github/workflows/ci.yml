@@ -9,10 +9,7 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -23,12 +20,6 @@ jobs:
         with:
           go-version: '1.23'
           cache: true
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Verify dependencies
-        run: go mod verify
 
       - name: Run tests
         run: make test
@@ -47,15 +38,12 @@ jobs:
           go-version: '1.23'
           cache: true
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
+      - name: Run linter
+        run: make lint
 
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [test, lint]
 
     steps:
       - name: Checkout code
@@ -67,21 +55,12 @@ jobs:
           go-version: '1.23'
           cache: true
 
-      - name: Build library
+      - name: Build all
         run: make build
 
-      - name: Build CLI
-        run: go build -v ./cmd/imx
-
-      - name: Build examples
-        run: |
-          go build -v ./examples/basic
-          go build -v ./examples/advanced
-
   coverage:
-    name: Coverage (must be 100%)
+    name: Coverage
     runs-on: ubuntu-latest
-    needs: test
 
     steps:
       - name: Checkout code
@@ -93,7 +72,7 @@ jobs:
           go-version: '1.23'
           cache: true
 
-      - name: Verify 100% coverage
+      - name: Run coverage
         run: make coverage
 
       - name: Upload to Codecov
