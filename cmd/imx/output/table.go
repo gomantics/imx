@@ -84,7 +84,11 @@ func (f *TableFormatter) formatSingle(w io.Writer, result *Result) error {
 			name = name[:27] + "..."
 		}
 
+		// Apply time formatting if configured and tag is a time field
 		value := ui.FormatValue(tagInfo.Tag.Value, f.config.Full)
+		if f.config.TimeFormat != "" && isTimeField(name) {
+			value = ui.FormatTime(tagInfo.Tag.Value, f.config.TimeFormat)
+		}
 		if len(value) > 45 && !f.config.Full {
 			value = value[:42] + "..."
 		}

@@ -41,7 +41,12 @@ func (f *CSVFormatter) Format(w io.Writer, results []*Result) error {
 		// Write tag rows
 		for _, tagInfo := range result.Tags {
 			spec := strings.ToUpper(tagInfo.Dir.Spec.String())
+
+			// Apply time formatting if configured and tag is a time field
 			value := ui.FormatValue(tagInfo.Tag.Value, f.config.Full)
+			if f.config.TimeFormat != "" && isTimeField(tagInfo.Tag.Name) {
+				value = ui.FormatTime(tagInfo.Tag.Value, f.config.TimeFormat)
+			}
 
 			if err := writer.Write([]string{
 				result.File,

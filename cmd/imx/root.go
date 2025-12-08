@@ -226,8 +226,12 @@ func runRoot(cmd *cobra.Command, args []string) error {
 				errorCount++
 			}
 		}
-		if errorCount > 0 && !quietFlag {
-			fmt.Fprintf(os.Stderr, "\nProcessed %d files with %d errors\n", len(results), errorCount)
+		if errorCount > 0 {
+			if !quietFlag {
+				fmt.Fprintf(os.Stderr, "\nProcessed %d files with %d errors\n", len(results), errorCount)
+			}
+			// Return error to indicate processing failures
+			return fmt.Errorf("%d file(s) failed to process", errorCount)
 		}
 	}
 

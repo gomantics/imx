@@ -131,7 +131,11 @@ func (f *TextFormatter) formatSingle(w io.Writer, result *Result) error {
 					name = name[:32] + "..."
 				}
 
+				// Apply time formatting if configured and tag is a time field
 				value := ui.FormatValue(t.Tag.Value, f.config.Full)
+				if f.config.TimeFormat != "" && isTimeField(t.Tag.Name) {
+					value = ui.FormatTime(t.Tag.Value, f.config.TimeFormat)
+				}
 				if len(value) > 55 && !f.config.Full {
 					value = value[:52] + "..."
 				}

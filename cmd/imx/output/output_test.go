@@ -864,3 +864,157 @@ func TestCSVFormatter_Full(t *testing.T) {
 		t.Error("Should write output")
 	}
 }
+
+// Test isTimeField helper function
+func TestIsTimeField(t *testing.T) {
+	tests := []struct {
+		name     string
+		tagName  string
+		expected bool
+	}{
+		{"DateTimeOriginal", "DateTimeOriginal", true},
+		{"CreateDate", "CreateDate", true},
+		{"ModifyDate", "ModifyDate", true},
+		{"DateTime", "DateTime", true},
+		{"TimeStamp", "TimeStamp", true},
+		{"GPSTimeStamp", "GPSTimeStamp", true},
+		{"DateCreated", "DateCreated", true},
+		{"Make", "Make", false},
+		{"Model", "Model", false},
+		{"ISO", "ISO", false},
+		{"Mixed case DATE", "SomeDate", true},
+		{"Mixed case TIME", "SomeTime", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isTimeField(tt.tagName)
+			if result != tt.expected {
+				t.Errorf("isTimeField(%q) = %v, want %v", tt.tagName, result, tt.expected)
+			}
+		})
+	}
+}
+
+// Test TimeFormat with Table formatter
+func TestTableFormatter_TimeFormat(t *testing.T) {
+	tests := []struct {
+		name         string
+		timeFormat   string
+		expectedTime string
+	}{
+		{"iso", "iso", "2021-12-16T16:12:21Z"},
+		{"rfc3339", "rfc3339", "2021-12-16T16:12:21Z"},
+		{"unix", "unix", "1639671141"},
+		{"human", "human", "Dec 16, 2021 4:12 PM"},
+		{"custom", "2006-01-02 15:04:05", "2021-12-16 16:12:21"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			formatter := &TableFormatter{config: &Config{TimeFormat: tt.timeFormat}}
+			result := createTestResult("test.jpg", []TagInfo{
+				createTestTag(imx.SpecEXIF, "DateTimeOriginal", "2021:12:16 16:12:21"),
+			}, nil)
+
+			var buf bytes.Buffer
+			err := formatter.Format(&buf, []*Result{result})
+			if err != nil {
+				t.Fatalf("Format() error = %v", err)
+			}
+
+			output := buf.String()
+			if !strings.Contains(output, tt.expectedTime) {
+				t.Errorf("Expected time format %q to produce %q, but output doesn't contain it:\n%s", tt.timeFormat, tt.expectedTime, output)
+			}
+		})
+	}
+}
+
+// Test TimeFormat with Text formatter
+func TestTextFormatter_TimeFormat(t *testing.T) {
+	formatter := &TextFormatter{config: &Config{TimeFormat: "unix"}}
+	result := createTestResult("test.jpg", []TagInfo{
+		createTestTag(imx.SpecEXIF, "CreateDate", "2021:12:16 16:12:21"),
+	}, nil)
+
+	var buf bytes.Buffer
+	err := formatter.Format(&buf, []*Result{result})
+	if err != nil {
+		t.Fatalf("Format() error = %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "1639671141") {
+		t.Error("Text formatter should apply time formatting")
+	}
+}
+
+// Test TimeFormat with CSV formatter
+func TestCSVFormatter_TimeFormat(t *testing.T) {
+	formatter := &CSVFormatter{config: &Config{TimeFormat: "human"}}
+	result := createTestResult("test.jpg", []TagInfo{
+		createTestTag(imx.SpecEXIF, "ModifyDate", "2021:12:16 14:46:24"),
+	}, nil)
+
+	var buf bytes.Buffer
+	err := formatter.Format(&buf, []*Result{result})
+	if err != nil {
+		t.Fatalf("Format() error = %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "Dec 16, 2021") {
+		t.Errorf("CSV formatter should apply time formatting, got:\n%s", output)
+	}
+}
+
+// Test TimeFormat with JSON formatter
+func TestJSONFormatter_TimeFormat(t *testing.T) {
+	formatter := &JSONFormatter{config: &Config{TimeFormat: "unix"}}
+	result := createTestResult("test.jpg", []TagInfo{
+		createTestTag(imx.SpecEXIF, "DateTimeOriginal", "2021:12:16 16:12:21"),
+	}, nil)
+
+	var buf bytes.Buffer
+	err := formatter.Format(&buf, []*Result{result})
+	if err != nil {
+		t.Fatalf("Format() error = %v", err)
+	}
+
+	var output map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &output); err != nil {
+		t.Fatalf("Invalid JSON output: %v", err)
+	}
+
+	if exif, ok := output["EXIF"].(map[string]any); ok {
+		if exif["DateTimeOriginal"] != "1639671141" {
+			t.Errorf("JSON formatter should apply time formatting, got: %v", exif["DateTimeOriginal"])
+		}
+	} else {
+		t.Error("Missing or invalid EXIF section")
+	}
+}
+
+// Test that non-time fields are not affected
+func TestTableFormatter_NonTimeFieldsUnaffected(t *testing.T) {
+	formatter := &TableFormatter{config: &Config{TimeFormat: "unix"}}
+	result := createTestResult("test.jpg", []TagInfo{
+		createTestTag(imx.SpecEXIF, "Make", "Canon"),
+		createTestTag(imx.SpecEXIF, "Model", "EOS 5D"),
+	}, nil)
+
+	var buf bytes.Buffer
+	err := formatter.Format(&buf, []*Result{result})
+	if err != nil {
+		t.Fatalf("Format() error = %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "Canon") {
+		t.Error("Non-time fields should not be affected by time formatting")
+	}
+	if !strings.Contains(output, "EOS 5D") {
+		t.Error("Non-time fields should not be affected by time formatting")
+	}
+}

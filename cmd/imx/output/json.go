@@ -77,6 +77,10 @@ func (f *JSONFormatter) buildObject(result *Result) map[string]any {
 
 		// Format value for JSON
 		value := f.formatValue(tagInfo.Tag.Value)
+		// Apply time formatting if configured and tag is a time field
+		if f.config.TimeFormat != "" && isTimeField(tagInfo.Tag.Name) {
+			value = ui.FormatTime(tagInfo.Tag.Value, f.config.TimeFormat)
+		}
 		specs[specName][tagInfo.Tag.Name] = value
 	}
 
