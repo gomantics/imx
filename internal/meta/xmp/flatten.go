@@ -2,18 +2,9 @@ package xmp
 
 import (
 	"fmt"
-	"strings"
-	"sync"
 
 	"github.com/gomantics/imx/internal/common"
 )
-
-// builderPool provides reusable strings.Builder instances to reduce allocations
-var builderPool = sync.Pool{
-	New: func() interface{} {
-		return &strings.Builder{}
-	},
-}
 
 // flattenNodeMap converts the nested NodeMap into a flat Directory structure
 // suitable for the public API, while preserving hierarchical data in nested maps/slices.
@@ -24,13 +15,6 @@ func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) common.Direct
 		Name: directoryName,
 		Tags: make(map[common.TagID]common.Tag),
 	}
-
-	// Get reusable strings.Builder from pool for tag ID construction
-	tagBuilder := builderPool.Get().(*strings.Builder)
-	defer func() {
-		tagBuilder.Reset()
-		builderPool.Put(tagBuilder)
-	}()
 
 	for key, values := range nodeMap {
 		// Resolve prefix: first from runtime namespaces, then well-known, finally fallback
@@ -43,13 +27,7 @@ func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) common.Direct
 			}
 		}
 
-		// Build tag ID using strings.Builder (faster than fmt.Sprintf)
-		tagBuilder.Reset()
-		tagBuilder.WriteString("XMP-")
-		tagBuilder.WriteString(prefix)
-		tagBuilder.WriteByte(':')
-		tagBuilder.WriteString(key.Local)
-		tagID := common.TagID(tagBuilder.String())
+		tagID := common.TagID(fmt.Sprintf(tagIDFormat, prefix, key.Local))
 
 		var finalVal any
 		var dataType string
