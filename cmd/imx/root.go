@@ -99,7 +99,7 @@ Supported formats:
 
 func init() {
 	// Output flags
-	rootCmd.Flags().StringVarP(&formatFlag, "format", "f", "summary", "Output format (text|json|csv|table|summary)")
+	rootCmd.Flags().StringVarP(&formatFlag, "format", "f", "", "Output format (text|json|csv|table|summary)")
 	rootCmd.Flags().BoolVar(&noColorFlag, "no-color", false, "Disable colored output")
 	rootCmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Quiet mode (minimal output)")
 	rootCmd.Flags().BoolVar(&fullFlag, "full", false, "Show full values without truncation")
@@ -191,8 +191,18 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Auto-select format based on number of files if not explicitly set
+	selectedFormat := formatFlag
+	if selectedFormat == "" {
+		if len(files) == 1 {
+			selectedFormat = "table"
+		} else {
+			selectedFormat = "summary"
+		}
+	}
+
 	// Create formatter
-	formatter, err := output.NewFormatter(formatFlag, &output.Config{
+	formatter, err := output.NewFormatter(selectedFormat, &output.Config{
 		NoColor:    noColorFlag,
 		Quiet:      quietFlag,
 		Full:       fullFlag,
