@@ -35,8 +35,8 @@ jobs:
       - name: Install Python dependencies
         run: pip3 install matplotlib
 
-      - name: Run benchmarks and generate graphs
-        run: make bench N=50 2>&1 | tee bench_output.txt
+      - name: Run current benchmarks
+        run: make bench 2>&1 | tee bench_output.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
@@ -51,9 +51,19 @@ jobs:
           fail-on-alert: false
           summary-always: true
 
-      - name: Commit and push graphs
+      - name: Generate historical graphs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
+          # Clean any generated files from previous step
+          rm -rf out/
+
+          # Ensure working directory is clean
+          git reset --hard HEAD
+
+          # Generate historical graphs
+          make bench N=50
+
+          # Commit and push graphs
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add out/*.png
