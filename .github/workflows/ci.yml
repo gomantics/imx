@@ -85,6 +85,9 @@ jobs:
     name: Benchmark
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      deployments: write
 
     steps:
       - name: Checkout code
@@ -109,4 +112,6 @@ jobs:
           alert-threshold: '120%'
           comment-on-alert: true
           fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
 

@@ -192,7 +192,10 @@ BenchmarkParser_Parse-12 (ICC)  260016949       4.485 ns/op        0 B/op       
 BenchmarkParser_Parse-12 (JPEG)   455553       2609 ns/op    47920 B/op       24 allocs/op
 ```
 
-Run benchmarks locally: `make bench`
+**Continuous Benchmarking**: Performance is automatically tracked on every commit to main. View historical trends and charts at:
+- 📊 **[Performance Dashboard](https://gomantics.github.io/imx/dev/bench/)**
+
+**Run locally**: `make bench`
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed benchmarking information
 
