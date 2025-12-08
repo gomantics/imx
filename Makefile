@@ -75,14 +75,34 @@ install:
 
 # Generate coverage report for library (100% target)
 coverage: test-lib
-	@echo "Coverage report:"
+	@echo "Library coverage report:"
 	@$(GOCMD) tool cover -func=$(COVERAGE_FILE) | tail -1
 	@echo ""
 	@$(GOCMD) tool cover -func=$(COVERAGE_FILE) | grep -v "100.0%" || echo "✓ 100% coverage achieved!"
 
+# Generate coverage report including CLI (appends to coverage.out)
+coverage-all: test-lib
+	@echo "Running CLI tests with coverage..."
+	@cd cmd/imx && $(GOTEST) -coverprofile=cli-coverage.tmp -covermode=atomic ./...
+	@echo "Appending CLI coverage to $(COVERAGE_FILE)..."
+	@tail -n +2 cmd/imx/cli-coverage.tmp >> $(COVERAGE_FILE)
+	@rm -f cmd/imx/cli-coverage.tmp
+	@echo ""
+	@echo "=== Coverage Summary ==="
+	@echo ""
+	@echo "Library (100% target):"
+	@$(GOTEST) -cover $(LIB_PKGS) 2>&1 | grep "coverage:" | grep -v "no test files"
+	@echo ""
+	@echo "CLI packages:"
+	@cd cmd/imx && $(GOTEST) -cover ./... 2>&1 | grep "coverage:" | grep -v "no test files"
+	@echo ""
+	@echo "✓ Combined coverage file created: $(COVERAGE_FILE)"
+	@echo "  This file contains coverage for both library and CLI"
+	@echo "  Upload to Codecov to see combined coverage report"
+
 # Generate HTML coverage report
 coverage-html: test-lib
-	@echo "Generating HTML coverage report..."
+	@echo "Generating HTML coverage report (library only)..."
 	$(GOCMD) tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML)
 	@echo "✓ Coverage report: $(COVERAGE_HTML)"
 
@@ -112,8 +132,9 @@ help:
 	@echo "  fmt          - Format code with go fmt"
 	@echo "  clean        - Remove build artifacts"
 	@echo "  install      - Install CLI to GOPATH/bin"
-	@echo "  coverage     - Show coverage report (100% target)"
-	@echo "  coverage-html- Generate HTML coverage report"
+	@echo "  coverage     - Show library coverage report (100% target)"
+	@echo "  coverage-all - Show coverage for library and CLI"
+	@echo "  coverage-html- Generate HTML coverage report (library)"
 	@echo "  bench        - Run benchmarks"
 	@echo "  example      - Build and run example"
 	@echo "  help         - Show this help"
