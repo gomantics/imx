@@ -181,18 +181,48 @@ imx is designed for high performance:
 **Latest Results** *(Apple M4 Pro, Go 1.23)*:
 
 ```
-BenchmarkMetadataFromFile-12         4308      279μs/op     583KB/op     3616 allocs/op
-BenchmarkMetadataFromBytes-12        4707      250μs/op     583KB/op     3614 allocs/op
-BenchmarkMetadata_Tag-12        168282322        7ns/op        0B/op        0 allocs/op
-BenchmarkParser_EXIF-12           154510       6.9μs/op      16KB/op      219 allocs/op
-BenchmarkParser_IPTC-12           729804       1.6μs/op     4.6KB/op       54 allocs/op
-BenchmarkParser_XMP-12             47097        25μs/op      34KB/op      462 allocs/op
-BenchmarkParser_ICC-12         263156931       4.6ns/op        0B/op        0 allocs/op
-BenchmarkParser_JPEG-12           481448       2.5μs/op      48KB/op       24 allocs/op
+High-Level API
+Benchmark                      Iterations   Latency/op      B/op    allocs/op
+MetadataFromFile                    4.33K     281.48µs   569.54KB        3.62K
+Metadata_Tag                      171.29M       6.96ns          -            -
+
+EXIF Parser
+Parser_Parse                        1.19M       1.00µs     1.59KB        31.00
+
+IPTC Parser
+Parser_Parse                      791.12K       1.50µs     4.53KB        54.00
+
+XMP Parser
+Parser_Parse                       47.47K      24.17µs    33.57KB       462.00
+
+ICC Parser
+Parser_Parse                      256.61M       4.57ns          -            -
+
+JPEG Format
+Parser_Parse                      454.89K       2.62µs    46.80KB        24.00
 ```
 
+**Performance Trends**:
+
+<details>
+<summary>View Historical Performance Graphs</summary>
+
+![Latency Performance](out/latency.png)
+*Latency per operation across recent commits*
+
+![Memory Usage](out/memory.png)
+*Memory allocated per operation*
+
+![Iterations](out/iterations.png)
+*Benchmark iterations (higher is better)*
+
+![Allocations](out/allocs.png)
+*Number of allocations per operation*
+
+</details>
+
 **Continuous Benchmarking**:
-- View [historical performance graphs](../../benchmarks) (auto-updated on every commit)
+- Graphs auto-updated on every commit to main
 - Automatic regression detection with 120% threshold
 - Performance alerts on PRs
 
@@ -224,11 +254,10 @@ make bench N=50     # Creates graphs in out/ directory
 ```
 
 Generates graphs showing trends over time:
-- `out/ops_per_sec.png` - Operations per second across commits
-- `out/ns_per_op.png` - Latency across commits
-- `out/throughput.png` - MB/s throughput across commits
-- `out/bytes_per_op.png` - Memory allocations across commits
-- `out/allocs_per_op.png` - Allocation count across commits
+- `out/latency.png` - Latency (ns/op) across commits
+- `out/memory.png` - Memory allocations (B/op) across commits
+- `out/iterations.png` - Benchmark iterations across commits
+- `out/allocs.png` - Allocation count (allocs/op) across commits
 
 **Requirements**: Python 3 with matplotlib for graphs (`pip3 install matplotlib`)
 

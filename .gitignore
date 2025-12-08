@@ -27,5 +27,5 @@ debug/
 *.prof
 *.test
 trace.out
-out/
 *.out
+# Note: out/ is not ignored - graphs are committed by CI
