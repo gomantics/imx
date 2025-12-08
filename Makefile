@@ -94,6 +94,11 @@ example: build
 bench:
 	@./scripts/bench.py $(if $(N),-n $(N),)
 
+# Run benchmarks for CI (simple output)
+bench-ci:
+	@echo "Running benchmarks..."
+	$(GOTEST) -bench=. -benchmem -benchtime=1s $(ALL_PKGS)
+
 # Show help
 help:
 	@echo "imx - Image Metadata Extraction Library"
