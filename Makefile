@@ -81,9 +81,9 @@ coverage:
 	@rm -f go.work go.work.sum
 	@go work init . ./cmd/imx
 	@$(GOTEST) -coverprofile=$(COVERAGE_FILE) -covermode=atomic ./... ./cmd/imx/...
-	@rm -f go.work go.work.sum
 	@echo ""
-	@$(GOTEST) -cover ./... ./cmd/imx/... 2>&1 | grep "coverage:" | grep -v "no test files" || true
+	@$(GOCMD) tool cover -func=$(COVERAGE_FILE) | tail -1
+	@rm -f go.work go.work.sum
 
 # Generate HTML coverage report
 coverage-html: coverage
