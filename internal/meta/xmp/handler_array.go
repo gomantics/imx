@@ -10,7 +10,7 @@ type ArrayStateHandler struct{}
 
 // HandleStart processes start elements in ARRAY context.
 // Creates LI contexts for rdf:li elements.
-func (h *ArrayStateHandler) HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) (*ContextFrame, error) {
+func (h *ArrayStateHandler) HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) *ContextFrame {
 	if isRDFLi(elem.Name.Space, elem.Name.Local) {
 		ctx := &ContextFrame{Type: CTX_LI}
 
@@ -21,18 +21,17 @@ func (h *ArrayStateHandler) HandleStart(elem xml.StartElement, parent *ContextFr
 			ctx.fields = fields
 		}
 
-		return ctx, nil
+		return ctx
 	}
 
 	// Fall back to ROOT for unexpected elements
-	return &ContextFrame{Type: CTX_ROOT}, nil
+	return &ContextFrame{Type: CTX_ROOT}
 }
 
 // HandleEnd transfers array items to the parent property.
-func (h *ArrayStateHandler) HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap) error {
+func (h *ArrayStateHandler) HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap) {
 	// Transfer items from array to parent property
 	if parent.Type == CTX_PROPERTY {
 		parent.items = append(parent.items, curr.items...)
 	}
-	return nil
 }

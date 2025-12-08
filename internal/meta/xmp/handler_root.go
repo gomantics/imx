@@ -10,17 +10,16 @@ type RootStateHandler struct{}
 
 // HandleStart processes start elements in ROOT context.
 // Transitions to RDF context if rdf:RDF element is encountered.
-func (h *RootStateHandler) HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) (*ContextFrame, error) {
+func (h *RootStateHandler) HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) *ContextFrame {
 	if elem.Name.Space == nsRDF && elem.Name.Local == "RDF" {
-		return &ContextFrame{Type: CTX_RDF}, nil
+		return &ContextFrame{Type: CTX_RDF}
 	}
 	// Stay in ROOT context for other elements
-	return &ContextFrame{Type: CTX_ROOT}, nil
+	return &ContextFrame{Type: CTX_ROOT}
 }
 
 // HandleEnd is a no-op for ROOT context.
 // ROOT context doesn't produce any output.
-func (h *RootStateHandler) HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap) error {
+func (h *RootStateHandler) HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap) {
 	// No-op: ROOT context doesn't store anything
-	return nil
 }

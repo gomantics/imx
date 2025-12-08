@@ -21,8 +21,7 @@ type StateHandler interface {
 	//
 	// Returns:
 	//   - New context frame for the element
-	//   - Error if the element cannot be processed
-	HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) (*ContextFrame, error)
+	HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) *ContextFrame
 
 	// HandleEnd processes an end element and finalizes the context.
 	// It is called when the parser encounters a closing XML tag.
@@ -31,10 +30,7 @@ type StateHandler interface {
 	//   - curr: The current context frame being closed
 	//   - parent: The parent context frame
 	//   - nodeMap: Global node map to store finalized properties
-	//
-	// Returns:
-	//   - Error if the element cannot be finalized
-	HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap) error
+	HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap)
 }
 
 // HandlerRegistry manages the mapping from ContextType to StateHandler.

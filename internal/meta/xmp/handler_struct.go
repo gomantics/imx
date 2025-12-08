@@ -10,14 +10,14 @@ type StructFieldStateHandler struct{}
 
 // HandleStart processes start elements in STRUCT_FIELD context.
 // Handles nested arrays, structs, and additional struct fields.
-func (h *StructFieldStateHandler) HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) (*ContextFrame, error) {
+func (h *StructFieldStateHandler) HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) *ContextFrame {
 	space := elem.Name.Space
 	local := elem.Name.Local
 
 	// Check for array containers
 	if isArrayContainer(space, local) {
 		parent.propKind = KindArray
-		return &ContextFrame{Type: CTX_ARRAY}, nil
+		return &ContextFrame{Type: CTX_ARRAY}
 	}
 
 	// Check for struct (rdf:Description)
@@ -25,16 +25,16 @@ func (h *StructFieldStateHandler) HandleStart(elem xml.StartElement, parent *Con
 		parent.propKind = KindStruct
 		fields := parsePropertyAttrs(elem.Attr, ns, namespaces)
 		parent.fields = append(parent.fields, fields...)
-		return &ContextFrame{Type: CTX_STRUCT_FIELD, propKind: KindStruct}, nil
+		return &ContextFrame{Type: CTX_STRUCT_FIELD, propKind: KindStruct}
 	}
 
 	// Otherwise, it's a nested struct field
 	parent.propKind = KindStruct
-	return createStructFieldContext(space, local, ns, elem.Attr, namespaces), nil
+	return createStructFieldContext(space, local, ns, elem.Attr, namespaces)
 }
 
 // HandleEnd finalizes the struct field and adds it to the parent struct.
-func (h *StructFieldStateHandler) HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap) error {
+func (h *StructFieldStateHandler) HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap) {
 	// If this field has a name, create a StructField
 	if curr.propLocal != "" {
 		val := finalizeValue(curr)
@@ -55,5 +55,4 @@ func (h *StructFieldStateHandler) HandleEnd(curr *ContextFrame, parent *ContextF
 			parent.fields = append(parent.fields, curr.fields...)
 		}
 	}
-	return nil
 }

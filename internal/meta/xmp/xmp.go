@@ -109,7 +109,7 @@ func (p *Parser) parsePacket(data []byte, nodeMap NodeMap, namespaces map[string
 			// 2. Delegate to state handler
 			parent := ctxStack[len(ctxStack)-1]
 			handler := p.handlers.Get(parent.Type)
-			newCtx, _ := handler.HandleStart(t, parent, currNS, namespaces, nodeMap)
+			newCtx := handler.HandleStart(t, parent, currNS, namespaces, nodeMap)
 			ctxStack = append(ctxStack, newCtx)
 
 		case xml.EndElement:
@@ -117,7 +117,7 @@ func (p *Parser) parsePacket(data []byte, nodeMap NodeMap, namespaces map[string
 			curr := ctxStack[len(ctxStack)-1]
 			parent := ctxStack[len(ctxStack)-2]
 			handler := p.handlers.Get(curr.Type)
-			_ = handler.HandleEnd(curr, parent, nodeMap)
+			handler.HandleEnd(curr, parent, nodeMap)
 
 			// 4. Pop stacks
 			ctxStack = ctxStack[:len(ctxStack)-1]

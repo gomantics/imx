@@ -10,7 +10,7 @@ type DescriptionStateHandler struct{}
 
 // HandleStart processes start elements in DESCRIPTION context.
 // Creates PROPERTY contexts for non-RDF elements (actual XMP properties).
-func (h *DescriptionStateHandler) HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) (*ContextFrame, error) {
+func (h *DescriptionStateHandler) HandleStart(elem xml.StartElement, parent *ContextFrame, ns *NSFrame, namespaces map[string]string, nodeMap NodeMap) *ContextFrame {
 	// Only non-RDF elements are properties in Description context
 	if elem.Name.Space != nsRDF {
 		prefix := resolvePrefix(elem.Name.Space, ns)
@@ -31,16 +31,15 @@ func (h *DescriptionStateHandler) HandleStart(elem xml.StartElement, parent *Con
 			ctx.fields = fields
 		}
 
-		return ctx, nil
+		return ctx
 	}
 
 	// Fall back to ROOT for RDF elements in Description (unexpected)
-	return &ContextFrame{Type: CTX_ROOT}, nil
+	return &ContextFrame{Type: CTX_ROOT}
 }
 
 // HandleEnd is a no-op for DESCRIPTION context.
 // Description context doesn't produce any output.
-func (h *DescriptionStateHandler) HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap) error {
+func (h *DescriptionStateHandler) HandleEnd(curr *ContextFrame, parent *ContextFrame, nodeMap NodeMap) {
 	// No-op: DESCRIPTION context doesn't store anything
-	return nil
 }
