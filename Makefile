@@ -90,14 +90,14 @@ example: build
 	@echo "Running example..."
 	./$(BIN_DIR)/imx testdata/goldens/jpeg/google_iptc.jpg
 
-# Run benchmarks with comprehensive report
+# Run benchmarks
 bench:
-	@./scripts/bench.py $(if $(N),-n $(N),)
-
-# Run benchmarks for CI (simple output)
-bench-ci:
 	@echo "Running benchmarks..."
 	$(GOTEST) -bench=. -benchmem -benchtime=1s $(ALL_PKGS)
+
+# Run benchmarks with historical analysis and graphs
+bench-history:
+	@./scripts/bench.py $(if $(N),-n $(N),)
 
 # Show help
 help:
@@ -117,6 +117,7 @@ help:
 	@echo "  install      - Install CLI to GOPATH/bin"
 	@echo "  coverage     - Show coverage report (100% target)"
 	@echo "  coverage-html- Generate HTML coverage report"
-	@echo "  bench        - Run benchmarks with report (use N=commits for graphs)"
+	@echo "  bench        - Run benchmarks"
+	@echo "  bench-history- Run benchmarks with historical analysis (use N=commits)"
 	@echo "  example      - Build and run example"
 	@echo "  help         - Show this help"
