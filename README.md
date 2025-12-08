@@ -261,10 +261,6 @@ Generates graphs showing trends over time:
 
 **Requirements**: Python 3 with matplotlib for graphs (`pip3 install matplotlib`)
 
-**Tools**:
-- Results tracked via [github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark)
-- Historical visualization using Python + matplotlib
-
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines
