@@ -52,12 +52,14 @@ test-lib:
 lint:
 	@echo "Running linter..."
 	$(GOVET) $(ALL_PKGS)
+	cd cmd/imx && $(GOVET) ./...
 	@echo "✓ Linting passed"
 
 # Format code
 fmt:
 	@echo "Formatting code..."
 	$(GOFMT) $(ALL_PKGS)
+	cd cmd/imx && $(GOFMT) ./...
 	@echo "✓ Formatting complete"
 
 # Clean build artifacts
@@ -85,8 +87,8 @@ coverage:
 	@cd cmd/imx && $(GOTEST) -cover ./... 2>&1 | grep "coverage:" | grep -v "no test files"
 
 # Generate HTML coverage report
-coverage-html: test-lib
-	@echo "Generating HTML coverage report (library only)..."
+coverage-html: coverage
+	@echo "Generating HTML coverage report..."
 	$(GOCMD) tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML)
 	@echo "✓ Coverage report: $(COVERAGE_HTML)"
 
@@ -99,6 +101,7 @@ example: build
 bench:
 	@echo "Running benchmarks..."
 	$(GOTEST) -bench=. -benchmem -benchtime=1s $(ALL_PKGS)
+	cd cmd/imx && $(GOTEST) -bench=. -benchmem -benchtime=1s ./...
 
 # Show help
 help:
@@ -117,7 +120,7 @@ help:
 	@echo "  clean        - Remove build artifacts"
 	@echo "  install      - Install CLI to GOPATH/bin"
 	@echo "  coverage     - Run tests with coverage (library + CLI)"
-	@echo "  coverage-html- Generate HTML coverage report (library)"
+	@echo "  coverage-html- Generate HTML coverage report (library + CLI)"
 	@echo "  bench        - Run benchmarks"
 	@echo "  example      - Build and run example"
 	@echo "  help         - Show this help"
