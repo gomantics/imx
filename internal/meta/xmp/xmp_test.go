@@ -1035,3 +1035,47 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 		}
 	})
 }
+
+func TestParsePacket_Validation(t *testing.T) {
+	t.Run("Empty data error", func(t *testing.T) {
+		p := New()
+		nodeMap := make(NodeMap)
+		namespaces := make(map[string]string)
+
+		err := p.parsePacket([]byte{}, nodeMap, namespaces)
+		if err == nil {
+			t.Error("Expected error for empty data")
+		}
+		if err != nil && err.Error() != "empty XMP data" {
+			t.Errorf("Expected 'empty XMP data' error, got: %v", err)
+		}
+	})
+
+	t.Run("Nil nodeMap error", func(t *testing.T) {
+		p := New()
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/"/>`)
+		namespaces := make(map[string]string)
+
+		err := p.parsePacket(payload, nil, namespaces)
+		if err == nil {
+			t.Error("Expected error for nil nodeMap")
+		}
+		if err != nil && err.Error() != "nodeMap cannot be nil" {
+			t.Errorf("Expected 'nodeMap cannot be nil' error, got: %v", err)
+		}
+	})
+
+	t.Run("Nil namespaces error", func(t *testing.T) {
+		p := New()
+		payload := []byte(`<x:xmpmeta xmlns:x="adobe:ns:meta/"/>`)
+		nodeMap := make(NodeMap)
+
+		err := p.parsePacket(payload, nodeMap, nil)
+		if err == nil {
+			t.Error("Expected error for nil namespaces")
+		}
+		if err != nil && err.Error() != "namespaces map cannot be nil" {
+			t.Errorf("Expected 'namespaces map cannot be nil' error, got: %v", err)
+		}
+	})
+}

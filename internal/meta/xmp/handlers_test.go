@@ -48,6 +48,37 @@ func TestHandlerRegistry(t *testing.T) {
 			t.Error("Fallback handler should be ROOT handler")
 		}
 	})
+
+	t.Run("Get panics when registry is nil", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Get should panic when registry is nil")
+			} else if msg, ok := r.(string); !ok || msg != "handler registry is nil or uninitialized" {
+				t.Errorf("Expected panic message 'handler registry is nil or uninitialized', got %v", r)
+			}
+		}()
+
+		var registry *HandlerRegistry
+		registry.Get(CTX_ROOT)
+	})
+
+	t.Run("Get panics when root handler is missing", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Get should panic when root handler is missing")
+			} else if msg, ok := r.(string); !ok || msg != "handler registry corrupted: missing root handler" {
+				t.Errorf("Expected panic message 'handler registry corrupted: missing root handler', got %v", r)
+			}
+		}()
+
+		// Create corrupted registry with no root handler
+		registry := &HandlerRegistry{
+			handlers: map[ContextType]StateHandler{
+				CTX_RDF: &RDFStateHandler{},
+			},
+		}
+		registry.Get(ContextType(999)) // Request unknown context, should fallback to root but root is missing
+	})
 }
 
 func TestFinalizeValue(t *testing.T) {
