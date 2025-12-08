@@ -1,7 +1,10 @@
 package xmp
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
+	"io"
 
 	"github.com/gomantics/imx/internal/common"
 )
@@ -44,7 +47,7 @@ func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
 			continue
 		}
 
-		if err := parsePacket(payload, nodeMap, namespaces, p.handlers); err != nil {
+		if err := p.parsePacket(payload, nodeMap, namespaces); err != nil {
 			lastErr = err
 			lastBlockIdx = idx
 			continue // Skip malformed, try next
@@ -64,4 +67,89 @@ func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
 
 	dir := flattenNodeMap(nodeMap, namespaces)
 	return []common.Directory{dir}, nil
+}
+
+// parsePacket parses a single XMP packet using streaming XML parsing.
+// It uses a stack-based state machine with namespace tracking to convert
+// RDF/XML into a flat property map suitable for the public API.
+func (p *Parser) parsePacket(data []byte, nodeMap NodeMap, namespaces map[string]string) error {
+	// Validate inputs
+	if len(data) == 0 {
+		return fmt.Errorf("empty XMP data")
+	}
+	if nodeMap == nil {
+		return fmt.Errorf("nodeMap cannot be nil")
+	}
+	if namespaces == nil {
+		return fmt.Errorf("namespaces map cannot be nil")
+	}
+
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+
+	// Initialize stacks
+	nsStack := []*NSFrame{replaceNSFrame(nil, nil)} // Global namespace frame
+	ctxStack := []*ContextFrame{{Type: CTX_ROOT}}   // Start in ROOT context
+
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("decode XML token: %w", err)
+		}
+
+		switch t := token.(type) {
+		case xml.StartElement:
+			// 1. Manage namespace stack
+			if len(nsStack) == 0 {
+				return fmt.Errorf("namespace stack underflow on start element")
+			}
+			parentNS := nsStack[len(nsStack)-1]
+			currNS := replaceNSFrame(parentNS, t.Attr)
+			nsStack = append(nsStack, currNS)
+
+			// 2. Delegate to state handler
+			if len(ctxStack) == 0 {
+				return fmt.Errorf("context stack underflow on start element")
+			}
+			parent := ctxStack[len(ctxStack)-1]
+			handler := p.handlers.Get(parent.Type)
+			newCtx, err := handler.HandleStart(t, parent, currNS, namespaces, nodeMap)
+			if err != nil {
+				return fmt.Errorf("handle %s start element <%s:%s>: %w",
+					parent.Type, t.Name.Space, t.Name.Local, err)
+			}
+			ctxStack = append(ctxStack, newCtx)
+
+		case xml.EndElement:
+			// 3. Delegate to state handler
+			if len(ctxStack) < 2 {
+				return fmt.Errorf("context stack underflow on end element (need at least 2, have %d)", len(ctxStack))
+			}
+			curr := ctxStack[len(ctxStack)-1]
+			parent := ctxStack[len(ctxStack)-2]
+			handler := p.handlers.Get(curr.Type)
+			if err := handler.HandleEnd(curr, parent, nodeMap); err != nil {
+				return fmt.Errorf("handle %s end element: %w", curr.Type, err)
+			}
+
+			// 4. Pop stacks
+			ctxStack = ctxStack[:len(ctxStack)-1]
+			if len(nsStack) == 0 {
+				return fmt.Errorf("namespace stack underflow on stack pop")
+			}
+			nsStack = nsStack[:len(nsStack)-1]
+
+		case xml.CharData:
+			// 5. Accumulate character data in current context
+			if len(ctxStack) == 0 {
+				return fmt.Errorf("context stack underflow on char data")
+			}
+			top := ctxStack[len(ctxStack)-1]
+			top.text.Write(t)
+		}
+	}
+
+	return nil
 }

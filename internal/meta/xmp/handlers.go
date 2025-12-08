@@ -2,6 +2,7 @@ package xmp
 
 import (
 	"encoding/xml"
+	"strings"
 )
 
 // StateHandler handles state transitions for a specific context type.
@@ -78,4 +79,44 @@ func (r *HandlerRegistry) Get(ctx ContextType) StateHandler {
 	}
 
 	panic("handler registry corrupted: missing root handler")
+}
+
+// finalizeValue converts a ContextFrame into a PropertyValue.
+// It determines the value kind based on accumulated data with priority: Array > Struct > Simple.
+// Arrays are identified by propKind=Array or non-empty items slice.
+// Structs are identified by propKind=Struct or non-empty fields slice.
+// Simple values are trimmed text content from the text builder.
+func finalizeValue(ctx *ContextFrame) PropertyValue {
+	// Priority: Array > Struct > Simple
+	if ctx.propKind == KindArray || len(ctx.items) > 0 {
+		return PropertyValue{Kind: KindArray, Items: ctx.items}
+	}
+	if ctx.propKind == KindStruct || len(ctx.fields) > 0 {
+		return PropertyValue{Kind: KindStruct, Fields: ctx.fields}
+	}
+
+	// Simple value - trim whitespace from accumulated text
+	txt := strings.TrimSpace(ctx.text.String())
+	return PropertyValue{Kind: KindSimple, Scalar: txt}
+}
+
+// parsePropertyAttrs extracts struct fields from element attributes.
+// In XMP, attributes on property elements represent fields of a struct (shorthand struct notation).
+// Returns a slice of StructField representing each property attribute.
+func parsePropertyAttrs(attrs []xml.Attr, ns *NSFrame, namespaces map[string]string) []StructField {
+	var fields []StructField
+	for _, attr := range attrs {
+		if isPropAttr(attr.Name) {
+			prefix := resolvePrefix(attr.Name.Space, ns)
+			namespaces[attr.Name.Space] = prefix // Capture namespace mapping
+			val := PropertyValue{Kind: KindSimple, Scalar: attr.Value}
+			fields = append(fields, StructField{
+				Prefix: prefix,
+				URI:    attr.Name.Space,
+				Name:   attr.Name.Local,
+				Value:  val,
+			})
+		}
+	}
+	return fields
 }

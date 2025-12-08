@@ -26,3 +26,18 @@ func (h *RDFStateHandler) HandleEnd(curr *ContextFrame, parent *ContextFrame, no
 	// No-op: RDF context doesn't store anything
 	return nil
 }
+
+// parseDescriptionAttrs extracts XMP properties from rdf:Description attributes.
+// In XMP, Description element attributes represent top-level properties in shorthand notation.
+// Only property attributes (non-xmlns, non-rdf) are processed and added to the nodeMap.
+func parseDescriptionAttrs(attrs []xml.Attr, ns *NSFrame, nodeMap NodeMap, namespaces map[string]string) {
+	for _, attr := range attrs {
+		if isPropAttr(attr.Name) {
+			prefix := resolvePrefix(attr.Name.Space, ns)
+			namespaces[attr.Name.Space] = prefix // Capture namespace mapping
+			key := PropertyKey{attr.Name.Space, attr.Name.Local}
+			val := PropertyValue{Kind: KindSimple, Scalar: attr.Value}
+			nodeMap[key] = append(nodeMap[key], val)
+		}
+	}
+}
