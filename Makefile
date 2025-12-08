@@ -78,13 +78,12 @@ install:
 # Generate coverage report for all packages (library + CLI)
 coverage:
 	@echo "Running tests with coverage..."
-	@$(GOTEST) -coverprofile=$(COVERAGE_FILE) -covermode=atomic $(LIB_PKGS)
-	@cd cmd/imx && $(GOTEST) -coverprofile=cli-coverage.tmp -covermode=atomic ./...
-	@tail -n +2 cmd/imx/cli-coverage.tmp >> $(COVERAGE_FILE)
-	@rm -f cmd/imx/cli-coverage.tmp
+	@rm -f go.work go.work.sum
+	@go work init . ./cmd/imx
+	@$(GOTEST) -coverprofile=$(COVERAGE_FILE) -covermode=atomic ./... ./cmd/imx/...
+	@rm -f go.work go.work.sum
 	@echo ""
-	@$(GOTEST) -cover $(LIB_PKGS) 2>&1 | grep "coverage:" | grep -v "no test files"
-	@cd cmd/imx && $(GOTEST) -cover ./... 2>&1 | grep "coverage:" | grep -v "no test files"
+	@$(GOTEST) -cover ./... ./cmd/imx/... 2>&1 | grep "coverage:" | grep -v "no test files"
 
 # Generate HTML coverage report
 coverage-html: coverage
