@@ -182,84 +182,19 @@ imx is designed for high performance:
 
 ```
 High-Level API
-Benchmark                      Iterations   Latency/op      B/op    allocs/op
-MetadataFromFile                    4.33K     281.48µs   569.54KB        3.62K
-Metadata_Tag                      171.29M       6.96ns          -            -
+BenchmarkMetadataFromFile-12         4344     279269 ns/op   583213 B/op     3616 allocs/op
 
-EXIF Parser
-Parser_Parse                        1.19M       1.00µs     1.59KB        31.00
-
-IPTC Parser
-Parser_Parse                      791.12K       1.50µs     4.53KB        54.00
-
-XMP Parser
-Parser_Parse                       47.47K      24.17µs    33.57KB       462.00
-
-ICC Parser
-Parser_Parse                      256.61M       4.57ns          -            -
-
-JPEG Format
-Parser_Parse                      454.89K       2.62µs    46.80KB        24.00
+Parser Benchmarks
+BenchmarkParser_Parse-12 (EXIF)   1211294       1009 ns/op     1632 B/op       31 allocs/op
+BenchmarkParser_Parse-12 (IPTC)    799962       1502 ns/op     4634 B/op       54 allocs/op
+BenchmarkParser_Parse-12 (XMP)      47424      23940 ns/op    34371 B/op      462 allocs/op
+BenchmarkParser_Parse-12 (ICC)  260016949       4.485 ns/op        0 B/op        0 allocs/op
+BenchmarkParser_Parse-12 (JPEG)   455553       2609 ns/op    47920 B/op       24 allocs/op
 ```
 
-**Performance Trends**:
+Run benchmarks locally: `make bench`
 
-<details>
-<summary>View Historical Performance Graphs</summary>
-
-![Latency Performance](out/latency.png)
-*Latency per operation across recent commits*
-
-![Memory Usage](out/memory.png)
-*Memory allocated per operation*
-
-![Iterations](out/iterations.png)
-*Benchmark iterations (higher is better)*
-
-![Allocations](out/allocs.png)
-*Number of allocations per operation*
-
-</details>
-
-**Continuous Benchmarking**:
-- Graphs auto-updated on every commit to main
-- Automatic regression detection with 120% threshold
-- Performance alerts on PRs
-
-**Run Benchmarks**:
-```bash
-# Run benchmarks with comprehensive human-readable report
-make bench
-
-# Run benchmarks + generate historical performance graphs
-make bench N=50         # Last 50 commits
-```
-
-The benchmark tool provides:
-- **Human-readable report** with performance metrics grouped by category
-- **Summary statistics** showing fastest/slowest benchmarks
-- **Multiple metrics**:
-  - **Ops/Sec** - Operations per second (throughput)
-  - **ns/op** - Nanoseconds per operation (latency)
-  - **MB/s** - Megabytes per second (data throughput)
-  - **B/op** - Bytes allocated per operation (memory usage)
-  - **allocs/op** - Number of allocations per operation
-
-**Historical Performance Graphs**:
-
-Generate performance trend graphs across git history:
-
-```bash
-make bench N=50     # Creates graphs in out/ directory
-```
-
-Generates graphs showing trends over time:
-- `out/latency.png` - Latency (ns/op) across commits
-- `out/memory.png` - Memory allocations (B/op) across commits
-- `out/iterations.png` - Benchmark iterations across commits
-- `out/allocs.png` - Allocation count (allocs/op) across commits
-
-**Requirements**: Python 3 with matplotlib for graphs (`pip3 install matplotlib`)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed benchmarking information
 
 ## Contributing
 
