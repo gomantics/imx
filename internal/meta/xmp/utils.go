@@ -26,10 +26,32 @@ var wellKnownPrefixes = map[string]string{
 }
 
 func replaceNSFrame(parent *NSFrame, attrs []xml.Attr) *NSFrame {
-	// Clone or Create
+	// Quick check: if no xmlns attributes, return parent frame (lazy cloning)
+	// This avoids unnecessary map cloning for elements without namespace declarations
+	hasXMLNS := false
+	for _, attr := range attrs {
+		if attr.Name.Space == "xmlns" || (attr.Name.Local == "xmlns" && attr.Name.Space == "") {
+			hasXMLNS = true
+			break
+		}
+	}
+
+	// If no xmlns attributes and parent exists, reuse parent frame
+	if !hasXMLNS && parent != nil {
+		return parent
+	}
+
+	// Pre-size maps based on expected final size (parent entries + new attributes)
+	// This reduces reallocations during map growth
+	parentSize := 0
+	if parent != nil {
+		parentSize = len(parent.prefixToURI)
+	}
+	expectedSize := parentSize + len(attrs)
+
 	newFrame := &NSFrame{
-		prefixToURI: make(map[string]string),
-		uriToPrefix: make(map[string]string),
+		prefixToURI: make(map[string]string, expectedSize),
+		uriToPrefix: make(map[string]string, expectedSize),
 	}
 
 	if parent != nil {

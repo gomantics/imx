@@ -7,11 +7,15 @@ import (
 )
 
 // Parser implements meta.Parser for the XMP specification using a streaming approach.
-type Parser struct{}
+type Parser struct {
+	handlers *HandlerRegistry
+}
 
-// New creates a new XMP parser.
+// New creates a new XMP parser with an initialized handler registry.
 func New() *Parser {
-	return &Parser{}
+	return &Parser{
+		handlers: NewHandlerRegistry(),
+	}
 }
 
 // Spec returns the meta.Spec constant for XMP.
@@ -40,7 +44,7 @@ func (p *Parser) Parse(blocks []common.RawBlock) ([]common.Directory, error) {
 			continue
 		}
 
-		if err := parsePacket(payload, nodeMap, namespaces); err != nil {
+		if err := parsePacket(payload, nodeMap, namespaces, p.handlers); err != nil {
 			lastErr = err
 			lastBlockIdx = idx
 			continue // Skip malformed, try next

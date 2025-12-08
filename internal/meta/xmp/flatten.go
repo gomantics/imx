@@ -2,9 +2,18 @@ package xmp
 
 import (
 	"fmt"
+	"strings"
+	"sync"
 
 	"github.com/gomantics/imx/internal/common"
 )
+
+// builderPool provides reusable strings.Builder instances to reduce allocations
+var builderPool = sync.Pool{
+	New: func() interface{} {
+		return &strings.Builder{}
+	},
+}
 
 // flattenNodeMap converts the nested NodeMap into a flat Directory structure
 // suitable for the public API, while preserving hierarchical data in nested maps/slices.
@@ -15,6 +24,13 @@ func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) common.Direct
 		Name: directoryName,
 		Tags: make(map[common.TagID]common.Tag),
 	}
+
+	// Get reusable strings.Builder from pool for tag ID construction
+	tagBuilder := builderPool.Get().(*strings.Builder)
+	defer func() {
+		tagBuilder.Reset()
+		builderPool.Put(tagBuilder)
+	}()
 
 	for key, values := range nodeMap {
 		// Resolve prefix: first from runtime namespaces, then well-known, finally fallback
@@ -27,7 +43,13 @@ func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) common.Direct
 			}
 		}
 
-		tagID := common.TagID(fmt.Sprintf(tagIDFormat, prefix, key.Local))
+		// Build tag ID using strings.Builder (faster than fmt.Sprintf)
+		tagBuilder.Reset()
+		tagBuilder.WriteString("XMP-")
+		tagBuilder.WriteString(prefix)
+		tagBuilder.WriteByte(':')
+		tagBuilder.WriteString(key.Local)
+		tagID := common.TagID(tagBuilder.String())
 
 		var finalVal any
 		var dataType string
@@ -35,7 +57,8 @@ func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) common.Direct
 		if len(values) == 1 {
 			finalVal, dataType = flattenVal(values[0])
 		} else {
-			var list []any
+			// Pre-allocate slice with known size
+			list := make([]any, 0, len(values))
 			for _, v := range values {
 				val, _ := flattenVal(v)
 				list = append(list, val)
@@ -65,14 +88,16 @@ func flattenVal(v PropertyValue) (any, string) {
 	case KindSimple:
 		return inferType(v.Scalar)
 	case KindArray:
-		var list []any
+		// Pre-allocate slice with known size
+		list := make([]any, 0, len(v.Items))
 		for _, item := range v.Items {
 			val, _ := flattenVal(item)
 			list = append(list, val)
 		}
 		return list, "array"
 	case KindStruct:
-		m := make(map[string]any)
+		// Pre-size map with known number of fields
+		m := make(map[string]any, len(v.Fields))
 		for _, f := range v.Fields {
 			val, _ := flattenVal(f.Value)
 			// Struct field key: prefix:name

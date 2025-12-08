@@ -247,7 +247,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -276,7 +276,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -299,7 +299,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -321,7 +321,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -345,7 +345,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -366,7 +366,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -382,7 +382,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err == nil {
 			t.Error("Expected error for malformed XML")
 		}
@@ -398,7 +398,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -414,7 +414,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -433,7 +433,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -454,7 +454,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -478,7 +478,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -501,7 +501,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -523,7 +523,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -546,7 +546,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -570,7 +570,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -587,7 +587,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -613,7 +613,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -634,7 +634,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -659,7 +659,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -684,7 +684,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -709,7 +709,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -734,7 +734,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -757,7 +757,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -780,7 +780,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -805,7 +805,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -827,7 +827,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -846,7 +846,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -866,7 +866,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}
@@ -890,7 +890,7 @@ func TestParsePacket_EdgeCases(t *testing.T) {
 
 		nodeMap := make(NodeMap)
 		namespaces := make(map[string]string)
-		err := parsePacket(payload, nodeMap, namespaces)
+		err := parsePacket(payload, nodeMap, namespaces, NewHandlerRegistry())
 		if err != nil {
 			t.Fatalf("parsePacket error: %v", err)
 		}

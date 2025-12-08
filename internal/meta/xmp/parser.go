@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func parsePacket(data []byte, nodeMap NodeMap, namespaces map[string]string) error {
+func parsePacket(data []byte, nodeMap NodeMap, namespaces map[string]string, handlers *HandlerRegistry) error {
 	// Validate inputs
 	if len(data) == 0 {
 		return fmt.Errorf("empty XMP data")
@@ -19,11 +19,11 @@ func parsePacket(data []byte, nodeMap NodeMap, namespaces map[string]string) err
 	if namespaces == nil {
 		return fmt.Errorf("namespaces map cannot be nil")
 	}
+	if handlers == nil {
+		return fmt.Errorf("handlers cannot be nil")
+	}
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
-
-	// Initialize handler registry (pre-allocated, reusable)
-	handlers := NewHandlerRegistry()
 
 	// Initialize stacks
 	nsStack := []*NSFrame{replaceNSFrame(nil, nil)} // Global namespace frame
