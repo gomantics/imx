@@ -30,7 +30,7 @@ build:
 	@echo "Building..."
 	@mkdir -p $(BIN_DIR)
 	$(GOBUILD) $(ALL_PKGS)
-	$(GOBUILD) -o $(BIN_DIR)/imx ./cmd/imx
+	cd cmd/imx && $(GOBUILD) -o ../../$(BIN_DIR)/imx .
 	$(GOBUILD) -o $(BIN_DIR)/basic ./examples/basic
 	$(GOBUILD) -o $(BIN_DIR)/advanced ./examples/advanced
 	@echo "✓ Build complete"
@@ -39,6 +39,7 @@ build:
 test:
 	@echo "Running tests..."
 	$(GOTEST) -race $(ALL_PKGS)
+	cd cmd/imx && $(GOTEST) -race ./...
 	@echo "✓ All tests passed"
 
 # Run library tests only with coverage (excludes cmd and examples)
@@ -69,7 +70,7 @@ clean:
 # Install CLI to GOPATH/bin
 install:
 	@echo "Installing CLI..."
-	$(GOCMD) install ./cmd/imx
+	cd cmd/imx && $(GOCMD) install .
 	@echo "✓ Installed imx to GOPATH/bin"
 
 # Generate coverage report for library (100% target)
