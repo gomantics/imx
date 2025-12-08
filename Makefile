@@ -1,4 +1,4 @@
-.PHONY: build test test-lib lint fmt clean install coverage coverage-html check help bench
+.PHONY: build test lint fmt clean install coverage coverage-html check help bench
 
 # Go settings
 GOCMD = go
@@ -42,12 +42,6 @@ test:
 	cd cmd/imx && $(GOTEST) -race ./...
 	@echo "✓ All tests passed"
 
-# Run library tests only with coverage (excludes cmd and examples)
-test-lib:
-	@echo "Running library tests with coverage..."
-	$(GOTEST) -race -coverprofile=$(COVERAGE_FILE) -covermode=atomic $(LIB_PKGS)
-	@echo "✓ Library tests passed"
-
 # Run linter (go vet)
 lint:
 	@echo "Running linter..."
@@ -67,6 +61,7 @@ clean:
 	@echo "Cleaning..."
 	rm -rf $(BIN_DIR)
 	rm -f $(COVERAGE_FILE) $(COVERAGE_HTML)
+	rm -f go.work go.work.sum
 	@echo "✓ Clean complete"
 
 # Install CLI to GOPATH/bin
@@ -88,7 +83,9 @@ coverage:
 # Generate HTML coverage report
 coverage-html: coverage
 	@echo "Generating HTML coverage report..."
-	$(GOCMD) tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML)
+	@go work init . ./cmd/imx 2>/dev/null || true
+	@$(GOCMD) tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML)
+	@rm -f go.work go.work.sum
 	@echo "✓ Coverage report: $(COVERAGE_HTML)"
 
 # Run basic example
@@ -99,8 +96,8 @@ example: build
 # Run benchmarks
 bench:
 	@echo "Running benchmarks..."
-	$(GOTEST) -bench=. -benchmem -benchtime=1s $(ALL_PKGS)
-	cd cmd/imx && $(GOTEST) -bench=. -benchmem -benchtime=1s ./...
+	$(GOTEST) -bench=. -benchmem -benchtime=2s $(ALL_PKGS)
+	cd cmd/imx && $(GOTEST) -bench=. -benchmem -benchtime=2s ./...
 
 # Show help
 help:
@@ -113,7 +110,6 @@ help:
 	@echo "  check        - Run lint, test, and build"
 	@echo "  build        - Build library, CLI, and examples"
 	@echo "  test         - Run all tests with race detector"
-	@echo "  test-lib     - Run library tests with coverage"
 	@echo "  lint         - Run go vet"
 	@echo "  fmt          - Format code with go fmt"
 	@echo "  clean        - Remove build artifacts"

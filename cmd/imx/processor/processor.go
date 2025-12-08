@@ -19,10 +19,10 @@ import (
 // Config holds processor configuration
 type Config struct {
 	// Processing options
-	Workers    int
-	Verbose    bool
-	Quiet      bool
-	StopOnErr  bool
+	Workers      int
+	Verbose      bool
+	Quiet        bool
+	StopOnErr    bool
 	ShowProgress bool
 
 	// Filter options

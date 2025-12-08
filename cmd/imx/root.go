@@ -93,7 +93,7 @@ Supported formats:
 		}
 		return cobra.MinimumNArgs(1)(cmd, args)
 	},
-	SilenceUsage: true,
+	SilenceUsage:  true,
 	SilenceErrors: true,
 }
 
