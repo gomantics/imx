@@ -77,10 +77,11 @@ jobs:
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
-        continue-on-error: true
         with:
           files: coverage.out
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+          verbose: true
 
   bench:
     name: Benchmark
@@ -115,4 +116,6 @@ jobs:
           fail-on-alert: false
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: dev/bench
+          gh-repository: github.com/gomantics/imx
+          skip-fetch-gh-pages: true
 
