@@ -83,6 +83,24 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
+  fuzz:
+    name: Fuzz Tests
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Run fuzz tests
+        run: make fuzz
+
   bench:
     name: Benchmark
     runs-on: ubuntu-latest
