@@ -233,7 +233,7 @@ func TestParser_ParseWithTags(t *testing.T) {
 	}
 
 	// Check for Make tag
-	if tag, ok := dirs[0].Tags["EXIF:Make"]; ok {
+	if tag, ok := dirs[0].Tags["EXIF:IFD0:Make"]; ok {
 		if tag.Value != "Canon" {
 			t.Errorf("Make value = %v, want %q", tag.Value, "Canon")
 		}
@@ -757,8 +757,8 @@ func TestParser_ParseEntry_UnknownTag(t *testing.T) {
 
 	tag := p.parseEntry(data, 0, byteOrder, "IFD0")
 
-	if tag.Name != "TagFFFF" {
-		t.Errorf("Unknown tag name = %q, want %q", tag.Name, "TagFFFF")
+	if tag.Name != "IFD0:TagFFFF" {
+		t.Errorf("Unknown tag name = %q, want %q", tag.Name, "IFD0:TagFFFF")
 	}
 }
 
@@ -775,8 +775,8 @@ func TestParser_ParseEntry_GPSTags(t *testing.T) {
 
 	tag := p.parseEntry(data, 0, byteOrder, "GPS")
 
-	if tag.Name != "GPSLatitudeRef" {
-		t.Errorf("GPS tag name = %q, want %q", tag.Name, "GPSLatitudeRef")
+	if tag.Name != "GPS:GPSLatitudeRef" {
+		t.Errorf("GPS tag name = %q, want %q", tag.Name, "GPS:GPSLatitudeRef")
 	}
 }
 

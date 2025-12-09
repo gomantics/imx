@@ -65,6 +65,11 @@ This document outlines the current status and future plans for imx.
 
 ### Potential Features
 
+- **Human-Readable Value Conversions** - Convert raw EXIF values to human-readable formats
+  - APEX values (ShutterSpeedValue, ApertureValue, MaxApertureValue) → "1/50", "f/9.0", etc.
+  - Enum values (ResolutionUnit, ExposureProgram, MeteringMode, etc.) → "inches", "Aperture-priority AE", etc.
+  - GPS coordinates → Decimal degrees format
+  - Fraction values (ExposureTime, ExposureCompensation) → Formatted strings
 - **Maker Notes** - Decode manufacturer-specific data (Nikon, Canon, Sony, etc.)
 - **Thumbnail Extraction** - Extract embedded preview images
 - **Metadata Writing** - Modify and write metadata back to files

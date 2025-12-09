@@ -75,38 +75,53 @@ func (p *Parser) buildDirectories(datasets []Dataset) []common.Directory {
 			Tags: make(map[common.TagID]common.Tag),
 		}
 
-		// Track repeatable fields
-		repeatCounts := make(map[uint8]int)
+		// Track values for repeatable fields
+		repeatableValues := make(map[string][]any)
+		repeatableRaws := make(map[string][][]byte)
 
 		for _, ds := range recordDatasets {
-			// Build tag ID
-			var tagID common.TagID
-			if isRepeatable(ds.Record, ds.DatasetID) {
-				count := repeatCounts[ds.DatasetID]
-				repeatCounts[ds.DatasetID]++
-				if count == 0 {
-					tagID = common.TagID("IPTC:" + ds.Name)
-				} else {
-					tagID = common.TagID(fmt.Sprintf("IPTC:%s[%d]", ds.Name, count))
-				}
-			} else {
-				tagID = common.TagID("IPTC:" + ds.Name)
-			}
+			tagID := common.TagID("IPTC:" + ds.Name)
 
-			// Determine data type
-			dataType := "string"
-			switch ds.Value.(type) {
-			case int:
-				dataType = "int"
+			if isRepeatable(ds.Record, ds.DatasetID) {
+				// Aggregate repeatable field values into arrays
+				repeatableValues[ds.Name] = append(repeatableValues[ds.Name], ds.Value)
+				repeatableRaws[ds.Name] = append(repeatableRaws[ds.Name], ds.Raw)
+			} else {
+				// Non-repeatable field - create tag directly
+				dataType := "string"
+				switch ds.Value.(type) {
+				case int:
+					dataType = "int"
+				}
+
+				dir.Tags[tagID] = common.Tag{
+					Spec:     common.SpecIPTC,
+					ID:       tagID,
+					Name:     ds.Name,
+					DataType: dataType,
+					Value:    ds.Value,
+					Raw:      ds.Raw,
+				}
+			}
+		}
+
+		// Create tags for repeatable fields with aggregated values
+		for name, values := range repeatableValues {
+			tagID := common.TagID("IPTC:" + name)
+			var value any
+			if len(values) == 1 {
+				value = values[0]
+			} else {
+				value = values
 			}
 
 			dir.Tags[tagID] = common.Tag{
 				Spec:     common.SpecIPTC,
 				ID:       tagID,
-				Name:     ds.Name,
-				DataType: dataType,
-				Value:    ds.Value,
-				Raw:      ds.Raw,
+				Name:     name,
+				DataType: "array",
+				Value:    value,
+				Raw:      repeatableRaws[name][0], // Use first raw value
 			}
 		}
 
