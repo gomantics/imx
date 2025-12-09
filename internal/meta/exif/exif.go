@@ -47,10 +47,14 @@ func (p *Parser) parseTIFF(data []byte) ([]common.Directory, error) {
 		return nil, fmt.Errorf("TIFF header too short")
 	}
 
-	// Read byte order from TIFF header
-	byteOrder, err := parseByteOrder(data)
-	if err != nil {
-		return nil, err
+	// Read byte order (first 2 bytes)
+	var byteOrder binary.ByteOrder
+	if data[0] == 'I' && data[1] == 'I' {
+		byteOrder = binary.LittleEndian // Intel
+	} else if data[0] == 'M' && data[1] == 'M' {
+		byteOrder = binary.BigEndian // Motorola
+	} else {
+		return nil, fmt.Errorf("invalid TIFF byte order: %02X %02X", data[0], data[1])
 	}
 
 	// Verify TIFF magic number (should be 42)
@@ -74,12 +78,24 @@ func (p *Parser) parseTIFF(data []byte) ([]common.Directory, error) {
 		}
 		dirs = append(dirs, ifd0)
 
-		// Parse EXIF and GPS sub-IFDs if present
-		if subIFD, ok := p.parseSubIFD(ifd0, "EXIF:ExifOffset", "ExifIFD", data, byteOrder); ok {
-			dirs = append(dirs, subIFD)
+		// Check for EXIF sub-IFD pointer
+		if exifOffset, ok := ifd0.Tags["EXIF:ExifOffset"]; ok {
+			if offset, ok := exifOffset.Value.(int); ok && offset > 0 && offset < len(data) {
+				exifIFD, _, err := p.parseIFD(data, offset, byteOrder, "ExifIFD")
+				if err == nil {
+					dirs = append(dirs, exifIFD)
+				}
+			}
 		}
-		if subIFD, ok := p.parseSubIFD(ifd0, "EXIF:GPSInfo", "GPS", data, byteOrder); ok {
-			dirs = append(dirs, subIFD)
+
+		// Check for GPS sub-IFD pointer
+		if gpsOffset, ok := ifd0.Tags["EXIF:GPSInfo"]; ok {
+			if offset, ok := gpsOffset.Value.(int); ok && offset > 0 && offset < len(data) {
+				gpsIFD, _, err := p.parseIFD(data, offset, byteOrder, "GPS")
+				if err == nil {
+					dirs = append(dirs, gpsIFD)
+				}
+			}
 		}
 
 		// Parse IFD1 (thumbnail) if present
@@ -92,37 +108,6 @@ func (p *Parser) parseTIFF(data []byte) ([]common.Directory, error) {
 	}
 
 	return dirs, nil
-}
-
-// parseByteOrder reads and validates the TIFF byte order marker
-func parseByteOrder(data []byte) (binary.ByteOrder, error) {
-	if data[0] == 'I' && data[1] == 'I' {
-		return binary.LittleEndian, nil // Intel
-	}
-	if data[0] == 'M' && data[1] == 'M' {
-		return binary.BigEndian, nil // Motorola
-	}
-	return nil, fmt.Errorf("invalid TIFF byte order: %02X %02X", data[0], data[1])
-}
-
-// parseSubIFD attempts to parse a sub-IFD referenced by a tag in the parent IFD
-func (p *Parser) parseSubIFD(parentIFD common.Directory, tagID common.TagID, name string, data []byte, byteOrder binary.ByteOrder) (common.Directory, bool) {
-	tag, ok := parentIFD.Tags[tagID]
-	if !ok {
-		return common.Directory{}, false
-	}
-
-	offset, ok := tag.Value.(int)
-	if !ok || offset <= 0 || offset >= len(data) {
-		return common.Directory{}, false
-	}
-
-	subIFD, _, err := p.parseIFD(data, offset, byteOrder, name)
-	if err != nil {
-		return common.Directory{}, false
-	}
-
-	return subIFD, true
 }
 
 // parseIFD parses a single IFD (Image File Directory)
@@ -139,7 +124,7 @@ func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, n
 	dir := common.Directory{
 		Spec: common.SpecEXIF,
 		Name: name,
-		Tags: make(map[common.TagID]common.Tag, entryCount),
+		Tags: make(map[common.TagID]common.Tag),
 	}
 
 	// Parse each entry (12 bytes each)
@@ -194,7 +179,7 @@ func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder,
 	if !ok {
 		tagName = fmt.Sprintf("Tag%04X", tagID)
 	}
-	tag.ID = common.TagID("EXIF:" + tagName)
+	tag.ID = common.TagID(fmt.Sprintf("EXIF:%s", tagName))
 	tag.Name = tagName
 
 	// Parse value based on type
