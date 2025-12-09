@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1765242340749,
+  "lastUpdate": 1765242540581,
   "repoUrl": "https://github.com/gomantics/imx",
   "entries": {
     "Benchmark": [
@@ -2304,6 +2304,294 @@ window.BENCHMARK_DATA = {
             "value": 369,
             "unit": "allocs/op",
             "extra": "53257 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "puneetrai04@gmail.com",
+            "name": "Puneet Rai",
+            "username": "rpuneet"
+          },
+          "committer": {
+            "email": "puneetrai04@gmail.com",
+            "name": "Puneet Rai",
+            "username": "rpuneet"
+          },
+          "distinct": true,
+          "id": "ff252c49292d8566db527195edf777d1a6868c61",
+          "message": "perf(exif): preallocate map capacity in parseIFD\n\nInitialize the Tags map with the entry count capacity to avoid\npotential map growth and rehashing during tag insertion.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+          "timestamp": "2025-12-09T06:37:56+05:30",
+          "tree_id": "ba15a511722097fb91b05dbccaf4f041c3618ca0",
+          "url": "https://github.com/gomantics/imx/commit/ff252c49292d8566db527195edf777d1a6868c61"
+        },
+        "date": 1765242540182,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkMetadataFromFile",
+            "value": 486658,
+            "unit": "ns/op\t  465294 B/op\t    2762 allocs/op",
+            "extra": "4778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromFile - ns/op",
+            "value": 486658,
+            "unit": "ns/op",
+            "extra": "4778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromFile - B/op",
+            "value": 465294,
+            "unit": "B/op",
+            "extra": "4778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromFile - allocs/op",
+            "value": 2762,
+            "unit": "allocs/op",
+            "extra": "4778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromBytes",
+            "value": 424694,
+            "unit": "ns/op\t  465196 B/op\t    2760 allocs/op",
+            "extra": "5259 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromBytes - ns/op",
+            "value": 424694,
+            "unit": "ns/op",
+            "extra": "5259 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromBytes - B/op",
+            "value": 465196,
+            "unit": "B/op",
+            "extra": "5259 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromBytes - allocs/op",
+            "value": 2760,
+            "unit": "allocs/op",
+            "extra": "5259 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromReader",
+            "value": 434575,
+            "unit": "ns/op\t  465173 B/op\t    2760 allocs/op",
+            "extra": "5481 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromReader - ns/op",
+            "value": 434575,
+            "unit": "ns/op",
+            "extra": "5481 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromReader - B/op",
+            "value": 465173,
+            "unit": "B/op",
+            "extra": "5481 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadataFromReader - allocs/op",
+            "value": 2760,
+            "unit": "allocs/op",
+            "extra": "5481 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_Tag",
+            "value": 15.42,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "150365145 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_Tag - ns/op",
+            "value": 15.42,
+            "unit": "ns/op",
+            "extra": "150365145 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_Tag - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "150365145 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_Tag - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "150365145 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_GetAll",
+            "value": 150.1,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "16154850 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_GetAll - ns/op",
+            "value": 150.1,
+            "unit": "ns/op",
+            "extra": "16154850 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_GetAll - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "16154850 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_GetAll - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "16154850 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_Each",
+            "value": 3053,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "785912 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_Each - ns/op",
+            "value": 3053,
+            "unit": "ns/op",
+            "extra": "785912 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_Each - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "785912 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMetadata_Each - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "785912 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJPEGParse",
+            "value": 5453,
+            "unit": "ns/op\t   47920 B/op\t      24 allocs/op",
+            "extra": "556261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJPEGParse - ns/op",
+            "value": 5453,
+            "unit": "ns/op",
+            "extra": "556261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJPEGParse - B/op",
+            "value": 47920,
+            "unit": "B/op",
+            "extra": "556261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkJPEGParse - allocs/op",
+            "value": 24,
+            "unit": "allocs/op",
+            "extra": "556261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEXIFParse",
+            "value": 2464,
+            "unit": "ns/op\t    1632 B/op\t      31 allocs/op",
+            "extra": "926394 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEXIFParse - ns/op",
+            "value": 2464,
+            "unit": "ns/op",
+            "extra": "926394 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEXIFParse - B/op",
+            "value": 1632,
+            "unit": "B/op",
+            "extra": "926394 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEXIFParse - allocs/op",
+            "value": 31,
+            "unit": "allocs/op",
+            "extra": "926394 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkICCParse",
+            "value": 7.179,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "334975136 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkICCParse - ns/op",
+            "value": 7.179,
+            "unit": "ns/op",
+            "extra": "334975136 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkICCParse - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "334975136 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkICCParse - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "334975136 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIPTCParse",
+            "value": 3880,
+            "unit": "ns/op\t    4632 B/op\t      54 allocs/op",
+            "extra": "628629 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIPTCParse - ns/op",
+            "value": 3880,
+            "unit": "ns/op",
+            "extra": "628629 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIPTCParse - B/op",
+            "value": 4632,
+            "unit": "B/op",
+            "extra": "628629 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkIPTCParse - allocs/op",
+            "value": 54,
+            "unit": "allocs/op",
+            "extra": "628629 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkXMPParse",
+            "value": 45294,
+            "unit": "ns/op\t   22106 B/op\t     369 allocs/op",
+            "extra": "52768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkXMPParse - ns/op",
+            "value": 45294,
+            "unit": "ns/op",
+            "extra": "52768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkXMPParse - B/op",
+            "value": 22106,
+            "unit": "B/op",
+            "extra": "52768 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkXMPParse - allocs/op",
+            "value": 369,
+            "unit": "allocs/op",
+            "extra": "52768 times\n4 procs"
           }
         ]
       }
