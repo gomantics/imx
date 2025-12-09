@@ -124,7 +124,7 @@ func (p *Parser) parseIFD(data []byte, offset int, byteOrder binary.ByteOrder, n
 	dir := common.Directory{
 		Spec: common.SpecEXIF,
 		Name: name,
-		Tags: make(map[common.TagID]common.Tag),
+		Tags: make(map[common.TagID]common.Tag, entryCount),
 	}
 
 	// Parse each entry (12 bytes each)
