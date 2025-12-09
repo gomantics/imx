@@ -79,7 +79,7 @@ func (p *Parser) parseTIFF(data []byte) ([]common.Directory, error) {
 		dirs = append(dirs, ifd0)
 
 		// Check for EXIF sub-IFD pointer
-		if exifOffset, ok := ifd0.Tags["EXIF:ExifOffset"]; ok {
+		if exifOffset, ok := ifd0.Tags["EXIF:IFD0:ExifOffset"]; ok {
 			if offset, ok := exifOffset.Value.(int); ok && offset > 0 && offset < len(data) {
 				exifIFD, _, err := p.parseIFD(data, offset, byteOrder, "ExifIFD")
 				if err == nil {
@@ -89,7 +89,7 @@ func (p *Parser) parseTIFF(data []byte) ([]common.Directory, error) {
 		}
 
 		// Check for GPS sub-IFD pointer
-		if gpsOffset, ok := ifd0.Tags["EXIF:GPSInfo"]; ok {
+		if gpsOffset, ok := ifd0.Tags["EXIF:IFD0:GPSInfo"]; ok {
 			if offset, ok := gpsOffset.Value.(int); ok && offset > 0 && offset < len(data) {
 				gpsIFD, _, err := p.parseIFD(data, offset, byteOrder, "GPS")
 				if err == nil {
@@ -179,6 +179,11 @@ func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder,
 	if !ok {
 		tagName = fmt.Sprintf("Tag%04X", tagID)
 	}
+
+	// Prefix all tags with IFD name for clarity and to avoid ambiguity
+	// e.g., IFD0:XResolution vs IFD1:XResolution
+	tagName = ifdName + ":" + tagName
+
 	tag.ID = common.TagID("EXIF:" + tagName)
 	tag.Name = tagName
 

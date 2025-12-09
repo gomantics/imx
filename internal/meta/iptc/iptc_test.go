@@ -90,12 +90,16 @@ func TestParser_Parse_ValidIPTC(t *testing.T) {
 	if _, ok := dir.Tags["IPTC:Byline"]; !ok {
 		t.Error("Missing IPTC:Byline tag")
 	}
-	// Keywords should be indexed
-	if _, ok := dir.Tags["IPTC:Keywords"]; !ok {
+	// Keywords should be aggregated into an array
+	if tag, ok := dir.Tags["IPTC:Keywords"]; !ok {
 		t.Error("Missing IPTC:Keywords tag")
-	}
-	if _, ok := dir.Tags["IPTC:Keywords[1]"]; !ok {
-		t.Error("Missing IPTC:Keywords[1] tag")
+	} else {
+		// Check that it's an array with 2 values
+		if arr, ok := tag.Value.([]any); !ok {
+			t.Errorf("Keywords value should be array, got %T", tag.Value)
+		} else if len(arr) != 2 {
+			t.Errorf("Keywords array should have 2 values, got %d", len(arr))
+		}
 	}
 }
 
