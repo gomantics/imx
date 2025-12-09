@@ -179,7 +179,7 @@ func (p *Parser) parseEntry(data []byte, offset int, byteOrder binary.ByteOrder,
 	if !ok {
 		tagName = fmt.Sprintf("Tag%04X", tagID)
 	}
-	tag.ID = common.TagID(fmt.Sprintf("EXIF:%s", tagName))
+	tag.ID = common.TagID("EXIF:" + tagName)
 	tag.Name = tagName
 
 	// Parse value based on type
