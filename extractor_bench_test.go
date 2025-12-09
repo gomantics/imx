@@ -10,7 +10,7 @@ import (
 func BenchmarkMetadataFromFile(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_, err := MetadataFromFile("testdata/goldens/jpeg/canon_xmp.jpg")
+		_, err := MetadataFromFile("testdata/jpeg/canon_xmp.jpg")
 		if err != nil {
 			b.Fatalf("MetadataFromFile failed: %v", err)
 		}
@@ -19,7 +19,7 @@ func BenchmarkMetadataFromFile(b *testing.B) {
 
 // BenchmarkMetadataFromBytes benchmarks metadata extraction from byte slice
 func BenchmarkMetadataFromBytes(b *testing.B) {
-	data, err := os.ReadFile("testdata/goldens/jpeg/canon_xmp.jpg")
+	data, err := os.ReadFile("testdata/jpeg/canon_xmp.jpg")
 	if err != nil {
 		b.Fatalf("Failed to read test file: %v", err)
 	}
@@ -36,7 +36,7 @@ func BenchmarkMetadataFromBytes(b *testing.B) {
 
 // BenchmarkMetadataFromReader benchmarks metadata extraction from io.Reader
 func BenchmarkMetadataFromReader(b *testing.B) {
-	data, err := os.ReadFile("testdata/goldens/jpeg/canon_xmp.jpg")
+	data, err := os.ReadFile("testdata/jpeg/canon_xmp.jpg")
 	if err != nil {
 		b.Fatalf("Failed to read test file: %v", err)
 	}
@@ -54,7 +54,7 @@ func BenchmarkMetadataFromReader(b *testing.B) {
 
 // BenchmarkMetadata_Tag benchmarks single tag lookup
 func BenchmarkMetadata_Tag(b *testing.B) {
-	meta, err := MetadataFromFile("testdata/goldens/jpeg/canon_xmp.jpg")
+	meta, err := MetadataFromFile("testdata/jpeg/canon_xmp.jpg")
 	if err != nil {
 		b.Fatalf("MetadataFromFile failed: %v", err)
 	}
@@ -68,7 +68,7 @@ func BenchmarkMetadata_Tag(b *testing.B) {
 
 // BenchmarkMetadata_GetAll benchmarks batch tag retrieval
 func BenchmarkMetadata_GetAll(b *testing.B) {
-	meta, err := MetadataFromFile("testdata/goldens/jpeg/canon_xmp.jpg")
+	meta, err := MetadataFromFile("testdata/jpeg/canon_xmp.jpg")
 	if err != nil {
 		b.Fatalf("MetadataFromFile failed: %v", err)
 	}
@@ -82,7 +82,7 @@ func BenchmarkMetadata_GetAll(b *testing.B) {
 
 // BenchmarkMetadata_Each benchmarks iteration over all tags
 func BenchmarkMetadata_Each(b *testing.B) {
-	meta, err := MetadataFromFile("testdata/goldens/jpeg/canon_xmp.jpg")
+	meta, err := MetadataFromFile("testdata/jpeg/canon_xmp.jpg")
 	if err != nil {
 		b.Fatalf("MetadataFromFile failed: %v", err)
 	}

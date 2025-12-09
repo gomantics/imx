@@ -198,7 +198,7 @@ func findTestImage(t *testing.T) string {
 	// Look for test images in root testdata directory
 	candidates := []string{
 		"../../../testdata/DSC_1631.jpg",
-		"../../../testdata/goldens/jpeg/DSC_1631.jpg",
+		"../../../testdata/jpeg/DSC_1631.jpg",
 		"../../../testdata/RicohWG-6.jpg",
 	}
 

@@ -9,7 +9,7 @@ import (
 )
 
 // testJPEGPathAPI is the path to the test JPEG file
-const testJPEGPathAPI = "testdata/goldens/jpeg/canon_xmp.jpg"
+const testJPEGPathAPI = "testdata/jpeg/canon_xmp.jpg"
 
 // loadTestJPEGAPI loads the test JPEG file for API testing
 func loadTestJPEGAPI(t *testing.T) []byte {

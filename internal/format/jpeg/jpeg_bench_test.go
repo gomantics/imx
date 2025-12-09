@@ -9,7 +9,7 @@ import (
 
 // BenchmarkJPEGParse benchmarks JPEG marker parsing with typical camera file
 func BenchmarkJPEGParse(b *testing.B) {
-	data, err := os.ReadFile("../../../testdata/goldens/jpeg/canon_xmp.jpg")
+	data, err := os.ReadFile("../../../testdata/jpeg/canon_xmp.jpg")
 	if err != nil {
 		b.Fatalf("Failed to read test file: %v", err)
 	}
