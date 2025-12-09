@@ -244,7 +244,7 @@ func (p *Parser) buildDirectory(profile *Profile, index int) common.Directory {
 			continue
 		}
 
-		tagID := common.TagID(fmt.Sprintf("ICC:%s", parsed.Name))
+		tagID := common.TagID("ICC:" + parsed.Name)
 
 		// Skip if we already have this tag (from header)
 		if _, exists := dir.Tags[tagID]; exists {
@@ -266,7 +266,7 @@ func (p *Parser) buildDirectory(profile *Profile, index int) common.Directory {
 
 // addTag adds a tag to the directory
 func (p *Parser) addTag(dir *common.Directory, name string, dataType string, value any) {
-	id := common.TagID(fmt.Sprintf("ICC:%s", name))
+	id := common.TagID("ICC:" + name)
 	dir.Tags[id] = common.Tag{
 		Spec:     common.SpecICC,
 		ID:       id,

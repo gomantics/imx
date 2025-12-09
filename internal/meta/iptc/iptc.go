@@ -85,12 +85,12 @@ func (p *Parser) buildDirectories(datasets []Dataset) []common.Directory {
 				count := repeatCounts[ds.DatasetID]
 				repeatCounts[ds.DatasetID]++
 				if count == 0 {
-					tagID = common.TagID(fmt.Sprintf("IPTC:%s", ds.Name))
+					tagID = common.TagID("IPTC:" + ds.Name)
 				} else {
 					tagID = common.TagID(fmt.Sprintf("IPTC:%s[%d]", ds.Name, count))
 				}
 			} else {
-				tagID = common.TagID(fmt.Sprintf("IPTC:%s", ds.Name))
+				tagID = common.TagID("IPTC:" + ds.Name)
 			}
 
 			// Determine data type

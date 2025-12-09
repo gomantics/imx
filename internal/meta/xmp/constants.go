@@ -17,9 +17,6 @@ const (
 	// directoryName is the name used for XMP directories
 	directoryName = "XMP"
 
-	// tagIDFormat is the format string for XMP tag IDs
-	tagIDFormat = "XMP-%s:%s"
-
 	// unknownDataType is returned when property kind is not recognized
 	unknownDataType = "unknown"
 )

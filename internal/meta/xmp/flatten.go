@@ -1,8 +1,6 @@
 package xmp
 
 import (
-	"fmt"
-
 	"github.com/gomantics/imx/internal/common"
 )
 
@@ -27,7 +25,7 @@ func flattenNodeMap(nodeMap NodeMap, namespaces map[string]string) common.Direct
 			}
 		}
 
-		tagID := common.TagID(fmt.Sprintf(tagIDFormat, prefix, key.Local))
+		tagID := common.TagID("XMP-" + prefix + ":" + key.Local)
 
 		var finalVal any
 		var dataType string
@@ -79,7 +77,7 @@ func flattenVal(v PropertyValue) (any, string) {
 		for _, f := range v.Fields {
 			val, _ := flattenVal(f.Value)
 			// Struct field key: prefix:name
-			k := fmt.Sprintf("%s:%s", f.Prefix, f.Name)
+			k := f.Prefix + ":" + f.Name
 			m[k] = val
 		}
 		return m, "struct"
