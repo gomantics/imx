@@ -183,19 +183,19 @@ imx is designed for high performance:
 
 ```
 High-Level API
-BenchmarkMetadataFromFile-12      4359     275888 ns/op   583223 B/op     3616 allocs/op
-BenchmarkMetadataFromBytes-12     4988     243084 ns/op   582855 B/op     3614 allocs/op
-BenchmarkMetadataFromReader-12    4936     243059 ns/op   582855 B/op     3614 allocs/op
-BenchmarkMetadata_Tag-12       169154738      7.036 ns/op        0 B/op        0 allocs/op
-BenchmarkMetadata_GetAll-12     17826426      67.21 ns/op        0 B/op        0 allocs/op
-BenchmarkMetadata_Each-12         967952       1288 ns/op        0 B/op        0 allocs/op
+BenchmarkMetadataFromFile-12      12282     195814 ns/op   446581 B/op     2390 allocs/op
+BenchmarkMetadataFromBytes-12     14323     167753 ns/op   446282 B/op     2388 allocs/op
+BenchmarkMetadataFromReader-12    14336     168602 ns/op   446283 B/op     2388 allocs/op
+BenchmarkMetadata_Tag-12       321816780      7.207 ns/op        0 B/op        0 allocs/op
+BenchmarkMetadata_GetAll-12     35377401      68.13 ns/op        0 B/op        0 allocs/op
+BenchmarkMetadata_Each-12        1884883       1294 ns/op        0 B/op        0 allocs/op
 
 Parser Benchmarks
-BenchmarkEXIFParse-12            1239682      973.6 ns/op     1632 B/op       31 allocs/op
-BenchmarkIPTCParse-12             799494       1476 ns/op     4634 B/op       54 allocs/op
-BenchmarkXMPParse-12               48666      23616 ns/op    34371 B/op      462 allocs/op
-BenchmarkICCParse-12           262634449      4.507 ns/op        0 B/op        0 allocs/op
-BenchmarkJPEGParse-12             458469       2612 ns/op    47920 B/op       24 allocs/op
+BenchmarkEXIFParse-12            2799916       870.9 ns/op     1552 B/op       26 allocs/op
+BenchmarkIPTCParse-12            1767890       1325 ns/op     4506 B/op       46 allocs/op
+BenchmarkXMPParse-12              119239      18799 ns/op    21888 B/op      355 allocs/op
+BenchmarkICCParse-12           502302393      4.574 ns/op        0 B/op        0 allocs/op
+BenchmarkJPEGParse-12             764920       2631 ns/op    47920 B/op       24 allocs/op
 ```
 
 **Continuous Benchmarking**: Performance is automatically tracked on every commit to main. View historical trends and charts at:
