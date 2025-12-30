@@ -288,6 +288,13 @@ func TestExtractor_MetadataFromFile(t *testing.T) {
 			t.Error("MetadataFromFile() expected error for non-existent file")
 		}
 	})
+
+	t.Run("file size exceeds max bytes", func(t *testing.T) {
+		_, err := e.MetadataFromFile(testJPEGPath, WithMaxBytes(100))
+		if err != ErrMaxBytesExceeded {
+			t.Errorf("MetadataFromFile() error = %v, want ErrMaxBytesExceeded", err)
+		}
+	})
 }
 
 func TestExtractor_MetadataFromBytes(t *testing.T) {

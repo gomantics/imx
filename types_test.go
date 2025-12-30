@@ -948,6 +948,80 @@ func TestReaderAdapter_EdgeCases(t *testing.T) {
 			t.Errorf("ReadAt() error = %v, want 'read error'", err)
 		}
 	})
+
+	t.Run("read with max bytes exceeded during buffering", func(t *testing.T) {
+		largeData := make([]byte, 1000)
+		for i := range largeData {
+			largeData[i] = byte(i % 256)
+		}
+		adapter := newReaderAdapter(bytes.NewReader(largeData), 100, 0)
+
+		buf := make([]byte, 150)
+		_, err := adapter.ReadAt(buf, 0)
+		if err != ErrMaxBytesExceeded {
+			t.Errorf("ReadAt() error = %v, want ErrMaxBytesExceeded", err)
+		}
+	})
+
+	t.Run("read with custom buffer size", func(t *testing.T) {
+		data := make([]byte, 500)
+		for i := range data {
+			data[i] = byte(i % 256)
+		}
+		adapter := newReaderAdapter(bytes.NewReader(data), 0, 64) // 64 byte buffer
+
+		buf := make([]byte, 200)
+		n, err := adapter.ReadAt(buf, 0)
+		if err != nil {
+			t.Errorf("ReadAt() error = %v, want nil", err)
+		}
+		if n != 200 {
+			t.Errorf("ReadAt() n = %d, want 200", n)
+		}
+	})
+
+	t.Run("read with zero buffer size (auto-sized)", func(t *testing.T) {
+		data := make([]byte, 100)
+		for i := range data {
+			data[i] = byte(i)
+		}
+		adapter := newReaderAdapter(bytes.NewReader(data), 0, 0) // 0 = auto-size
+
+		buf := make([]byte, 50)
+		n, err := adapter.ReadAt(buf, 0)
+		if err != nil {
+			t.Errorf("ReadAt() error = %v, want nil", err)
+		}
+		if n != 50 {
+			t.Errorf("ReadAt() n = %d, want 50", n)
+		}
+	})
+
+	t.Run("multiple reads at different offsets", func(t *testing.T) {
+		data := []byte("hello world, this is a test")
+		adapter := newReaderAdapter(bytes.NewReader(data), 0, 0)
+
+		// First read
+		buf1 := make([]byte, 5)
+		n1, err1 := adapter.ReadAt(buf1, 0)
+		if err1 != nil || n1 != 5 || string(buf1) != "hello" {
+			t.Errorf("First ReadAt() = %q, %d, %v", buf1, n1, err1)
+		}
+
+		// Second read at different offset
+		buf2 := make([]byte, 5)
+		n2, err2 := adapter.ReadAt(buf2, 6)
+		if err2 != nil || n2 != 5 || string(buf2) != "world" {
+			t.Errorf("Second ReadAt() = %q, %d, %v", buf2, n2, err2)
+		}
+
+		// Third read at later offset
+		buf3 := make([]byte, 4)
+		n3, err3 := adapter.ReadAt(buf3, 23)
+		if err3 != nil || n3 != 4 || string(buf3) != "test" {
+			t.Errorf("Third ReadAt() = %q, %d, %v", buf3, n3, err3)
+		}
+	})
 }
 
 // errorReader always returns an error
@@ -957,4 +1031,104 @@ type errorReader struct {
 
 func (er *errorReader) Read(p []byte) (n int, err error) {
 	return 0, er.err
+}
+
+func TestReaderAdapter_LastError(t *testing.T) {
+	t.Run("no error initially", func(t *testing.T) {
+		adapter := newReaderAdapter(bytes.NewReader([]byte("test")), 0, 0)
+		if err := adapter.LastError(); err != nil {
+			t.Errorf("LastError() = %v, want nil", err)
+		}
+	})
+
+	t.Run("error after max bytes exceeded", func(t *testing.T) {
+		data := []byte("hello world")
+		adapter := newReaderAdapter(bytes.NewReader(data), 5, 0)
+
+		buf := make([]byte, 10)
+		_, _ = adapter.ReadAt(buf, 0)
+
+		if err := adapter.LastError(); err != ErrMaxBytesExceeded {
+			t.Errorf("LastError() = %v, want ErrMaxBytesExceeded", err)
+		}
+	})
+
+	t.Run("error from underlying reader", func(t *testing.T) {
+		testErr := fmt.Errorf("read error")
+		errReader := &errorReader{err: testErr}
+		adapter := newReaderAdapter(errReader, 0, 0)
+
+		buf := make([]byte, 10)
+		_, _ = adapter.ReadAt(buf, 0)
+
+		if err := adapter.LastError(); err == nil || err.Error() != "read error" {
+			t.Errorf("LastError() = %v, want 'read error'", err)
+		}
+	})
+}
+
+func TestBoundedReaderAt_LastError(t *testing.T) {
+	t.Run("no error initially", func(t *testing.T) {
+		data := []byte("test")
+		bounded := &boundedReaderAt{r: bytes.NewReader(data), limit: 10}
+		if err := bounded.LastError(); err != nil {
+			t.Errorf("LastError() = %v, want nil", err)
+		}
+	})
+
+	t.Run("error after exceeding limit", func(t *testing.T) {
+		data := []byte("hello world")
+		bounded := &boundedReaderAt{r: bytes.NewReader(data), limit: 5}
+
+		buf := make([]byte, 10)
+		_, _ = bounded.ReadAt(buf, 0)
+
+		if err := bounded.LastError(); err != ErrMaxBytesExceeded {
+			t.Errorf("LastError() = %v, want ErrMaxBytesExceeded", err)
+		}
+	})
+}
+
+func TestBoundedReaderAt_ReadAt(t *testing.T) {
+	t.Run("read within limit", func(t *testing.T) {
+		data := []byte("hello world")
+		bounded := &boundedReaderAt{r: bytes.NewReader(data), limit: 100}
+
+		buf := make([]byte, 5)
+		n, err := bounded.ReadAt(buf, 0)
+		if err != nil {
+			t.Errorf("ReadAt() error = %v, want nil", err)
+		}
+		if n != 5 {
+			t.Errorf("ReadAt() n = %d, want 5", n)
+		}
+		if string(buf) != "hello" {
+			t.Errorf("ReadAt() data = %q, want %q", string(buf), "hello")
+		}
+	})
+
+	t.Run("read exceeds limit", func(t *testing.T) {
+		data := []byte("hello world")
+		bounded := &boundedReaderAt{r: bytes.NewReader(data), limit: 5}
+
+		buf := make([]byte, 10)
+		_, err := bounded.ReadAt(buf, 0)
+		if err != ErrMaxBytesExceeded {
+			t.Errorf("ReadAt() error = %v, want ErrMaxBytesExceeded", err)
+		}
+	})
+
+	t.Run("no limit (unlimited)", func(t *testing.T) {
+		data := []byte("hello world")
+		bounded := &boundedReaderAt{r: bytes.NewReader(data), limit: 0}
+
+		buf := make([]byte, 11)
+		n, err := bounded.ReadAt(buf, 0)
+		if err != nil {
+			t.Errorf("ReadAt() error = %v, want nil", err)
+		}
+		if n != 11 {
+			t.Errorf("ReadAt() n = %d, want 11", n)
+		}
+	})
 }

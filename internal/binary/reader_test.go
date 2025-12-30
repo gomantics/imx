@@ -191,3 +191,77 @@ func TestReader_ReadBytes(t *testing.T) {
 		})
 	}
 }
+
+func TestReader_PutUint16(t *testing.T) {
+	tests := []struct {
+		name  string
+		order binary.ByteOrder
+		value uint16
+		want  []byte
+	}{
+		{"big endian 0x1234", binary.BigEndian, 0x1234, []byte{0x12, 0x34}},
+		{"little endian 0x1234", binary.LittleEndian, 0x1234, []byte{0x34, 0x12}},
+		{"big endian 0xFFFF", binary.BigEndian, 0xFFFF, []byte{0xFF, 0xFF}},
+		{"little endian 0xFFFF", binary.LittleEndian, 0xFFFF, []byte{0xFF, 0xFF}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewReader(newMockReader(nil), tt.order)
+			buf := make([]byte, 2)
+			r.PutUint16(buf, tt.value)
+			if !bytes.Equal(buf, tt.want) {
+				t.Errorf("PutUint16() = %v, want %v", buf, tt.want)
+			}
+		})
+	}
+}
+
+func TestReader_PutUint32(t *testing.T) {
+	tests := []struct {
+		name  string
+		order binary.ByteOrder
+		value uint32
+		want  []byte
+	}{
+		{"big endian 0x12345678", binary.BigEndian, 0x12345678, []byte{0x12, 0x34, 0x56, 0x78}},
+		{"little endian 0x12345678", binary.LittleEndian, 0x12345678, []byte{0x78, 0x56, 0x34, 0x12}},
+		{"big endian 0xFFFFFFFF", binary.BigEndian, 0xFFFFFFFF, []byte{0xFF, 0xFF, 0xFF, 0xFF}},
+		{"little endian 0xFFFFFFFF", binary.LittleEndian, 0xFFFFFFFF, []byte{0xFF, 0xFF, 0xFF, 0xFF}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewReader(newMockReader(nil), tt.order)
+			buf := make([]byte, 4)
+			r.PutUint32(buf, tt.value)
+			if !bytes.Equal(buf, tt.want) {
+				t.Errorf("PutUint32() = %v, want %v", buf, tt.want)
+			}
+		})
+	}
+}
+
+func TestReader_Uint16(t *testing.T) {
+	tests := []struct {
+		name  string
+		order binary.ByteOrder
+		data  []byte
+		want  uint16
+	}{
+		{"big endian 0x1234", binary.BigEndian, []byte{0x12, 0x34}, 0x1234},
+		{"little endian 0x1234", binary.LittleEndian, []byte{0x34, 0x12}, 0x1234},
+		{"big endian 0xFFFF", binary.BigEndian, []byte{0xFF, 0xFF}, 0xFFFF},
+		{"little endian 0xFFFF", binary.LittleEndian, []byte{0xFF, 0xFF}, 0xFFFF},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewReader(newMockReader(nil), tt.order)
+			got := r.Uint16(tt.data)
+			if got != tt.want {
+				t.Errorf("Uint16() = 0x%04X, want 0x%04X", got, tt.want)
+			}
+		})
+	}
+}
