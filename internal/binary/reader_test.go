@@ -3,8 +3,28 @@ package binary
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 	"testing"
 )
+
+type mockReaderAt struct {
+	data []byte
+}
+
+func (m *mockReaderAt) ReadAt(p []byte, off int64) (int, error) {
+	if off < 0 || off >= int64(len(m.data)) {
+		return 0, io.EOF
+	}
+	n := copy(p, m.data[off:])
+	if n < len(p) {
+		return n, io.EOF
+	}
+	return n, nil
+}
+
+func newMockReader(data []byte) *mockReaderAt {
+	return &mockReaderAt{data: data}
+}
 
 func TestReader_ReadUint16(t *testing.T) {
 	data := []byte{0x12, 0x34, 0x56, 0x78}

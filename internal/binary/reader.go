@@ -33,7 +33,10 @@ func (r *Reader) ReadUint16(offset int64) (uint16, error) {
 	if _, err := r.r.ReadAt(buf, offset); err != nil {
 		return 0, fmt.Errorf("failed to read uint16 at offset %d: %w", offset, err)
 	}
-	return r.order.Uint16(buf), nil
+	if r.order == binary.BigEndian {
+		return Uint16BE(buf, 0), nil
+	}
+	return Uint16LE(buf, 0), nil
 }
 
 // ReadUint32 reads a uint32 at the given offset using the Reader's byte order.
@@ -42,7 +45,10 @@ func (r *Reader) ReadUint32(offset int64) (uint32, error) {
 	if _, err := r.r.ReadAt(buf, offset); err != nil {
 		return 0, fmt.Errorf("failed to read uint32 at offset %d: %w", offset, err)
 	}
-	return r.order.Uint32(buf), nil
+	if r.order == binary.BigEndian {
+		return Uint32BE(buf, 0), nil
+	}
+	return Uint32LE(buf, 0), nil
 }
 
 // ReadUint64 reads a uint64 at the given offset using the Reader's byte order.
@@ -51,7 +57,10 @@ func (r *Reader) ReadUint64(offset int64) (uint64, error) {
 	if _, err := r.r.ReadAt(buf, offset); err != nil {
 		return 0, fmt.Errorf("failed to read uint64 at offset %d: %w", offset, err)
 	}
-	return r.order.Uint64(buf), nil
+	if r.order == binary.BigEndian {
+		return Uint64BE(buf, 0), nil
+	}
+	return Uint64LE(buf, 0), nil
 }
 
 // ReadInt16 reads an int16 at the given offset using the Reader's byte order.
@@ -77,15 +86,26 @@ func (r *Reader) ReadBytes(offset int64, n int) ([]byte, error) {
 
 // PutUint16 writes a uint16 to a byte slice using the Reader's byte order.
 func (r *Reader) PutUint16(b []byte, v uint16) {
-	r.order.PutUint16(b, v)
+	if r.order == binary.BigEndian {
+		PutUint16BE(b, 0, v)
+	} else {
+		PutUint16LE(b, 0, v)
+	}
 }
 
 // PutUint32 writes a uint32 to a byte slice using the Reader's byte order.
 func (r *Reader) PutUint32(b []byte, v uint32) {
-	r.order.PutUint32(b, v)
+	if r.order == binary.BigEndian {
+		PutUint32BE(b, 0, v)
+	} else {
+		PutUint32LE(b, 0, v)
+	}
 }
 
 // Uint16 reads a uint16 from a byte slice using the Reader's byte order.
 func (r *Reader) Uint16(b []byte) uint16 {
-	return r.order.Uint16(b)
+	if r.order == binary.BigEndian {
+		return Uint16BE(b, 0)
+	}
+	return Uint16LE(b, 0)
 }
