@@ -30,3 +30,9 @@ debug/
 trace.out
 *.out
 out/
+
+# Temporary files
+tmp/
+
+# Large test files (kept locally, not in repo)
+testdata/**/*_large.*

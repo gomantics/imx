@@ -96,7 +96,7 @@ func TestTagFilter_ShouldInclude(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter := NewTagFilter(tt.query)
-			dir := imx.Directory{Spec: imx.SpecEXIF, Name: "IFD0"}
+			dir := imx.Directory{Name: "IFD0"}
 			tag := imx.Tag{ID: tt.tagID, Name: tt.tagName, Value: "test"}
 
 			got := filter.ShouldInclude(dir, tag)

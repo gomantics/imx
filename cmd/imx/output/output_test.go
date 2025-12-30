@@ -25,9 +25,9 @@ func createTestResult(file string, tags []TagInfo, err error) *Result {
 	}
 }
 
-func createTestTag(spec imx.Spec, name string, value any) TagInfo {
+func createTestTag(dirName string, name string, value any) TagInfo {
 	return TagInfo{
-		Dir: imx.Directory{Spec: spec},
+		Dir: imx.Directory{Name: dirName},
 		Tag: imx.Tag{Name: name, Value: value},
 	}
 }
@@ -79,7 +79,7 @@ func TestNewFormatterWithConfig(t *testing.T) {
 // Test FormatSingle
 func TestFormatSingle(t *testing.T) {
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Make", "Canon"),
+		createTestTag("IFD0", "Make", "Canon"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -107,9 +107,9 @@ func TestFormatSingleInvalidFormat(t *testing.T) {
 func TestJSONFormatter_SingleResult(t *testing.T) {
 	formatter := &JSONFormatter{config: &Config{}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Make", "Canon"),
-		createTestTag(imx.SpecEXIF, "Model", "EOS 5D"),
-		createTestTag(imx.SpecXMP, "Creator", "Test User"),
+		createTestTag("IFD0", "Make", "Canon"),
+		createTestTag("IFD0", "Model", "EOS 5D"),
+		createTestTag("XMP", "Creator", "Test User"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -128,15 +128,15 @@ func TestJSONFormatter_SingleResult(t *testing.T) {
 		t.Errorf("SourceFile = %v, want test.jpg", output["SourceFile"])
 	}
 
-	if exif, ok := output["EXIF"].(map[string]any); ok {
-		if exif["Make"] != "Canon" {
-			t.Errorf("EXIF.Make = %v, want Canon", exif["Make"])
+	if ifd0, ok := output["IFD0"].(map[string]any); ok {
+		if ifd0["Make"] != "Canon" {
+			t.Errorf("IFD0.Make = %v, want Canon", ifd0["Make"])
 		}
-		if exif["Model"] != "EOS 5D" {
-			t.Errorf("EXIF.Model = %v, want EOS 5D", exif["Model"])
+		if ifd0["Model"] != "EOS 5D" {
+			t.Errorf("IFD0.Model = %v, want EOS 5D", ifd0["Model"])
 		}
 	} else {
-		t.Error("Missing or invalid EXIF section")
+		t.Error("Missing or invalid IFD0 section")
 	}
 
 	if xmp, ok := output["XMP"].(map[string]any); ok {
@@ -152,10 +152,10 @@ func TestJSONFormatter_MultipleResults(t *testing.T) {
 	formatter := &JSONFormatter{config: &Config{}}
 	results := []*Result{
 		createTestResult("photo1.jpg", []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Canon"),
+			createTestTag("IFD0", "Make", "Canon"),
 		}, nil),
 		createTestResult("photo2.jpg", []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Nikon"),
+			createTestTag("IFD0", "Make", "Nikon"),
 		}, nil),
 	}
 
@@ -207,7 +207,7 @@ func TestJSONFormatter_MultipleWithErrors(t *testing.T) {
 	formatter := &JSONFormatter{config: &Config{}}
 	results := []*Result{
 		createTestResult("photo1.jpg", []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Canon"),
+			createTestTag("IFD0", "Make", "Canon"),
 		}, nil),
 		createTestResult("photo2.jpg", nil, errors.New("read error")),
 	}
@@ -238,7 +238,7 @@ func TestJSONFormatter_BinaryData(t *testing.T) {
 	// Test small binary data (should be hex)
 	smallData := []byte{0x01, 0x02, 0x03}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Binary", smallData),
+		createTestTag("IFD0", "Binary", smallData),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -250,7 +250,7 @@ func TestJSONFormatter_BinaryData(t *testing.T) {
 	// Test large binary data (should be size object)
 	largeData := make([]byte, 200)
 	result2 := createTestResult("test2.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "LargeBinary", largeData),
+		createTestTag("IFD0", "LargeBinary", largeData),
 	}, nil)
 
 	buf.Reset()
@@ -284,11 +284,11 @@ func TestCSVFormatter(t *testing.T) {
 	formatter := &CSVFormatter{config: &Config{}}
 	results := []*Result{
 		createTestResult("photo1.jpg", []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Canon"),
-			createTestTag(imx.SpecEXIF, "Model", "EOS 5D"),
+			createTestTag("IFD0", "Make", "Canon"),
+			createTestTag("IFD0", "Model", "EOS 5D"),
 		}, nil),
 		createTestResult("photo2.jpg", []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Nikon"),
+			createTestTag("IFD0", "Make", "Nikon"),
 		}, nil),
 	}
 
@@ -304,7 +304,7 @@ func TestCSVFormatter(t *testing.T) {
 	}
 
 	// Check header
-	if !strings.Contains(lines[0], "File") || !strings.Contains(lines[0], "Spec") {
+	if !strings.Contains(lines[0], "File") || !strings.Contains(lines[0], "Dir") {
 		t.Errorf("Invalid CSV header: %s", lines[0])
 	}
 
@@ -340,8 +340,8 @@ func TestTableFormatter(t *testing.T) {
 	formatter := &TableFormatter{config: &Config{}}
 	results := []*Result{
 		createTestResult("photo1.jpg", []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Canon"),
-			createTestTag(imx.SpecEXIF, "Model", "EOS 5D"),
+			createTestTag("IFD0", "Make", "Canon"),
+			createTestTag("IFD0", "Model", "EOS 5D"),
 		}, nil),
 	}
 
@@ -363,7 +363,7 @@ func TestTableFormatter(t *testing.T) {
 func TestTableFormatter_NoColor(t *testing.T) {
 	formatter := &TableFormatter{config: &Config{NoColor: true}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Make", "Canon"),
+		createTestTag("IFD0", "Make", "Canon"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -380,7 +380,7 @@ func TestTableFormatter_NoColor(t *testing.T) {
 func TestTableFormatter_Quiet(t *testing.T) {
 	formatter := &TableFormatter{config: &Config{Quiet: true}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Make", "Canon"),
+		createTestTag("IFD0", "Make", "Canon"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -433,10 +433,10 @@ func TestTableFormatter_Multiple(t *testing.T) {
 	formatter := &TableFormatter{config: &Config{}}
 	results := []*Result{
 		createTestResult("photo1.jpg", []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Canon"),
+			createTestTag("IFD0", "Make", "Canon"),
 		}, nil),
 		createTestResult("photo2.jpg", []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Nikon"),
+			createTestTag("IFD0", "Make", "Nikon"),
 		}, nil),
 	}
 
@@ -459,8 +459,8 @@ func TestTableFormatter_Multiple(t *testing.T) {
 func TestTextFormatter(t *testing.T) {
 	formatter := &TextFormatter{config: &Config{}}
 	result := createTestResult("photo.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Make", "Canon"),
-		createTestTag(imx.SpecXMP, "Creator", "Test User"),
+		createTestTag("IFD0", "Make", "Canon"),
+		createTestTag("XMP", "Creator", "Test User"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -470,8 +470,8 @@ func TestTextFormatter(t *testing.T) {
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "[EXIF]") {
-		t.Error("Should contain EXIF section header")
+	if !strings.Contains(output, "[IFD0]") {
+		t.Error("Should contain IFD0 section header")
 	}
 	if !strings.Contains(output, "[XMP]") {
 		t.Error("Should contain XMP section header")
@@ -484,7 +484,7 @@ func TestTextFormatter(t *testing.T) {
 func TestTextFormatter_NoColor(t *testing.T) {
 	formatter := &TextFormatter{config: &Config{NoColor: true}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Make", "Canon"),
+		createTestTag("IFD0", "Make", "Canon"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -501,7 +501,7 @@ func TestTextFormatter_NoColor(t *testing.T) {
 func TestTextFormatter_Quiet(t *testing.T) {
 	formatter := &TextFormatter{config: &Config{Quiet: true}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Make", "Canon"),
+		createTestTag("IFD0", "Make", "Canon"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -552,12 +552,12 @@ func TestTextFormatter_NoTags(t *testing.T) {
 func TestSummaryFormatter(t *testing.T) {
 	// Create metadata with tags
 	meta := &imx.Metadata{}
-	
+
 	result := &Result{
 		File: "photo.jpg",
 		Meta: meta,
 		Tags: []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Canon"),
+			createTestTag("IFD0", "Make", "Canon"),
 		},
 	}
 
@@ -670,25 +670,12 @@ func TestMin(t *testing.T) {
 
 // Test SummaryFormatter with actual metadata
 func TestSummaryFormatter_WithMetadata(t *testing.T) {
-	// Create metadata with directories and tags
-	meta := &imx.Metadata{
-		Directories: []imx.Directory{
-			{
-				Spec: imx.SpecEXIF,
-				Name: "IFD0",
-				Tags: map[imx.TagID]imx.Tag{
-					"EXIF:Make":  {Spec: imx.SpecEXIF, ID: "EXIF:Make", Name: "Make", Value: "Canon"},
-					"EXIF:Model": {Spec: imx.SpecEXIF, ID: "EXIF:Model", Name: "Model", Value: "EOS 5D"},
-				},
-			},
-		},
-	}
-
+	// Create a simple result without metadata (formatter only needs File and Tags)
 	result := &Result{
 		File: "photo.jpg",
-		Meta: meta,
+		Meta: nil,
 		Tags: []TagInfo{
-			{Dir: imx.Directory{Spec: imx.SpecEXIF, Name: "IFD0"}, Tag: imx.Tag{Name: "Make", Value: "Canon"}},
+			{Dir: imx.Directory{Name: "IFD0"}, Tag: imx.Tag{ID: "EXIF:Make", Name: "Make", Value: "Canon"}},
 		},
 	}
 
@@ -710,7 +697,7 @@ func TestSummaryFormatter_WithMetadata(t *testing.T) {
 func TestCSVFormatter_WriterError(t *testing.T) {
 	formatter := &CSVFormatter{config: &Config{}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Make", "Canon"),
+		createTestTag("IFD0", "Make", "Canon"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -729,10 +716,10 @@ func TestTextFormatter_Multiple(t *testing.T) {
 	formatter := &TextFormatter{config: &Config{}}
 	results := []*Result{
 		createTestResult("photo1.jpg", []TagInfo{
-			createTestTag(imx.SpecEXIF, "Make", "Canon"),
+			createTestTag("IFD0", "Make", "Canon"),
 		}, nil),
 		createTestResult("photo2.jpg", []TagInfo{
-			createTestTag(imx.SpecIPTC, "Byline", "Photographer"),
+			createTestTag("IPTC", "Byline", "Photographer"),
 		}, nil),
 	}
 
@@ -749,8 +736,8 @@ func TestTextFormatter_Multiple(t *testing.T) {
 	if !strings.Contains(output, "photo2.jpg") {
 		t.Error("Should contain second filename")
 	}
-	if !strings.Contains(output, "[EXIF]") {
-		t.Error("Should contain EXIF section")
+	if !strings.Contains(output, "[IFD0]") {
+		t.Error("Should contain IFD0 section")
 	}
 	if !strings.Contains(output, "[IPTC]") {
 		t.Error("Should contain IPTC section")
@@ -762,9 +749,9 @@ func TestTableFormatter_LongValues(t *testing.T) {
 	formatter := &TableFormatter{config: &Config{}}
 	longName := strings.Repeat("A", 50)
 	longValue := strings.Repeat("B", 100)
-	
+
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, longName, longValue),
+		createTestTag("IFD0", longName, longValue),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -784,9 +771,9 @@ func TestTableFormatter_LongValues(t *testing.T) {
 func TestTableFormatter_Full(t *testing.T) {
 	formatter := &TableFormatter{config: &Config{Full: true}}
 	longValue := strings.Repeat("B", 100)
-	
+
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Test", longValue),
+		createTestTag("IFD0", "Test", longValue),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -807,9 +794,9 @@ func TestTextFormatter_LongValues(t *testing.T) {
 	formatter := &TextFormatter{config: &Config{}}
 	longName := strings.Repeat("A", 50)
 	longValue := strings.Repeat("B", 100)
-	
+
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, longName, longValue),
+		createTestTag("IFD0", longName, longValue),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -829,9 +816,9 @@ func TestTextFormatter_LongValues(t *testing.T) {
 func TestTextFormatter_Full(t *testing.T) {
 	formatter := &TextFormatter{config: &Config{Full: true}}
 	longValue := strings.Repeat("B", 100)
-	
+
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Test", longValue),
+		createTestTag("IFD0", "Test", longValue),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -851,7 +838,7 @@ func TestTextFormatter_Full(t *testing.T) {
 func TestCSVFormatter_Full(t *testing.T) {
 	formatter := &CSVFormatter{config: &Config{Full: true}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Test", "value"),
+		createTestTag("IFD0", "Test", "value"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -914,7 +901,7 @@ func TestTableFormatter_TimeFormat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			formatter := &TableFormatter{config: &Config{TimeFormat: tt.timeFormat}}
 			result := createTestResult("test.jpg", []TagInfo{
-				createTestTag(imx.SpecEXIF, "DateTimeOriginal", "2021:12:16 16:12:21"),
+				createTestTag("IFD0", "DateTimeOriginal", "2021:12:16 16:12:21"),
 			}, nil)
 
 			var buf bytes.Buffer
@@ -935,7 +922,7 @@ func TestTableFormatter_TimeFormat(t *testing.T) {
 func TestTextFormatter_TimeFormat(t *testing.T) {
 	formatter := &TextFormatter{config: &Config{TimeFormat: "unix"}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "CreateDate", "2021:12:16 16:12:21"),
+		createTestTag("IFD0", "CreateDate", "2021:12:16 16:12:21"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -954,7 +941,7 @@ func TestTextFormatter_TimeFormat(t *testing.T) {
 func TestCSVFormatter_TimeFormat(t *testing.T) {
 	formatter := &CSVFormatter{config: &Config{TimeFormat: "human"}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "ModifyDate", "2021:12:16 14:46:24"),
+		createTestTag("IFD0", "ModifyDate", "2021:12:16 14:46:24"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -973,7 +960,7 @@ func TestCSVFormatter_TimeFormat(t *testing.T) {
 func TestJSONFormatter_TimeFormat(t *testing.T) {
 	formatter := &JSONFormatter{config: &Config{TimeFormat: "unix"}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "DateTimeOriginal", "2021:12:16 16:12:21"),
+		createTestTag("IFD0", "DateTimeOriginal", "2021:12:16 16:12:21"),
 	}, nil)
 
 	var buf bytes.Buffer
@@ -987,12 +974,12 @@ func TestJSONFormatter_TimeFormat(t *testing.T) {
 		t.Fatalf("Invalid JSON output: %v", err)
 	}
 
-	if exif, ok := output["EXIF"].(map[string]any); ok {
-		if exif["DateTimeOriginal"] != "1639671141" {
-			t.Errorf("JSON formatter should apply time formatting, got: %v", exif["DateTimeOriginal"])
+	if ifd0, ok := output["IFD0"].(map[string]any); ok {
+		if ifd0["DateTimeOriginal"] != "1639671141" {
+			t.Errorf("JSON formatter should apply time formatting, got: %v", ifd0["DateTimeOriginal"])
 		}
 	} else {
-		t.Error("Missing or invalid EXIF section")
+		t.Error("Missing or invalid IFD0 section")
 	}
 }
 
@@ -1000,8 +987,8 @@ func TestJSONFormatter_TimeFormat(t *testing.T) {
 func TestTableFormatter_NonTimeFieldsUnaffected(t *testing.T) {
 	formatter := &TableFormatter{config: &Config{TimeFormat: "unix"}}
 	result := createTestResult("test.jpg", []TagInfo{
-		createTestTag(imx.SpecEXIF, "Make", "Canon"),
-		createTestTag(imx.SpecEXIF, "Model", "EOS 5D"),
+		createTestTag("IFD0", "Make", "Canon"),
+		createTestTag("IFD0", "Model", "EOS 5D"),
 	}, nil)
 
 	var buf bytes.Buffer

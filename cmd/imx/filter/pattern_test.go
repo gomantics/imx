@@ -131,7 +131,7 @@ func TestPatternFilter_ShouldInclude(t *testing.T) {
 				t.Fatalf("NewPatternFilter() error = %v", err)
 			}
 
-			dir := imx.Directory{Spec: imx.SpecEXIF, Name: "IFD0"}
+			dir := imx.Directory{Name: "IFD0"}
 			tag := imx.Tag{ID: imx.TagID("EXIF:" + tt.tagName), Name: tt.tagName, Value: tt.tagValue}
 
 			got := filter.ShouldInclude(dir, tag)

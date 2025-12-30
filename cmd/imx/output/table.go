@@ -56,12 +56,12 @@ func (f *TableFormatter) formatSingle(w io.Writer, result *Result) error {
 	}
 
 	// Calculate column widths
-	specWidth := 4
+	dirWidth := 4
 	nameWidth := 20
 	for _, tagInfo := range result.Tags {
-		spec := tagInfo.Dir.Spec.String()
-		if len(spec) > specWidth {
-			specWidth = len(spec)
+		dir := tagInfo.Dir.Name
+		if len(dir) > dirWidth {
+			dirWidth = len(dir)
 		}
 		if len(tagInfo.Tag.Name) > nameWidth && len(tagInfo.Tag.Name) <= 30 {
 			nameWidth = len(tagInfo.Tag.Name)
@@ -70,15 +70,15 @@ func (f *TableFormatter) formatSingle(w io.Writer, result *Result) error {
 
 	// Print header
 	if f.config.NoColor {
-		fmt.Fprintf(w, "%-*s  %-*s  %s\n", specWidth, "SPEC", nameWidth, "TAG", "VALUE")
+		fmt.Fprintf(w, "%-*s  %-*s  %s\n", dirWidth, "DIR", nameWidth, "TAG", "VALUE")
 	} else {
-		ui.Dim.Fprintf(w, "%-*s  %-*s  %s\n", specWidth, "SPEC", nameWidth, "TAG", "VALUE")
+		ui.Dim.Fprintf(w, "%-*s  %-*s  %s\n", dirWidth, "DIR", nameWidth, "TAG", "VALUE")
 	}
 	fmt.Fprintln(w, strings.Repeat("─", 80))
 
 	// Print rows
 	for _, tagInfo := range result.Tags {
-		spec := strings.ToUpper(tagInfo.Dir.Spec.String())
+		dir := tagInfo.Dir.Name
 		name := tagInfo.Tag.Name
 		if len(name) > 30 {
 			name = name[:27] + "..."
@@ -94,10 +94,10 @@ func (f *TableFormatter) formatSingle(w io.Writer, result *Result) error {
 		}
 
 		if f.config.NoColor {
-			fmt.Fprintf(w, "%-*s  %-*s  %s\n", specWidth, spec, nameWidth, name, value)
+			fmt.Fprintf(w, "%-*s  %-*s  %s\n", dirWidth, dir, nameWidth, name, value)
 		} else {
-			color := ui.SpecColor(tagInfo.Dir.Spec)
-			color.Fprintf(w, "%-*s", specWidth, spec)
+			color := ui.SpecColor(tagInfo.Dir.Name)
+			color.Fprintf(w, "%-*s", dirWidth, dir)
 			fmt.Fprintf(w, "  %-*s  %s\n", nameWidth, name, value)
 		}
 	}

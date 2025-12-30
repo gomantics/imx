@@ -2,27 +2,45 @@ package imx
 
 import (
 	"bytes"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 )
 
-// testJPEGPathAPI is the path to the test JPEG file
-const testJPEGPathAPI = "testdata/goldens/jpeg/canon_xmp.jpg"
+// testJPEGPath is the path to the test JPEG file
+const testJPEGPath = "testdata/jpeg/canon_xmp.jpg"
 
-// loadTestJPEGAPI loads the test JPEG file for API testing
-func loadTestJPEGAPI(t *testing.T) []byte {
+// loadTestJPEG loads the test JPEG file for testing
+func loadTestJPEG(t *testing.T) []byte {
 	t.Helper()
-	data, err := os.ReadFile(testJPEGPathAPI)
+	data, err := os.ReadFile(testJPEGPath)
 	if err != nil {
 		t.Fatalf("Failed to load test JPEG: %v", err)
 	}
 	return data
 }
 
+// newIPv4Server forces an IPv4 listener to avoid environments where IPv6 is blocked.
+func newIPv4Server(t *testing.T, handler http.Handler) *httptest.Server {
+	t.Helper()
+	l, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Skipf("skipping: cannot bind IPv4 listener (%v)", err)
+		return nil
+	}
+	server := &httptest.Server{
+		Listener: l,
+		Config:   &http.Server{Handler: handler},
+	}
+	server.Start()
+	return server
+}
+
 func TestMetadataFromReader(t *testing.T) {
-	validJPEG := loadTestJPEGAPI(t)
+	validJPEG := loadTestJPEG(t)
 
 	tests := []struct {
 		name    string
@@ -39,13 +57,19 @@ func TestMetadataFromReader(t *testing.T) {
 		{
 			name:    "valid JPEG with options",
 			data:    validJPEG,
-			opts:    []Option{WithMaxBytes(20000000)}, // Large enough for the test file
+			opts:    []Option{WithHTTPTimeout(60 * time.Second)},
 			wantErr: false,
 		},
 		{
 			name:    "invalid data",
 			data:    []byte{0x00, 0x01, 0x02, 0x03},
 			opts:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "max bytes exceeded",
+			data:    validJPEG,
+			opts:    []Option{WithMaxBytes(10)}, // too small
 			wantErr: true,
 		},
 	}
@@ -71,14 +95,14 @@ func TestMetadataFromFile(t *testing.T) {
 	}{
 		{
 			name:    "valid file",
-			path:    testJPEGPathAPI,
+			path:    testJPEGPath,
 			opts:    nil,
 			wantErr: false,
 		},
 		{
 			name:    "valid file with options",
-			path:    testJPEGPathAPI,
-			opts:    []Option{WithMaxBytes(20000000)},
+			path:    testJPEGPath,
+			opts:    nil,
 			wantErr: false,
 		},
 		{
@@ -91,6 +115,12 @@ func TestMetadataFromFile(t *testing.T) {
 			name:    "directory instead of file",
 			path:    "testdata",
 			opts:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "max bytes exceeded",
+			path:    testJPEGPath,
+			opts:    []Option{WithMaxBytes(10)},
 			wantErr: true,
 		},
 	}
@@ -107,7 +137,7 @@ func TestMetadataFromFile(t *testing.T) {
 }
 
 func TestMetadataFromBytes(t *testing.T) {
-	validJPEG := loadTestJPEGAPI(t)
+	validJPEG := loadTestJPEG(t)
 
 	tests := []struct {
 		name    string
@@ -124,7 +154,7 @@ func TestMetadataFromBytes(t *testing.T) {
 		{
 			name:    "valid JPEG with options",
 			data:    validJPEG,
-			opts:    []Option{WithMaxBytes(20000000)},
+			opts:    nil,
 			wantErr: false,
 		},
 		{
@@ -137,6 +167,12 @@ func TestMetadataFromBytes(t *testing.T) {
 			name:    "invalid bytes",
 			data:    []byte{0x00, 0x01, 0x02},
 			opts:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "max bytes exceeded",
+			data:    validJPEG,
+			opts:    []Option{WithMaxBytes(10)},
 			wantErr: true,
 		},
 	}
@@ -153,7 +189,7 @@ func TestMetadataFromBytes(t *testing.T) {
 }
 
 func TestMetadataFromURL(t *testing.T) {
-	validJPEG := loadTestJPEGAPI(t)
+	validJPEG := loadTestJPEG(t)
 
 	// Create test server
 	mux := http.NewServeMux()
@@ -178,7 +214,7 @@ func TestMetadataFromURL(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 	})
 
-	server := httptest.NewServer(mux)
+	server := newIPv4Server(t, mux)
 	defer server.Close()
 
 	tests := []struct {
@@ -193,12 +229,12 @@ func TestMetadataFromURL(t *testing.T) {
 			opts:    nil,
 			wantErr: false,
 		},
-		{
-			name:    "valid URL with options",
-			url:     server.URL + "/valid.jpg",
-			opts:    []Option{WithMaxBytes(20000000)},
-			wantErr: false,
-		},
+			{
+				name:    "valid URL with options",
+				url:     server.URL + "/valid.jpg",
+				opts:    nil,
+				wantErr: false,
+			},
 		{
 			name:    "invalid JPEG data",
 			url:     server.URL + "/invalid.jpg",
@@ -240,7 +276,7 @@ func TestExtractor_MetadataFromFile(t *testing.T) {
 	e := New()
 
 	t.Run("valid file", func(t *testing.T) {
-		_, err := e.MetadataFromFile(testJPEGPathAPI)
+		_, err := e.MetadataFromFile(testJPEGPath)
 		if err != nil {
 			t.Errorf("MetadataFromFile() error = %v", err)
 		}
@@ -256,7 +292,7 @@ func TestExtractor_MetadataFromFile(t *testing.T) {
 
 func TestExtractor_MetadataFromBytes(t *testing.T) {
 	e := New()
-	validJPEG := loadTestJPEGAPI(t)
+	validJPEG := loadTestJPEG(t)
 
 	t.Run("valid bytes", func(t *testing.T) {
 		_, err := e.MetadataFromBytes(validJPEG)
@@ -275,10 +311,10 @@ func TestExtractor_MetadataFromBytes(t *testing.T) {
 
 func TestExtractor_MetadataFromURL(t *testing.T) {
 	e := New()
-	validJPEG := loadTestJPEGAPI(t)
+	validJPEG := loadTestJPEG(t)
 
 	// Create test server
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := newIPv4Server(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/valid.jpg":
 			w.WriteHeader(http.StatusOK)
@@ -320,6 +356,14 @@ func TestExtractor_MetadataFromURL(t *testing.T) {
 			t.Errorf("MetadataFromURL() with HTTPTimeout=0 should work (unlimited timeout), got error: %v", err)
 		}
 	})
+
+	t.Run("max bytes exceeded", func(t *testing.T) {
+		e2 := New(WithMaxBytes(10))
+		_, err := e2.MetadataFromURL(server.URL + "/valid.jpg")
+		if err == nil {
+			t.Error("MetadataFromURL() expected error for exceeding max bytes")
+		}
+	})
 }
 
 // TestDefaultExtractor verifies the default extractor is initialized
@@ -332,13 +376,13 @@ func TestDefaultExtractor(t *testing.T) {
 // TestMetadataContent verifies that real metadata is extracted from the test file
 func TestMetadataContent(t *testing.T) {
 	// Use the real test file to validate actual metadata extraction
-	metadata, err := MetadataFromFile(testJPEGPathAPI)
+	metadata, err := MetadataFromFile(testJPEGPath)
 	if err != nil {
 		t.Fatalf("MetadataFromFile() error = %v", err)
 	}
 
 	// Verify we got some directories
-	if len(metadata.Directories) == 0 {
+	if len(metadata.Directories()) == 0 {
 		t.Error("Expected at least one directory from real JPEG file")
 	}
 
@@ -362,10 +406,13 @@ func TestMetadataContent(t *testing.T) {
 
 	// At minimum, we should have extracted SOME tags from this real file
 	totalTags := 0
-	for _, dir := range metadata.Directories {
+	for _, dir := range metadata.Directories() {
 		totalTags += len(dir.Tags)
 	}
 	if totalTags == 0 {
 		t.Error("Expected to extract at least some tags from real JPEG file")
 	}
 }
+
+// TestMetadataFromReaderAt_PackageLevel removed - metadataFromReaderAt is now private
+// Use MetadataFromFile, MetadataFromBytes, or MetadataFromReader instead
