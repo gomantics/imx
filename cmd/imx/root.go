@@ -15,7 +15,7 @@ import (
 	"github.com/gomantics/imx/cmd/imx/util"
 )
 
-const version = "0.2.0"
+const version = "1.0.0"
 
 var (
 	// Output options
@@ -45,18 +45,24 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "imx [flags] <file>...",
-	Short: "Extract and analyze image metadata",
-	Long: `imx - Image Metadata Extractor
+	Short: "Extract and analyze metadata from images, audio, and video files",
+	Long: `imx - Metadata Extractor
 
 A powerful command-line tool for extracting, querying, and analyzing
-metadata from images. Supports EXIF, IPTC, XMP, and ICC color profiles.
+metadata from images, audio, and video files.
+
+Supports: EXIF, IPTC, XMP, ICC profiles, ID3 tags, FLAC metadata, and more.
+Formats: JPEG, PNG, GIF, WebP, TIFF, CR2, HEIC, MP3, FLAC, MP4/M4A
 
 Examples:
-  # Extract all metadata from an image
+  # Extract all metadata from files
   imx photo.jpg
+  imx song.mp3
+  imx video.mp4
 
-  # Extract EXIF data in JSON format
-  imx --spec exif --format json photo.jpg
+  # Extract specific directory in JSON format
+  imx --dir IFD0 --format json photo.jpg
+  imx --dir ID3v2_4 --format json song.mp3
 
   # Search for GPS tags
   imx --search gps *.jpg
@@ -66,7 +72,7 @@ Examples:
 
   # Filter by tag name or ID
   imx --tag Make --tag Model photo.jpg
-  imx --tag EXIF:0x010f photo.jpg
+  imx --tag Artist --tag Album song.mp3
 
   # Format GPS coordinates
   imx --gps-format decimal photo.jpg
@@ -80,7 +86,7 @@ Examples:
   imx --time-format human photo.jpg
   imx --time-format "2006-01-02 15:04:05" photo.jpg
 
-Supported formats:
+Supported options:
   - Output: text, json, csv, table, summary
   - Time: iso, rfc3339, unix, human, or custom Go layout
   - GPS: decimal, dms, url
@@ -89,6 +95,10 @@ Supported formats:
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Allow --version without files
 		if versionFlag {
+			return nil
+		}
+		// Allow no args if stdin is being piped
+		if len(args) == 0 && isStdinPiped() {
 			return nil
 		}
 		return cobra.MinimumNArgs(1)(cmd, args)
@@ -107,7 +117,7 @@ func init() {
 	rootCmd.Flags().StringVar(&gpsFormatFlag, "gps-format", "dms", "GPS format (decimal|dms|url)")
 
 	// Filter flags
-	rootCmd.Flags().StringVar(&specFlag, "spec", "", "Filter by spec (exif|iptc|xmp|icc)")
+	rootCmd.Flags().StringVar(&specFlag, "dir", "", "Filter by directory (IFD0|ExifIFD|GPS|ID3v2_4|FLAC-StreamInfo|etc)")
 	rootCmd.Flags().StringVar(&tagFlag, "tag", "", "Filter by tag name or ID")
 	rootCmd.Flags().StringVar(&searchFlag, "search", "", "Search in tag names and values")
 	rootCmd.Flags().StringVar(&patternFlag, "pattern", "", "Filter by regex pattern")
@@ -140,14 +150,41 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		ui.DisableColors()
 	}
 
-	// Expand file paths (glob patterns, directories, etc.)
-	files, err := util.ExpandFiles(args, recursiveFlag)
-	if err != nil {
-		return fmt.Errorf("failed to expand files: %w", err)
+	// Validate format flag
+	if formatFlag != "" {
+		validFormats := map[string]bool{
+			"text": true, "json": true, "csv": true, "table": true, "summary": true,
+		}
+		if !validFormats[formatFlag] {
+			return fmt.Errorf("invalid format %q, must be one of: text, json, csv, table, summary", formatFlag)
+		}
 	}
 
-	if len(files) == 0 {
-		return fmt.Errorf("no files found")
+	// Validate gps-format flag
+	validGPSFormats := map[string]bool{
+		"decimal": true, "dms": true, "url": true,
+	}
+	if !validGPSFormats[gpsFormatFlag] {
+		return fmt.Errorf("invalid gps-format %q, must be one of: decimal, dms, url", gpsFormatFlag)
+	}
+
+	var files []string
+	var err error
+
+	// Check if reading from stdin
+	if len(args) == 0 && isStdinPiped() {
+		// Read from stdin - use a special marker
+		files = []string{"-"}
+	} else {
+		// Expand file paths (glob patterns, directories, etc.)
+		files, err = util.ExpandFiles(args, recursiveFlag)
+		if err != nil {
+			return fmt.Errorf("failed to expand files: %w", err)
+		}
+
+		if len(files) == 0 {
+			return fmt.Errorf("no files found")
+		}
 	}
 
 	// Build filter chain
@@ -197,7 +234,8 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		if len(files) == 1 {
 			selectedFormat = "table"
 		} else {
-			selectedFormat = "summary"
+			// For multiple files, default to JSON for machine-readable output
+			selectedFormat = "json"
 		}
 	}
 
@@ -245,4 +283,13 @@ func isTerminal() bool {
 		return false
 	}
 	return (fileInfo.Mode() & os.ModeCharDevice) != 0
+}
+
+// isStdinPiped checks if stdin is being piped
+func isStdinPiped() bool {
+	fileInfo, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return (fileInfo.Mode() & os.ModeCharDevice) == 0
 }

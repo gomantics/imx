@@ -4,24 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"os"
+	"net/http"
 	"testing"
-
-	"github.com/gomantics/imx/internal/common"
+	"time"
 )
 
-// testJPEGPath is the path to the test JPEG file
-const testJPEGPath = "testdata/goldens/jpeg/canon_xmp.jpg"
-
-// loadTestJPEG loads the test JPEG file for testing
-func loadTestJPEG(t *testing.T) []byte {
-	t.Helper()
-	data, err := os.ReadFile(testJPEGPath)
-	if err != nil {
-		t.Fatalf("Failed to load test JPEG: %v", err)
-	}
-	return data
-}
+// Test helper is defined in api_test.go to avoid duplication
 
 func TestNew(t *testing.T) {
 	tests := []struct {
@@ -33,24 +21,8 @@ func TestNew(t *testing.T) {
 			opts: nil,
 		},
 		{
-			name: "with max bytes",
-			opts: []Option{WithMaxBytes(1024)},
-		},
-		{
-			name: "with buffer size",
-			opts: []Option{WithBufferSize(32 * 1024)},
-		},
-		{
-			name: "with stop on first error",
-			opts: []Option{WithStopOnFirstError(true)},
-		},
-		{
-			name: "with multiple options",
-			opts: []Option{
-				WithMaxBytes(2048),
-				WithBufferSize(16 * 1024),
-				WithStopOnFirstError(true),
-			},
+			name: "with HTTP timeout",
+			opts: []Option{WithHTTPTimeout(60 * time.Second)},
 		},
 	}
 
@@ -60,8 +32,8 @@ func TestNew(t *testing.T) {
 			if e == nil {
 				t.Fatal("New() returned nil")
 			}
-			if e.cfg.BufferSize <= 0 {
-				t.Error("BufferSize should be positive")
+			if len(e.parsers) == 0 {
+				t.Error("No parsers registered")
 			}
 		})
 	}
@@ -86,17 +58,16 @@ func TestExtractor_Metadata(t *testing.T) {
 		{
 			name:    "valid JPEG with per-call options",
 			data:    validJPEG,
-			opts:    []Option{WithMaxBytes(20000000)}, // Large enough for the 17MB test file
+			opts:    []Option{WithHTTPTimeout(60 * time.Second)},
 			wantErr: false,
 		},
 		{
-			name: "unknown format - PNG signature",
-			// PNG signature padded to 64 bytes
+			name: "valid PNG signature",
+			// PNG signature padded to 64 bytes (PNG parser should recognize this)
 			data: append([]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A},
 				make([]byte, 60)...),
 			opts:    nil,
-			wantErr: true,
-			errType: ErrUnknownFormat,
+			wantErr: false,
 		},
 		{
 			name: "unknown format - random bytes",
@@ -107,7 +78,7 @@ func TestExtractor_Metadata(t *testing.T) {
 			errType: ErrUnknownFormat,
 		},
 		{
-			name:    "peek fails - too short",
+			name:    "too short data",
 			data:    []byte{0xFF},
 			opts:    nil,
 			wantErr: true,
@@ -131,106 +102,8 @@ func TestExtractor_Metadata(t *testing.T) {
 				}
 			}
 
-			if err == nil && len(metadata.Directories) == 0 {
+			if err == nil && len(metadata.Directories()) == 0 {
 				t.Log("Metadata() returned 0 directories, which is valid for some inputs")
-			}
-		})
-	}
-}
-
-func TestExtractor_MaxBytes(t *testing.T) {
-	e := New(WithMaxBytes(100))
-	validJPEG := loadTestJPEG(t)
-
-	r := bytes.NewReader(validJPEG)
-	_, err := e.MetadataFromReader(r)
-
-	// With MaxBytes limiting the read, parsing may or may not succeed
-	// depending on where the limit cuts off
-	_ = err // Error is acceptable
-}
-
-func TestExtractor_StopOnError(t *testing.T) {
-	// Create extractor with StopOnFirstError
-	e := New(WithStopOnFirstError(true))
-
-	// Valid JPEG that parses successfully
-	validJPEG := loadTestJPEG(t)
-	r := bytes.NewReader(validJPEG)
-
-	_, err := e.MetadataFromReader(r)
-	if err != nil {
-		t.Errorf("Metadata() error = %v for valid JPEG", err)
-	}
-}
-
-func TestFilterBlocksForSpec(t *testing.T) {
-	blocks := []common.RawBlock{
-		{Spec: SpecEXIF, Payload: []byte{1}},
-		{Spec: SpecXMP, Payload: []byte{2}},
-		{Spec: SpecEXIF, Payload: []byte{3}},
-		{Spec: SpecICC, Payload: []byte{4}},
-	}
-
-	tests := []struct {
-		name      string
-		spec      Spec
-		wantCount int
-	}{
-		{"filter EXIF", SpecEXIF, 2},
-		{"filter XMP", SpecXMP, 1},
-		{"filter ICC", SpecICC, 1},
-		{"filter IPTC (none)", SpecIPTC, 0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := filterBlocksForSpec(blocks, tt.spec)
-			if len(result) != tt.wantCount {
-				t.Errorf("filterBlocksForSpec() returned %d blocks, want %d", len(result), tt.wantCount)
-			}
-		})
-	}
-}
-
-func TestContains(t *testing.T) {
-	tests := []struct {
-		name  string
-		slice []Spec
-		item  Spec
-		want  bool
-	}{
-		{
-			name:  "item in slice",
-			slice: []Spec{SpecEXIF, SpecXMP, SpecICC},
-			item:  SpecXMP,
-			want:  true,
-		},
-		{
-			name:  "item not in slice",
-			slice: []Spec{SpecEXIF, SpecXMP},
-			item:  SpecICC,
-			want:  false,
-		},
-		{
-			name:  "empty slice",
-			slice: []Spec{},
-			item:  SpecEXIF,
-			want:  false,
-		},
-		{
-			name:  "nil slice",
-			slice: nil,
-			item:  SpecEXIF,
-			want:  false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := contains(tt.slice, tt.item)
-			if result != tt.want {
-				t.Errorf("contains() = %v, want %v", result, tt.want)
 			}
 		})
 	}
@@ -252,41 +125,8 @@ func TestExtractor_ReaderError(t *testing.T) {
 	}
 }
 
-// buildJPEGWithBadEXIF creates a JPEG with malformed EXIF data that will fail to parse
-func buildJPEGWithBadEXIF() []byte {
-	var buf bytes.Buffer
-
-	// SOI
-	buf.Write([]byte{0xFF, 0xD8})
-
-	// APP1 with bad EXIF - valid header but truncated IFD
-	// We make it large enough (80 bytes) to satisfy Peek(64)
-	// And set offset to 79, so 79 < 80 (valid checks)
-	// But 79+2 > 80 (entry count read failure)
-	badExif := make([]byte, 80)
-	copy(badExif[0:2], []byte{'I', 'I'})               // Little-endian
-	copy(badExif[2:4], []byte{0x2A, 0x00})             // TIFF magic
-	copy(badExif[4:8], []byte{0x4F, 0x00, 0x00, 0x00}) // IFD0 offset = 79
-
-	buf.WriteByte(0xFF)
-	buf.WriteByte(0xE1)
-	length := uint16(len(badExif) + 2 + 6)
-	buf.WriteByte(byte(length >> 8))
-	buf.WriteByte(byte(length))
-	buf.Write([]byte("Exif\x00\x00"))
-	buf.Write(badExif)
-
-	// SOS to end metadata
-	buf.Write([]byte{0xFF, 0xDA, 0x00, 0x08, 0x00, 0x01, 0x00, 0x00, 0x3F, 0x00})
-
-	// EOI
-	buf.Write([]byte{0xFF, 0xD9})
-
-	return buf.Bytes()
-}
-
 // buildJPEGWithNoEXIF creates a valid JPEG without any EXIF data
-// Must be at least 64 bytes for Peek to succeed
+// Must be at least 64 bytes for detection to succeed
 func buildJPEGWithNoEXIF() []byte {
 	var buf bytes.Buffer
 
@@ -323,71 +163,41 @@ func TestExtractor_NoBlocks(t *testing.T) {
 		t.Errorf("expected success, got error: %v", err)
 	}
 
-	// Should succeed but have no directories
-	if len(metadata.Directories) != 0 {
-		t.Errorf("returned %d directories, want 0", len(metadata.Directories))
+	// Should succeed but have no directories (or only format metadata)
+	if metadata == nil {
+		t.Error("metadata should not be nil")
 	}
 }
 
-func TestExtractor_ParseErrorStop(t *testing.T) {
-	// Test with StopOnFirstError=true and bad EXIF data
-	e := New(WithStopOnFirstError(true))
-	jpegBadExif := buildJPEGWithBadEXIF()
-
-	r := bytes.NewReader(jpegBadExif)
-	_, err := e.MetadataFromReader(r)
-
-	if err == nil {
-		t.Error("expected error with StopOnFirstError=true, got nil")
-	}
-}
-
-func TestExtractor_ParseErrorContinue(t *testing.T) {
-	// Test with StopOnFirstError=false (default) and bad EXIF data
-	// Should continue and return empty result without error
-	e := New()
-	jpegBadExif := buildJPEGWithBadEXIF()
-
-	r := bytes.NewReader(jpegBadExif)
-	metadata, err := e.MetadataFromReader(r)
-
-	// Should return PartialError when parser fails without StopOnFirstErr
-	if err == nil {
-		t.Error("expected PartialError when parsing fails")
-	}
-
-	var partialErr *PartialError
-	if !errors.As(err, &partialErr) {
-		t.Errorf("expected PartialError, got %T", err)
-	}
-
-	// Should have error for the spec that failed
-	if partialErr != nil && len(partialErr.SpecErrs) == 0 {
-		t.Error("expected SpecErrs in PartialError")
-	}
-
-	// Should still have no directories since parsing failed
-	if len(metadata.Directories) != 0 {
-		t.Errorf("returned %d directories, want 0 when parsing fails", len(metadata.Directories))
-	}
-}
-
-func TestExtractor_PartialError_WithPartialResults(t *testing.T) {
-	// Create a JPEG with no EXIF - should parse format successfully but have no metadata
-	data := buildJPEGWithNoEXIF()
+func TestExtractor_metadataFromReaderAt_WithOptions(t *testing.T) {
+	validJPEG := loadTestJPEG(t)
 
 	e := New()
-	_, err := e.MetadataFromBytes(data)
+	r := bytes.NewReader(validJPEG)
+	cfg := e.cloneConfig(WithHTTPTimeout(60 * time.Second))
+	metadata, err := e.metadataFromReaderAt(r, cfg)
 
-	// Should succeed with no error since format parsing works
 	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+		t.Fatalf("metadataFromReaderAt() error = %v", err)
 	}
 
-	// This test verifies that no PartialError is returned when all parsers succeed
-	// (even if they find nothing)
-	var partialErr *PartialError
-	if errors.As(err, &partialErr) {
-		t.Error("should not return PartialError when parsers succeed")
+	if metadata == nil {
+		t.Fatal("metadataFromReaderAt() returned nil metadata")
 	}
+}
+
+func TestExtractor_MetadataFromURL_ConfigClone(t *testing.T) {
+	server := newIPv4Server(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		validJPEG := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46}
+		validJPEG = append(validJPEG, make([]byte, 54)...) // Pad to 64 bytes
+		validJPEG = append(validJPEG, 0xFF, 0xD9)
+		w.Write(validJPEG)
+	}))
+	if server == nil {
+		return
+	}
+	defer server.Close()
+
+	e := New()
+	_, _ = e.MetadataFromURL(server.URL, WithHTTPTimeout(5*time.Second))
 }

@@ -3,7 +3,6 @@ package output
 import (
 	"encoding/csv"
 	"io"
-	"strings"
 
 	"github.com/gomantics/imx/cmd/imx/ui"
 )
@@ -19,7 +18,7 @@ func (f *CSVFormatter) Format(w io.Writer, results []*Result) error {
 	defer writer.Flush()
 
 	// Write header
-	if err := writer.Write([]string{"File", "Spec", "Tag", "Value"}); err != nil {
+	if err := writer.Write([]string{"File", "Dir", "Tag", "Value"}); err != nil {
 		return err
 	}
 
@@ -40,7 +39,7 @@ func (f *CSVFormatter) Format(w io.Writer, results []*Result) error {
 
 		// Write tag rows
 		for _, tagInfo := range result.Tags {
-			spec := strings.ToUpper(tagInfo.Dir.Spec.String())
+			dir := tagInfo.Dir.Name
 
 			// Apply time formatting if configured and tag is a time field
 			value := ui.FormatValue(tagInfo.Tag.Value, f.config.Full)
@@ -50,7 +49,7 @@ func (f *CSVFormatter) Format(w io.Writer, results []*Result) error {
 
 			if err := writer.Write([]string{
 				result.File,
-				spec,
+				dir,
 				tagInfo.Tag.Name,
 				value,
 			}); err != nil {

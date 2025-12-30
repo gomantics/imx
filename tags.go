@@ -362,6 +362,6 @@ const (
 	TagICCDeviceModelDesc       TagID = "ICC:DeviceModelDescription"        // Device model description
 	TagICCTechnology            TagID = "ICC:Technology"                    // Device technology
 	TagICCViewingConditionsDesc TagID = "ICC:ViewingConditionsDescription"  // Viewing conditions
-	TagICCLuminance             TagID = "ICC:Luminance"                       // Luminance value
-	TagICCMeasurement           TagID = "ICC:Measurement"                     // Measurement info
+	TagICCLuminance             TagID = "ICC:Luminance"                     // Luminance value
+	TagICCMeasurement           TagID = "ICC:Measurement"                   // Measurement info
 )

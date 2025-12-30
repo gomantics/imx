@@ -3,8 +3,6 @@ package processor
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"runtime"
 	"sync"
@@ -53,8 +51,9 @@ func (p *Processor) Process(ctx context.Context, files []string) ([]*output.Resu
 	}
 
 	// Create progress bar if needed
+	// Note: Disable progress bar when verbose is enabled to prevent stderr corruption
 	var bar *ui.ProgressBar
-	if p.config.ShowProgress && !p.config.Quiet && len(files) > 1 {
+	if p.config.ShowProgress && !p.config.Quiet && !p.config.Verbose && len(files) > 1 {
 		bar = ui.NewProgressBarWithOutput(len(files), "Processing", os.Stderr)
 	}
 
@@ -105,19 +104,22 @@ func (p *Processor) Process(ctx context.Context, files []string) ([]*output.Resu
 func (p *Processor) ProcessSingle(ctx context.Context, file string) (*output.Result, error) {
 	result := &output.Result{File: file}
 
-	// Read file data
-	data, err := p.readFile(ctx, file)
-	if err != nil {
-		result.Error = &util.ProcessError{
-			File: file,
-			Op:   "read",
-			Err:  err,
-		}
-		return result, result.Error
+	// Extract metadata using the appropriate method
+	var meta *imx.Metadata
+	var err error
+
+	switch {
+	case file == "-":
+		// Handle stdin - read all data and use MetadataFromReader
+		meta, err = p.extractor.MetadataFromReader(os.Stdin)
+	case util.IsURL(file):
+		// Handle URL - use MetadataFromURL which includes proper timeout and streaming
+		meta, err = p.extractor.MetadataFromURL(file)
+	default:
+		// Handle file path - use MetadataFromFile for efficient io.ReaderAt access
+		meta, err = p.extractor.MetadataFromFile(file)
 	}
 
-	// Extract metadata
-	meta, err := p.extractor.MetadataFromBytes(data)
 	if err != nil {
 		result.Error = &util.ProcessError{
 			File: file,
@@ -127,7 +129,7 @@ func (p *Processor) ProcessSingle(ctx context.Context, file string) (*output.Res
 		return result, result.Error
 	}
 
-	result.Meta = &meta
+	result.Meta = meta
 
 	// Apply filters and collect tags
 	var tags []output.TagInfo
@@ -184,30 +186,3 @@ func (p *Processor) worker(ctx context.Context, wg *sync.WaitGroup, jobs <-chan 
 	}
 }
 
-// readFile reads file data from path or URL
-func (p *Processor) readFile(ctx context.Context, path string) ([]byte, error) {
-	if util.IsURL(path) {
-		return p.readURL(ctx, path)
-	}
-	return os.ReadFile(path)
-}
-
-// readURL fetches data from a URL
-func (p *Processor) readURL(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
-	}
-
-	return io.ReadAll(resp.Body)
-}

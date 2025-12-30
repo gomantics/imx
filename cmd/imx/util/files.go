@@ -7,8 +7,9 @@ import (
 	"strings"
 )
 
-// ImageExtensions contains all supported image file extensions
-var ImageExtensions = map[string]bool{
+// SupportedExtensions contains all supported file extensions (images, audio, video)
+var SupportedExtensions = map[string]bool{
+	// Images
 	".jpg":  true,
 	".jpeg": true,
 	".png":  true,
@@ -20,6 +21,7 @@ var ImageExtensions = map[string]bool{
 	".heif": true,
 	".avif": true,
 	".bmp":  true,
+
 	// RAW formats
 	".cr2": true,
 	".cr3": true,
@@ -31,6 +33,15 @@ var ImageExtensions = map[string]bool{
 	".pef": true,
 	".srw": true,
 	".raf": true,
+
+	// Audio
+	".mp3":  true,
+	".flac": true,
+	".m4a":  true,
+
+	// Video
+	".mp4": true,
+	".m4v": true,
 }
 
 // IsURL checks if the given path is an HTTP or HTTPS URL
@@ -38,13 +49,13 @@ func IsURL(path string) bool {
 	return strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://")
 }
 
-// IsImageFile checks if the file has a supported image extension
+// IsImageFile checks if the file has a supported extension (image, audio, or video)
 func IsImageFile(path string) bool {
 	ext := strings.ToLower(filepath.Ext(path))
-	return ImageExtensions[ext]
+	return SupportedExtensions[ext]
 }
 
-// ExpandFiles expands file patterns and directories into a list of image files
+// ExpandFiles expands file patterns and directories into a list of supported files
 func ExpandFiles(paths []string, recursive bool) ([]string, error) {
 	var files []string
 	seen := make(map[string]bool) // Deduplicate files
@@ -132,7 +143,7 @@ func ExpandFiles(paths []string, recursive bool) ([]string, error) {
 	return files, nil
 }
 
-// expandDirectory recursively walks a directory and returns all image files
+// expandDirectory recursively walks a directory and returns all supported files
 func expandDirectory(dir string, recursive bool) ([]string, error) {
 	var files []string
 

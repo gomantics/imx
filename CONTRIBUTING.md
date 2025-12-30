@@ -24,22 +24,47 @@ make check
 
 ```
 imx/
-├── *.go                # Public API (api.go, config.go, extractor.go, types.go, tags.go)
-├── cmd/imx/            # CLI tool
-├── examples/           # Usage examples (basic & advanced)
+├── *.go                    # Public API (api.go, config.go, extractor.go, types.go, tags.go)
+├── cmd/imx/                # CLI tool
+│   ├── filter/             # Tag filtering logic
+│   ├── output/             # Output formatters (JSON, CSV, Table, Text, Summary)
+│   ├── processor/          # File processing
+│   ├── ui/                 # CLI interface
+│   └── util/               # Utilities
+├── examples/               # Usage examples
 ├── internal/
-│   ├── format/         # Container format parsers (JPEG, etc.)
-│   └── meta/           # Metadata parsers (EXIF, IPTC, XMP, ICC)
-├── testdata/goldens/   # Test images with expected metadata
-└── Makefile            # Build automation
+│   ├── binary/             # Binary reading helpers
+│   ├── bufpool/            # Buffer pool for performance
+│   ├── parser/             # Unified parser architecture
+│   │   ├── cr2/            # Canon RAW parser
+│   │   ├── flac/           # FLAC audio parser
+│   │   ├── gif/            # GIF parser
+│   │   ├── heic/           # HEIC/HEIF parser
+│   │   ├── icc/            # ICC profile parser
+│   │   ├── id3/            # ID3/MP3 parser
+│   │   ├── iptc/           # IPTC metadata parser
+│   │   ├── jpeg/           # JPEG parser
+│   │   ├── mp4/            # MP4/M4A parser
+│   │   ├── png/            # PNG parser
+│   │   ├── tiff/           # TIFF parser
+│   │   ├── webp/           # WebP parser
+│   │   └── xmp/            # XMP parser
+│   └── testing/            # Shared test utilities
+├── testdata/               # Test files for all formats
+│   ├── jpeg/, png/, gif/   # Image formats
+│   ├── flac/, mp3/, mp4/   # Audio/video formats
+│   └── goldens/            # Expected metadata outputs
+└── Makefile                # Build automation
 ```
 
 ### Architecture
 
-Three-layer pipeline:
-1. **Format Layer** - Extracts raw metadata blocks from container formats
-2. **Meta Layer** - Parses raw blocks into structured tags
-3. **API Layer** - Provides user-facing types and functions
+**Unified Parser Model**:
+- All parsers implement `parser.Parser` interface
+- Each parser is stateless and thread-safe
+- Uses `io.ReaderAt` for efficient random access
+- Returns `[]parser.Directory` with structured tags
+- 100% test coverage for all parsers
 
 ## Development Guidelines
 
@@ -91,17 +116,26 @@ Closes #45
 
 ### Adding a New Parser
 
-**Metadata Parser:**
-1. Create package in `internal/meta/<spec>/`
-2. Implement `meta.Parser` interface
-3. Register in `extractor.go`
-4. Add tests with 100% coverage
-
-**Format Parser:**
-1. Create package in `internal/format/<format>/`
-2. Implement `format.Parser` interface
-3. Register in `extractor.go`
-4. Add tests with 100% coverage
+1. Create package in `internal/parser/<format>/`
+2. Implement the `parser.Parser` interface:
+   ```go
+   type Parser interface {
+       Name() string
+       Detect(r io.ReaderAt) bool
+       Parse(r io.ReaderAt) ([]Directory, *ParseError)
+   }
+   ```
+3. Make parser stateless and thread-safe (no struct fields that store state)
+4. Use `io.ReaderAt` for efficient random access
+5. Add comprehensive tests:
+   - Unit tests for all functions
+   - Fuzz tests (`FuzzParser`)
+   - Benchmark tests
+   - Concurrent access tests
+   - Target: 100% test coverage
+6. Add constants file if you have 10+ magic numbers
+7. Document the format structure in package comments
+8. Register parser in the main extractor
 
 ## Core Principles
 
@@ -124,17 +158,23 @@ func parse(data []byte) error {
 }
 ```
 
-### Streaming Only
+### Efficient I/O
 
-Use `bufio.Reader` for parsing. Never load entire files into memory:
+Use `io.ReaderAt` for parsing. Never load entire files into memory:
 
 ```go
-// Good
-func Parse(r *bufio.Reader) ([]Block, error)
+// Good - Random access without loading entire file
+func Parse(r io.ReaderAt) ([]Directory, *ParseError)
 
-// Bad
-func Parse(data []byte) ([]Block, error)
+// Bad - Loads entire file into memory
+func Parse(data []byte) ([]Directory, *ParseError)
 ```
+
+**Benefits of `io.ReaderAt`**:
+- Random access to any file position
+- No memory copying
+- Thread-safe for concurrent reads
+- Works with files, byte slices, and network streams
 
 ### Validate Sizes
 

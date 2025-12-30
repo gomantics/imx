@@ -24,5 +24,5 @@ func (f *SpecFilter) ShouldInclude(dir imx.Directory, tag imx.Tag) bool {
 	if f.spec == "" {
 		return true
 	}
-	return strings.EqualFold(dir.Spec.String(), f.spec)
+	return strings.EqualFold(dir.Name, f.spec)
 }

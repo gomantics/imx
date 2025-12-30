@@ -8,7 +8,7 @@ import (
 
 func TestChain_ShouldInclude(t *testing.T) {
 	// Create test data
-	dir := imx.Directory{Spec: imx.SpecEXIF, Name: "IFD0"}
+	dir := imx.Directory{Name: "IFD0"}
 	tag := imx.Tag{ID: "EXIF:Make", Name: "Make", Value: "Canon"}
 
 	tests := []struct {
@@ -24,7 +24,7 @@ func TestChain_ShouldInclude(t *testing.T) {
 		{
 			name: "single filter - pass",
 			filters: []Filter{
-				NewSpecFilter("exif"),
+				NewSpecFilter("ifd0"),
 			},
 			want: true,
 		},
@@ -38,7 +38,7 @@ func TestChain_ShouldInclude(t *testing.T) {
 		{
 			name: "multiple filters - all pass",
 			filters: []Filter{
-				NewSpecFilter("exif"),
+				NewSpecFilter("ifd0"),
 				NewTagFilter("Make"),
 			},
 			want: true,
@@ -46,7 +46,7 @@ func TestChain_ShouldInclude(t *testing.T) {
 		{
 			name: "multiple filters - one fails",
 			filters: []Filter{
-				NewSpecFilter("exif"),
+				NewSpecFilter("ifd0"),
 				NewTagFilter("Model"),
 			},
 			want: false,
@@ -89,7 +89,7 @@ func TestChain_Add(t *testing.T) {
 }
 
 func TestPassThrough_ShouldInclude(t *testing.T) {
-	dir := imx.Directory{Spec: imx.SpecEXIF, Name: "IFD0"}
+	dir := imx.Directory{Name: "IFD0"}
 	tag := imx.Tag{ID: "EXIF:Make", Name: "Make", Value: "Canon"}
 
 	filter := &PassThrough{}

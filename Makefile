@@ -32,7 +32,6 @@ build:
 	$(GOBUILD) $(ALL_PKGS)
 	cd cmd/imx && $(GOBUILD) -o ../../$(BIN_DIR)/imx .
 	$(GOBUILD) -o $(BIN_DIR)/basic ./examples/basic
-	$(GOBUILD) -o $(BIN_DIR)/advanced ./examples/advanced
 	@echo "✓ Build complete"
 
 # Run all tests with race detector
@@ -73,12 +72,9 @@ install:
 # Generate coverage report for all packages (library + CLI)
 coverage:
 	@echo "Running tests with coverage..."
-	@rm -f go.work go.work.sum
-	@go work init . ./cmd/imx
-	@$(GOTEST) -coverprofile=$(COVERAGE_FILE) -covermode=atomic ./... ./cmd/imx/...
+	$(GOTEST) -coverprofile=$(COVERAGE_FILE) -covermode=atomic ./...
 	@echo ""
 	@$(GOCMD) tool cover -func=$(COVERAGE_FILE) | tail -1
-	@rm -f go.work go.work.sum
 
 # Generate HTML coverage report
 coverage-html: coverage
@@ -91,28 +87,30 @@ coverage-html: coverage
 # Run basic example
 example: build
 	@echo "Running example..."
-	./$(BIN_DIR)/imx testdata/goldens/jpeg/google_iptc.jpg
+	./$(BIN_DIR)/imx testdata/jpeg/google_iptc.jpg
 
 # Run benchmarks
 bench:
 	@echo "Running benchmarks..."
-	$(GOTEST) -bench=. -benchmem -benchtime=2s $(ALL_PKGS)
-	cd cmd/imx && $(GOTEST) -bench=. -benchmem -benchtime=2s ./...
+	$(GOTEST) -run=^$$ -bench=. -benchmem -benchtime=2s $(ALL_PKGS)
+	cd cmd/imx && $(GOTEST) -run=^$$ -bench=. -benchmem -benchtime=2s ./...
 
 # Run fuzz tests
 fuzz:
 	@echo "Running fuzz tests..."
-	@$(GOTEST) -fuzz='^FuzzJPEGParse$$' -fuzztime=10s ./internal/format/jpeg
-	@$(GOTEST) -fuzz='^FuzzJPEGDetect$$' -fuzztime=10s ./internal/format/jpeg
-	@$(GOTEST) -fuzz='^FuzzEXIFParse$$' -fuzztime=10s ./internal/meta/exif
-	@$(GOTEST) -fuzz='^FuzzEXIFParseIFD$$' -fuzztime=10s ./internal/meta/exif
-	@$(GOTEST) -fuzz='^FuzzIPTCParse$$' -fuzztime=10s ./internal/meta/iptc
-	@$(GOTEST) -fuzz='^FuzzIPTCParseIPTCIIM$$' -fuzztime=10s ./internal/meta/iptc
-	@$(GOTEST) -fuzz='^FuzzXMPParse$$' -fuzztime=10s ./internal/meta/xmp
-	@$(GOTEST) -fuzz='^FuzzXMPParsePacket$$' -fuzztime=10s ./internal/meta/xmp
-	@$(GOTEST) -fuzz='^FuzzICCParse$$' -fuzztime=10s ./internal/meta/icc
-	@$(GOTEST) -fuzz='^FuzzICCParseHeader$$' -fuzztime=10s ./internal/meta/icc
-	@$(GOTEST) -fuzz='^FuzzICCParseTagTable$$' -fuzztime=10s ./internal/meta/icc
+	@$(GOTEST) -fuzz='^FuzzCR2Parse$$' -fuzztime=5s ./internal/parser/cr2
+	@$(GOTEST) -fuzz='^FuzzFLACParse$$' -fuzztime=5s ./internal/parser/flac
+	@$(GOTEST) -fuzz='^FuzzGIFParse$$' -fuzztime=5s ./internal/parser/gif
+	@$(GOTEST) -fuzz='^FuzzHEICParse$$' -fuzztime=5s ./internal/parser/heic
+	@$(GOTEST) -fuzz='^FuzzICCParse$$' -fuzztime=5s ./internal/parser/icc
+	@$(GOTEST) -fuzz='^FuzzID3Parse$$' -fuzztime=5s ./internal/parser/id3
+	@$(GOTEST) -fuzz='^FuzzIPTCParse$$' -fuzztime=5s ./internal/parser/iptc
+	@$(GOTEST) -fuzz='^FuzzJPEGParse$$' -fuzztime=5s ./internal/parser/jpeg
+	@$(GOTEST) -fuzz='^FuzzMP4Parse$$' -fuzztime=5s ./internal/parser/mp4
+	@$(GOTEST) -fuzz='^FuzzPNGParse$$' -fuzztime=5s ./internal/parser/png
+	@$(GOTEST) -fuzz='^FuzzTIFFParse$$' -fuzztime=5s ./internal/parser/tiff
+	@$(GOTEST) -fuzz='^FuzzWebPParse$$' -fuzztime=5s ./internal/parser/webp
+	@$(GOTEST) -fuzz='^FuzzXMPParse$$' -fuzztime=5s ./internal/parser/xmp
 	@echo "✓ All fuzz tests complete"
 
 # Show help

@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gomantics/imx"
 	"github.com/gomantics/imx/cmd/imx/ui"
 )
 
@@ -58,18 +57,18 @@ func (f *TextFormatter) formatSingle(w io.Writer, result *Result) error {
 		return nil
 	}
 
-	// Group tags by spec and directory
+	// Group tags by directory type
 	groups := f.groupTags(result.Tags)
 
-	// Sort specs by priority
+	// Sort directory types by priority
 	priority := map[string]int{"exif": 0, "iptc": 1, "xmp": 2, "icc": 3}
-	var specOrder []string
-	for spec := range groups {
-		specOrder = append(specOrder, spec)
+	var dirOrder []string
+	for dirType := range groups {
+		dirOrder = append(dirOrder, dirType)
 	}
-	sort.Slice(specOrder, func(i, j int) bool {
-		pi, oki := priority[specOrder[i]]
-		pj, okj := priority[specOrder[j]]
+	sort.Slice(dirOrder, func(i, j int) bool {
+		pi, oki := priority[dirOrder[i]]
+		pj, okj := priority[dirOrder[j]]
 		if oki && okj {
 			return pi < pj
 		}
@@ -79,20 +78,20 @@ func (f *TextFormatter) formatSingle(w io.Writer, result *Result) error {
 		if okj {
 			return false
 		}
-		return specOrder[i] < specOrder[j]
+		return dirOrder[i] < dirOrder[j]
 	})
 
-	// Output each spec
-	for _, specName := range specOrder {
-		group := groups[specName]
+	// Output each directory type
+	for _, dirTypeName := range dirOrder {
+		group := groups[dirTypeName]
 
-		// Spec header
+		// Directory type header
 		fmt.Fprintln(w)
 		if f.config.NoColor {
-			fmt.Fprintf(w, "[%s]\n", strings.ToUpper(specName))
+			fmt.Fprintf(w, "[%s]\n", dirTypeName)
 		} else {
-			specColor := ui.BoldSpecColor(group.spec)
-			specColor.Fprintf(w, "[%s]\n", strings.ToUpper(specName))
+			dirTypeColor := ui.BoldSpecColor(group.dirTypeName)
+			dirTypeColor.Fprintf(w, "[%s]\n", dirTypeName)
 		}
 
 		// Get directory names sorted
@@ -153,23 +152,23 @@ func (f *TextFormatter) formatSingle(w io.Writer, result *Result) error {
 	return nil
 }
 
-type specGroup struct {
-	spec imx.Spec
-	dirs map[string][]TagInfo
+type dirTypeGroup struct {
+	dirTypeName string
+	dirs        map[string][]TagInfo
 }
 
-func (f *TextFormatter) groupTags(tags []TagInfo) map[string]*specGroup {
-	groups := make(map[string]*specGroup)
+func (f *TextFormatter) groupTags(tags []TagInfo) map[string]*dirTypeGroup {
+	groups := make(map[string]*dirTypeGroup)
 
 	for _, t := range tags {
-		specName := t.Dir.Spec.String()
-		if groups[specName] == nil {
-			groups[specName] = &specGroup{
-				spec: t.Dir.Spec,
-				dirs: make(map[string][]TagInfo),
+		dirTypeName := t.Dir.Name
+		if groups[dirTypeName] == nil {
+			groups[dirTypeName] = &dirTypeGroup{
+				dirTypeName: dirTypeName,
+				dirs:        make(map[string][]TagInfo),
 			}
 		}
-		groups[specName].dirs[t.Dir.Name] = append(groups[specName].dirs[t.Dir.Name], t)
+		groups[dirTypeName].dirs[t.Dir.Name] = append(groups[dirTypeName].dirs[t.Dir.Name], t)
 	}
 
 	return groups

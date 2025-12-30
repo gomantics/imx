@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gomantics/imx"
 	"github.com/gomantics/imx/cmd/imx/filter"
 )
 
@@ -60,10 +59,14 @@ func TestProcessor_ProcessSingle_WithFilter(t *testing.T) {
 		t.Fatalf("ProcessSingle failed: %v", err)
 	}
 
-	// Verify all tags are EXIF
+	// Verify all tags are from EXIF-related directories
 	for _, tag := range result.Tags {
-		if tag.Dir.Spec != imx.SpecEXIF {
-			t.Errorf("Expected only EXIF tags, got %s", tag.Dir.Spec)
+		// Check if directory name is EXIF-related (IFD0, ExifIFD, GPS, etc.)
+		dirName := tag.Dir.Name
+		isEXIF := dirName == "IFD0" || dirName == "IFD1" || dirName == "ExifIFD" ||
+			dirName == "GPS" || dirName == "Interoperability" || dirName == "MakerNotes"
+		if !isEXIF {
+			t.Errorf("Expected only EXIF-related tags, got directory: %s", dirName)
 		}
 	}
 }
@@ -197,9 +200,9 @@ func findTestImage(t *testing.T) string {
 
 	// Look for test images in root testdata directory
 	candidates := []string{
-		"../../../testdata/DSC_1631.jpg",
-		"../../../testdata/goldens/jpeg/DSC_1631.jpg",
-		"../../../testdata/RicohWG-6.jpg",
+		"../../../testdata/jpeg/canon_xmp.jpg",
+		"../../../testdata/jpeg/google_iptc.jpg",
+		"../../../testdata/jpeg/olympus_micro43.jpg",
 	}
 
 	for _, path := range candidates {

@@ -3,7 +3,6 @@ package output
 import (
 	"encoding/json"
 	"io"
-	"strings"
 
 	"github.com/gomantics/imx/cmd/imx/ui"
 )
@@ -66,13 +65,13 @@ func (f *JSONFormatter) buildObject(result *Result) map[string]any {
 		"SourceFile": result.File,
 	}
 
-	// Group tags by spec
-	specs := make(map[string]map[string]any)
+	// Group tags by directory
+	dirs := make(map[string]map[string]any)
 
 	for _, tagInfo := range result.Tags {
-		specName := strings.ToUpper(tagInfo.Dir.Spec.String())
-		if specs[specName] == nil {
-			specs[specName] = make(map[string]any)
+		dirName := tagInfo.Dir.Name
+		if dirs[dirName] == nil {
+			dirs[dirName] = make(map[string]any)
 		}
 
 		// Format value for JSON
@@ -81,12 +80,12 @@ func (f *JSONFormatter) buildObject(result *Result) map[string]any {
 		if f.config.TimeFormat != "" && isTimeField(tagInfo.Tag.Name) {
 			value = ui.FormatTime(tagInfo.Tag.Value, f.config.TimeFormat)
 		}
-		specs[specName][tagInfo.Tag.Name] = value
+		dirs[dirName][tagInfo.Tag.Name] = value
 	}
 
-	// Add spec data to object
-	for spec, data := range specs {
-		obj[spec] = data
+	// Add directory data to object
+	for dir, data := range dirs {
+		obj[dir] = data
 	}
 
 	return obj

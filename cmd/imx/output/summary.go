@@ -53,16 +53,16 @@ func (f *SummaryFormatter) formatSingle(w io.Writer, result *Result) error {
 	}
 
 	// Camera info
-	cameraMake := f.getTagValue(result.Meta, imx.SpecEXIF, "Make")
-	cameraModel := f.getTagValue(result.Meta, imx.SpecEXIF, "Model")
+	cameraMake := f.getTagValue(result.Meta, "EXIF", "Make")
+	cameraModel := f.getTagValue(result.Meta, "EXIF", "Model")
 	if cameraMake != "" || cameraModel != "" {
 		f.printField(w, "Camera", fmt.Sprintf("%s %s", cameraMake, cameraModel))
 	}
 
 	// Date
-	date := f.getTagValue(result.Meta, imx.SpecEXIF, "DateTimeOriginal")
+	date := f.getTagValue(result.Meta, "EXIF", "DateTimeOriginal")
 	if date == "" {
-		date = f.getTagValue(result.Meta, imx.SpecEXIF, "DateTime")
+		date = f.getTagValue(result.Meta, "EXIF", "DateTime")
 	}
 	if date != "" {
 		// Format date if time format is specified
@@ -73,23 +73,23 @@ func (f *SummaryFormatter) formatSingle(w io.Writer, result *Result) error {
 	}
 
 	// Dimensions
-	width := f.getTagValue(result.Meta, imx.SpecEXIF, "ImageWidth")
-	height := f.getTagValue(result.Meta, imx.SpecEXIF, "ImageHeight")
+	width := f.getTagValue(result.Meta, "EXIF", "ImageWidth")
+	height := f.getTagValue(result.Meta, "EXIF", "ImageHeight")
 	if width == "" {
-		width = f.getTagValue(result.Meta, imx.SpecEXIF, "PixelXDimension")
+		width = f.getTagValue(result.Meta, "EXIF", "PixelXDimension")
 	}
 	if height == "" {
-		height = f.getTagValue(result.Meta, imx.SpecEXIF, "PixelYDimension")
+		height = f.getTagValue(result.Meta, "EXIF", "PixelYDimension")
 	}
 	if width != "" && height != "" {
 		f.printField(w, "Dimensions", fmt.Sprintf("%s × %s", width, height))
 	}
 
 	// GPS
-	lat := f.getRawTagValue(result.Meta, imx.SpecEXIF, "GPSLatitude")
-	lon := f.getRawTagValue(result.Meta, imx.SpecEXIF, "GPSLongitude")
-	latRef := f.getTagValue(result.Meta, imx.SpecEXIF, "GPSLatitudeRef")
-	lonRef := f.getTagValue(result.Meta, imx.SpecEXIF, "GPSLongitudeRef")
+	lat := f.getRawTagValue(result.Meta, "EXIF", "GPSLatitude")
+	lon := f.getRawTagValue(result.Meta, "EXIF", "GPSLongitude")
+	latRef := f.getTagValue(result.Meta, "EXIF", "GPSLatitudeRef")
+	lonRef := f.getTagValue(result.Meta, "EXIF", "GPSLongitudeRef")
 	if lat != nil && lon != nil {
 		gpsFormat := f.config.GPSFormat
 		if gpsFormat == "" {
@@ -100,9 +100,9 @@ func (f *SummaryFormatter) formatSingle(w io.Writer, result *Result) error {
 	}
 
 	// Exposure
-	exposure := f.getTagValue(result.Meta, imx.SpecEXIF, "ExposureTime")
-	fNumber := f.getTagValue(result.Meta, imx.SpecEXIF, "FNumber")
-	iso := f.getTagValue(result.Meta, imx.SpecEXIF, "ISOSpeedRatings")
+	exposure := f.getTagValue(result.Meta, "EXIF", "ExposureTime")
+	fNumber := f.getTagValue(result.Meta, "EXIF", "FNumber")
+	iso := f.getTagValue(result.Meta, "EXIF", "ISOSpeedRatings")
 	if exposure != "" || fNumber != "" || iso != "" {
 		var parts []string
 		if exposure != "" {
@@ -118,53 +118,43 @@ func (f *SummaryFormatter) formatSingle(w io.Writer, result *Result) error {
 	}
 
 	// Lens
-	lens := f.getTagValue(result.Meta, imx.SpecEXIF, "LensModel")
+	lens := f.getTagValue(result.Meta, "EXIF", "LensModel")
 	if lens == "" {
-		lens = f.getTagValue(result.Meta, imx.SpecEXIF, "Lens")
+		lens = f.getTagValue(result.Meta, "EXIF", "Lens")
 	}
 	if lens != "" {
 		f.printField(w, "Lens", lens)
 	}
 
 	// Copyright
-	copyright := f.getTagValue(result.Meta, imx.SpecEXIF, "Copyright")
+	copyright := f.getTagValue(result.Meta, "EXIF", "Copyright")
 	if copyright == "" {
-		copyright = f.getTagValue(result.Meta, imx.SpecIPTC, "CopyrightNotice")
+		copyright = f.getTagValue(result.Meta, "IPTC", "CopyrightNotice")
 	}
 	if copyright != "" {
 		f.printField(w, "Copyright", copyright)
 	}
 
-	// Tag counts by spec
+	// Tag counts by directory
 	counts := make(map[string]int)
 	result.Meta.Each(func(dir imx.Directory, tag imx.Tag) bool {
-		counts[dir.Spec.String()]++
+		counts[strings.ToLower(dir.Name)]++
 		return true
 	})
 
-	var specParts []string
-	for _, spec := range []string{"exif", "iptc", "xmp", "icc"} {
-		if c := counts[spec]; c > 0 {
-			specPart := fmt.Sprintf("%s:%d", strings.ToUpper(spec), c)
+	var dirParts []string
+	for _, dirType := range []string{"exif", "iptc", "xmp", "icc"} {
+		if c := counts[dirType]; c > 0 {
+			dirPart := fmt.Sprintf("%s:%d", dirType, c)
 			if !f.config.NoColor {
-				color := ui.SpecColor(imx.Spec(0)) // Will get color by name in loop
-				switch spec {
-				case "exif":
-					color = ui.Green
-				case "iptc":
-					color = ui.Blue
-				case "xmp":
-					color = ui.Cyan
-				case "icc":
-					color = ui.Yellow
-				}
-				specPart = color.Sprint(strings.ToUpper(spec)) + fmt.Sprintf(":%d", c)
+				dirColor := ui.SpecColor(dirType)
+				dirPart = dirColor.Sprint(dirType) + fmt.Sprintf(":%d", c)
 			}
-			specParts = append(specParts, specPart)
+			dirParts = append(dirParts, dirPart)
 		}
 	}
-	if len(specParts) > 0 {
-		f.printField(w, "Tags", strings.Join(specParts, "  "))
+	if len(dirParts) > 0 {
+		f.printField(w, "Tags", strings.Join(dirParts, "  "))
 	}
 
 	return nil
@@ -179,10 +169,10 @@ func (f *SummaryFormatter) printField(w io.Writer, label, value string) {
 	}
 }
 
-func (f *SummaryFormatter) getTagValue(meta *imx.Metadata, spec imx.Spec, name string) string {
+func (f *SummaryFormatter) getTagValue(meta *imx.Metadata, dirName string, name string) string {
 	var result string
 	meta.Each(func(dir imx.Directory, tag imx.Tag) bool {
-		if dir.Spec == spec && tag.Name == name {
+		if strings.EqualFold(dir.Name, dirName) && tag.Name == name {
 			result = ui.FormatValue(tag.Value, true)
 			return false
 		}
@@ -191,10 +181,10 @@ func (f *SummaryFormatter) getTagValue(meta *imx.Metadata, spec imx.Spec, name s
 	return result
 }
 
-func (f *SummaryFormatter) getRawTagValue(meta *imx.Metadata, spec imx.Spec, name string) any {
+func (f *SummaryFormatter) getRawTagValue(meta *imx.Metadata, dirName string, name string) any {
 	var result any
 	meta.Each(func(dir imx.Directory, tag imx.Tag) bool {
-		if dir.Spec == spec && tag.Name == name {
+		if strings.EqualFold(dir.Name, dirName) && tag.Name == name {
 			result = tag.Value
 			return false
 		}

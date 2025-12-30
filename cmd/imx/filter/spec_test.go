@@ -10,61 +10,61 @@ func TestSpecFilter_ShouldInclude(t *testing.T) {
 	tests := []struct {
 		name     string
 		filterOn string
-		dirSpec  imx.Spec
+		dirName  string
 		want     bool
 	}{
 		{
 			name:     "empty filter allows all",
 			filterOn: "",
-			dirSpec:  imx.SpecEXIF,
+			dirName:  "IFD0",
 			want:     true,
 		},
 		{
-			name:     "exact match lowercase",
-			filterOn: "exif",
-			dirSpec:  imx.SpecEXIF,
+			name:     "exact match lowercase - exif directory",
+			filterOn: "ifd0",
+			dirName:  "IFD0",
 			want:     true,
 		},
 		{
-			name:     "exact match uppercase",
-			filterOn: "EXIF",
-			dirSpec:  imx.SpecEXIF,
+			name:     "exact match uppercase - exif directory",
+			filterOn: "IFD0",
+			dirName:  "IFD0",
 			want:     true,
 		},
 		{
-			name:     "exact match mixed case",
-			filterOn: "Exif",
-			dirSpec:  imx.SpecEXIF,
+			name:     "exact match mixed case - exif directory",
+			filterOn: "Ifd0",
+			dirName:  "IFD0",
 			want:     true,
 		},
 		{
 			name:     "no match",
 			filterOn: "iptc",
-			dirSpec:  imx.SpecEXIF,
+			dirName:  "IFD0",
 			want:     false,
 		},
 		{
 			name:     "filter with whitespace",
-			filterOn: "  exif  ",
-			dirSpec:  imx.SpecEXIF,
+			filterOn: "  ifd0  ",
+			dirName:  "IFD0",
 			want:     true,
 		},
 		{
 			name:     "iptc match",
 			filterOn: "iptc",
-			dirSpec:  imx.SpecIPTC,
+			dirName:  "IPTC",
 			want:     true,
 		},
 		{
 			name:     "xmp match",
 			filterOn: "xmp",
-			dirSpec:  imx.SpecXMP,
+			dirName:  "XMP",
 			want:     true,
 		},
 		{
 			name:     "icc match",
 			filterOn: "icc",
-			dirSpec:  imx.SpecICC,
+			dirName:  "ICC",
 			want:     true,
 		},
 	}
@@ -72,7 +72,7 @@ func TestSpecFilter_ShouldInclude(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter := NewSpecFilter(tt.filterOn)
-			dir := imx.Directory{Spec: tt.dirSpec, Name: "TestDir"}
+			dir := imx.Directory{Name: tt.dirName}
 			tag := imx.Tag{ID: "TEST:Tag", Name: "Tag", Value: "value"}
 
 			got := filter.ShouldInclude(dir, tag)
