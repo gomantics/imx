@@ -10,6 +10,7 @@ import (
 	"github.com/gomantics/imx/internal/parser/icc"
 	"github.com/gomantics/imx/internal/parser/iptc"
 	"github.com/gomantics/imx/internal/parser/tiff/makernote"
+	"github.com/gomantics/imx/internal/parser/tiff/makernote/sony"
 	"github.com/gomantics/imx/internal/parser/xmp"
 )
 
@@ -41,11 +42,16 @@ type Parser struct {
 
 // New creates a new TIFF parser
 func New() *Parser {
+	registry := makernote.NewRegistry()
+	// Register MakerNote handlers in priority order (most specific first)
+	// Sony must be registered before Canon (Canon has no header, is fallback)
+	registry.Register(sony.New())
+
 	return &Parser{
 		icc:       icc.New(),
 		iptc:      iptc.New(),
 		xmp:       xmp.New(),
-		makernote: makernote.NewRegistry(),
+		makernote: registry,
 	}
 }
 
