@@ -122,6 +122,11 @@ func (p *Parser) parseTag(r *imxbin.Reader, entry *IFDEntry, dirName string) (*p
 		}
 	}
 
+	// Decode enum values to human-readable strings
+	if decoded := decodeEnumValue(entry.Tag, dirName, value); decoded != "" {
+		value = decoded
+	}
+
 	return &parser.Tag{
 		ID:       parser.TagID(fmt.Sprintf("%s:0x%04X", dirName, entry.Tag)),
 		Name:     tagName,
