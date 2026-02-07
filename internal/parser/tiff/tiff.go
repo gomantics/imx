@@ -12,6 +12,7 @@ import (
 	"github.com/gomantics/imx/internal/parser/tiff/makernote"
 	"github.com/gomantics/imx/internal/parser/tiff/makernote/canon"
 	"github.com/gomantics/imx/internal/parser/tiff/makernote/fujifilm"
+	"github.com/gomantics/imx/internal/parser/tiff/makernote/nikon"
 	"github.com/gomantics/imx/internal/parser/tiff/makernote/sony"
 	"github.com/gomantics/imx/internal/parser/xmp"
 )
@@ -47,6 +48,7 @@ func New() *Parser {
 	registry := makernote.NewRegistry()
 	// Register MakerNote handlers in priority order (most specific first)
 	// Canon must be last (has no header, is fallback detection)
+	registry.Register(nikon.New())
 	registry.Register(sony.New())
 	registry.Register(fujifilm.New())
 	registry.Register(canon.New()) // Must be last - no header, fallback
