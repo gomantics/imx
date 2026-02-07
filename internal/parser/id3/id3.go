@@ -242,9 +242,12 @@ func parseFrame(r io.ReaderAt, pos int64, version byte) (*parser.Tag, int64, err
 		// Attached picture - store metadata about it
 		tag.Value = fmt.Sprintf("Picture (%d bytes)", frameSize)
 		tag.DataType = "binary"
-	} else if frameID == frameComment {
-		// Comment frame
+	} else if frameID == frameComment || frameID == frameV2Comment {
+		// Comment frame (COMM for v2.3/2.4, COM for v2.2)
 		tag.Value = decodeCommentFrame(frameData)
+	} else if frameID == frameUserText {
+		// User defined text frame (TXXX)
+		tag.Value = decodeUserTextFrame(frameData)
 	} else {
 		// Generic binary frame
 		tag.Value = fmt.Sprintf("Binary data (%d bytes)", frameSize)
@@ -298,29 +301,114 @@ func decodeTextFrame(data []byte) string {
 	}
 }
 
-// decodeCommentFrame decodes comment frame (COMM)
+// decodeCommentFrame decodes comment frame (COMM/COM)
+// Structure: encoding (1 byte) + language (3 bytes) + description (null-terminated) + comment
 func decodeCommentFrame(data []byte) string {
-	if len(data) < 4 {
+	if len(data) < 5 { // Minimum: encoding + language + null terminator
 		return ""
 	}
 
 	encoding := data[0]
-	// Skip language (3 bytes) and short description
-	// For simplicity, just decode the entire content
-	text := data[4:]
+	// Skip language (3 bytes at bytes 1-3)
+	content := data[4:]
 
+	// Find the null terminator that separates description from comment
+	// Null terminator size depends on encoding
+	var commentStart int
+	if encoding == encodingUTF16BOM || encoding == encodingUTF16BE {
+		// UTF-16 uses double-null terminator
+		nullPos := findDoubleNull(content)
+		if nullPos >= 0 && nullPos+2 < len(content) {
+			// There's content after the double-null, that's the comment
+			commentStart = nullPos + 2
+		} else {
+			// No proper separator found, use entire content as comment
+			commentStart = 0
+		}
+	} else {
+		// ISO-8859-1 and UTF-8 use single null
+		nullPos := findNull(content)
+		if nullPos >= 0 && nullPos+1 < len(content) {
+			// There's content after the null, that's the comment
+			commentStart = nullPos + 1
+		} else {
+			// No proper separator found, use entire content as comment
+			commentStart = 0
+		}
+	}
+
+	text := content[commentStart:]
+	return decodeEncodedText(text, encoding)
+}
+
+// decodeUserTextFrame decodes user defined text frame (TXXX)
+// Structure: encoding (1 byte) + description (null-terminated) + value
+func decodeUserTextFrame(data []byte) string {
+	if len(data) < 2 {
+		return ""
+	}
+
+	encoding := data[0]
+	content := data[1:]
+
+	// Find the null terminator that separates description from value
+	var valueStart int
+	if encoding == encodingUTF16BOM || encoding == encodingUTF16BE {
+		nullPos := findDoubleNull(content)
+		if nullPos >= 0 && nullPos+2 < len(content) {
+			valueStart = nullPos + 2
+		} else {
+			// No proper separator, use entire content
+			valueStart = 0
+		}
+	} else {
+		nullPos := findNull(content)
+		if nullPos >= 0 && nullPos+1 < len(content) {
+			valueStart = nullPos + 1
+		} else {
+			// No proper separator, use entire content
+			valueStart = 0
+		}
+	}
+
+	text := content[valueStart:]
+	return decodeEncodedText(text, encoding)
+}
+
+// decodeEncodedText decodes text based on encoding byte
+func decodeEncodedText(data []byte, encoding byte) string {
 	switch encoding {
 	case encodingISO88591:
-		return string(trimNull(text))
+		return string(trimNull(data))
 	case encodingUTF16BOM:
-		return decodeUTF16WithBOM(text)
+		return decodeUTF16WithBOM(data)
 	case encodingUTF16BE:
-		return decodeUTF16BE(text)
+		return decodeUTF16BE(data)
 	case encodingUTF8:
-		return string(trimNull(text))
+		return string(trimNull(data))
 	default:
-		return string(trimNull(text))
+		return string(trimNull(data))
 	}
+}
+
+// findNull finds the first null byte and returns its index, or -1 if not found
+func findNull(data []byte) int {
+	for i, b := range data {
+		if b == 0 {
+			return i
+		}
+	}
+	return -1
+}
+
+// findDoubleNull finds the first double-null (UTF-16 terminator) and returns its index
+func findDoubleNull(data []byte) int {
+	for i := 0; i < len(data)-1; i += 2 {
+		if data[i] == 0 && data[i+1] == 0 {
+			return i
+		}
+	}
+	return -1
 }
 
 // decodeUTF16WithBOM decodes UTF-16 with byte order mark

@@ -1110,3 +1110,183 @@ func TestParser_Parse_TooManyFrames(t *testing.T) {
 		t.Fatalf("Parse() got %d directories, want 1", len(dirs))
 	}
 }
+
+func TestParser_Parse_CommentFrame_WithDescription(t *testing.T) {
+	var buf bytes.Buffer
+
+	// COMM frame with proper structure: encoding + lang + description\0 + comment\0
+	buf.Write([]byte{'I', 'D', '3'})
+	buf.WriteByte(0x03)
+	buf.WriteByte(0x00)
+	buf.WriteByte(0x00)
+	buf.Write(encodeSynchsafeInt(0x30))
+
+	// COMM frame: encoding + lang + desc\0 + comment\0
+	commFrame := []byte{
+		0x00,                                   // Encoding: ISO-8859-1
+		'e', 'n', 'g',                          // Language
+		'S', 'h', 'o', 'r', 't', 0x00,          // Description: "Short\0"
+		'T', 'h', 'i', 's', ' ', 'i', 's', ' ', // Comment text
+		't', 'h', 'e', ' ', 'c', 'o', 'm', 'm',
+		'e', 'n', 't', 0x00,
+	}
+
+	buf.Write([]byte{'C', 'O', 'M', 'M'})
+	buf.Write([]byte{0x00, 0x00, 0x00, byte(len(commFrame))})
+	buf.Write([]byte{0x00, 0x00}) // Flags
+	buf.Write(commFrame)
+
+	p := New()
+	r := bytes.NewReader(buf.Bytes())
+
+	dirs, err := p.Parse(r)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// Check for comment frame with correct value
+	foundComment := false
+	for _, tag := range dirs[0].Tags {
+		if tag.Name == "Comment" {
+			foundComment = true
+			if tag.Value != "This is the comment" {
+				t.Errorf("Comment value = %q, want %q", tag.Value, "This is the comment")
+			}
+		}
+	}
+	if !foundComment {
+		t.Error("Comment frame not found")
+	}
+}
+
+func TestParser_Parse_UserTextFrame(t *testing.T) {
+	var buf bytes.Buffer
+
+	// TXXX frame with structure: encoding + description\0 + value\0
+	buf.Write([]byte{'I', 'D', '3'})
+	buf.WriteByte(0x03)
+	buf.WriteByte(0x00)
+	buf.WriteByte(0x00)
+	buf.Write(encodeSynchsafeInt(0x30))
+
+	// TXXX frame: encoding + desc\0 + value\0
+	txxxFrame := []byte{
+		0x00,                                    // Encoding: ISO-8859-1
+		'M', 'y', 'D', 'e', 's', 'c', 0x00,      // Description: "MyDesc\0"
+		'M', 'y', 'V', 'a', 'l', 'u', 'e', 0x00, // Value: "MyValue\0"
+	}
+
+	buf.Write([]byte{'T', 'X', 'X', 'X'})
+	buf.Write([]byte{0x00, 0x00, 0x00, byte(len(txxxFrame))})
+	buf.Write([]byte{0x00, 0x00}) // Flags
+	buf.Write(txxxFrame)
+
+	p := New()
+	r := bytes.NewReader(buf.Bytes())
+
+	dirs, err := p.Parse(r)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// Check for user text frame with correct value
+	foundTXXX := false
+	for _, tag := range dirs[0].Tags {
+		if tag.Name == "User Defined Text" {
+			foundTXXX = true
+			if tag.Value != "MyValue" {
+				t.Errorf("User Defined Text value = %q, want %q", tag.Value, "MyValue")
+			}
+		}
+	}
+	if !foundTXXX {
+		t.Error("User Defined Text frame not found")
+	}
+}
+
+func TestParser_Parse_ID3v22_CommentFrame(t *testing.T) {
+	var buf bytes.Buffer
+
+	// ID3v2.2 COM frame
+	buf.Write([]byte{'I', 'D', '3'})
+	buf.WriteByte(0x02) // Version 2.2
+	buf.WriteByte(0x00)
+	buf.WriteByte(0x00)
+	buf.Write(encodeSynchsafeInt(0x20))
+
+	// COM frame (3-char ID for v2.2): encoding + lang + comment
+	comFrame := []byte{
+		0x00,                              // Encoding: ISO-8859-1
+		'e', 'n', 'g',                     // Language
+		'H', 'e', 'l', 'l', 'o', 0x00,     // Comment: "Hello\0"
+	}
+
+	buf.Write([]byte{'C', 'O', 'M'})
+	buf.Write([]byte{0x00, 0x00, byte(len(comFrame))}) // 3-byte size for v2.2
+	buf.Write(comFrame)
+
+	p := New()
+	r := bytes.NewReader(buf.Bytes())
+
+	dirs, err := p.Parse(r)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// Check for comment frame
+	foundComment := false
+	for _, tag := range dirs[0].Tags {
+		if tag.Name == "Comment" {
+			foundComment = true
+			if tag.Value != "Hello" {
+				t.Errorf("Comment value = %q, want %q", tag.Value, "Hello")
+			}
+		}
+	}
+	if !foundComment {
+		t.Error("ID3v2.2 Comment frame not found")
+	}
+}
+
+func TestDecodeUserTextFrame(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		want string
+	}{
+		{
+			name: "ISO-8859-1 with description",
+			data: []byte{0x00, 'd', 'e', 's', 'c', 0x00, 'v', 'a', 'l', 'u', 'e', 0x00},
+			want: "value",
+		},
+		{
+			name: "ISO-8859-1 no description",
+			data: []byte{0x00, 0x00, 'v', 'a', 'l', 'u', 'e', 0x00},
+			want: "value",
+		},
+		{
+			name: "UTF-8 with description",
+			data: []byte{0x03, 'd', 'e', 's', 'c', 0x00, 'v', 'a', 'l', 'u', 'e', 0x00},
+			want: "value",
+		},
+		{
+			name: "too short",
+			data: []byte{0x00},
+			want: "",
+		},
+		{
+			name: "empty",
+			data: []byte{},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := decodeUserTextFrame(tt.data)
+			if got != tt.want {
+				t.Errorf("decodeUserTextFrame() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
