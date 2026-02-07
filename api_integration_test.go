@@ -305,6 +305,42 @@ func TestIntegration_CR2(t *testing.T) {
 				{Name: "JPEGInterchangeFormatLength", Value: uint32(13120)},
 			},
 		},
+		{
+			Name:          "Canon",
+			ExactTagCount: 28, // Canon EOS-1Ds Mark II MakerNote
+			Tags: []imxtest.TagExpectation{
+				// Core Canon tags
+				{Name: "CameraSettings1"},
+				{Name: "FocalLength"},
+				{Name: "FlashInfo"},
+				{Name: "CameraSettings2"},
+				{Name: "ImageType"},
+				{Name: "FirmwareVersion"},
+				{Name: "OwnerName"},
+				{Name: "SerialNumber"},
+				{Name: "CameraInfo"},
+				{Name: "CustomFunctions"},
+				{Name: "ModelID"},
+				{Name: "AFInfo"},
+				{Name: "ColorInfo"},
+				{Name: "VRDOffset"},
+				{Name: "SensorInfo"},
+				{Name: "ColorData"},
+				{Name: "CRWParam"},
+				{Name: "ColorInfo2"},
+				// Unknown/undocumented tags (identified by hex code)
+				{Name: "0x0013"},
+				{Name: "0x0015"},
+				{Name: "0x0019"},
+				{Name: "0x0083"},
+				{Name: "0x0091"},
+				{Name: "0x0092"},
+				{Name: "0x0093"},
+				{Name: "0x0094"},
+				{Name: "0x00AA"},
+				{Name: "0x4004"},
+			},
+		},
 	})
 	if result.Failed() {
 		for _, err := range result.Errors {

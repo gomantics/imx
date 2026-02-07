@@ -10,6 +10,7 @@ import (
 	"github.com/gomantics/imx/internal/parser/icc"
 	"github.com/gomantics/imx/internal/parser/iptc"
 	"github.com/gomantics/imx/internal/parser/tiff/makernote"
+	"github.com/gomantics/imx/internal/parser/tiff/makernote/canon"
 	"github.com/gomantics/imx/internal/parser/xmp"
 )
 
@@ -41,11 +42,16 @@ type Parser struct {
 
 // New creates a new TIFF parser
 func New() *Parser {
+	// Create MakerNote registry with handlers in priority order
+	// Canon must be last (no header, uses IFD validation as fallback)
+	mnRegistry := makernote.NewRegistry()
+	mnRegistry.Register(canon.New())
+
 	return &Parser{
 		icc:       icc.New(),
 		iptc:      iptc.New(),
 		xmp:       xmp.New(),
-		makernote: makernote.NewRegistry(),
+		makernote: mnRegistry,
 	}
 }
 

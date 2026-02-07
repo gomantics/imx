@@ -521,9 +521,9 @@ func (p *Parser) handleXMP(r *imxbin.Reader, entry *IFDEntry, parseErr *parser.P
 
 // handleMakerNote handles MakerNote tag (tag 0x927C)
 // MakerNote contains manufacturer-specific metadata in various formats.
-// When a manufacturer handler is registered and parses successfully, the
-// parsed tags are returned in a separate directory.
-// When no handler matches, the raw MakerNote data is returned as a tag.
+// The raw MakerNote data is always returned as a tag in ExifIFD.
+// When a manufacturer handler is registered and parses successfully,
+// the parsed tags are also returned in a separate manufacturer directory.
 func (p *Parser) handleMakerNote(r *imxbin.Reader, fileReader io.ReaderAt, entry *IFDEntry, dirTags *[]parser.Tag, parseErr *parser.ParseError, makernoteDirs *[]parser.Directory) {
 	// Read MakerNote data
 	makerNoteOffset := int64(entry.ValueOffset)
@@ -533,30 +533,27 @@ func (p *Parser) handleMakerNote(r *imxbin.Reader, fileReader io.ReaderAt, entry
 		return
 	}
 
-	// If no registry or no handler matches, return raw MakerNote as a tag
+	// Always add raw MakerNote tag for backward compatibility
+	*dirTags = append(*dirTags, parser.Tag{
+		ID:       parser.TagID("ExifIFD:0x927C"),
+		Name:     "MakerNote",
+		Value:    data,
+		DataType: "UNDEFINED",
+	})
+
+	// If no registry, we're done
 	if p.makernote == nil {
-		*dirTags = append(*dirTags, parser.Tag{
-			ID:       parser.TagID("ExifIFD:0x927C"),
-			Name:     "MakerNote",
-			Value:    data,
-			DataType: "UNDEFINED",
-		})
 		return
 	}
 
+	// Try to detect and parse manufacturer-specific format
 	handler, cfg := p.makernote.Detect(data)
 	if handler == nil {
-		// Unknown manufacturer - return raw data as tag
-		*dirTags = append(*dirTags, parser.Tag{
-			ID:       parser.TagID("ExifIFD:0x927C"),
-			Name:     "MakerNote",
-			Value:    data,
-			DataType: "UNDEFINED",
-		})
+		// Unknown manufacturer - raw tag already added above
 		return
 	}
 
-	// Detect manufacturer and parse
+	// Parse manufacturer-specific tags
 	// exifBase is 0 for standard TIFF files (TIFF header at file start)
 	// TODO: For JPEG files, this would need to be the APP1 EXIF header offset
 	exifBase := int64(0)
