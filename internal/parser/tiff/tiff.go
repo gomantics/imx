@@ -10,6 +10,7 @@ import (
 	"github.com/gomantics/imx/internal/parser/icc"
 	"github.com/gomantics/imx/internal/parser/iptc"
 	"github.com/gomantics/imx/internal/parser/tiff/makernote"
+	"github.com/gomantics/imx/internal/parser/tiff/makernote/canon"
 	"github.com/gomantics/imx/internal/parser/tiff/makernote/sony"
 	"github.com/gomantics/imx/internal/parser/xmp"
 )
@@ -44,8 +45,9 @@ type Parser struct {
 func New() *Parser {
 	registry := makernote.NewRegistry()
 	// Register MakerNote handlers in priority order (most specific first)
-	// Sony must be registered before Canon (Canon has no header, is fallback)
+	// Canon must be LAST (no header, validated by IFD structure, is fallback)
 	registry.Register(sony.New())
+	registry.Register(canon.New())
 
 	return &Parser{
 		icc:       icc.New(),
