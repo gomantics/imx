@@ -9,6 +9,7 @@ import (
 	"github.com/gomantics/imx/internal/parser"
 	"github.com/gomantics/imx/internal/parser/icc"
 	"github.com/gomantics/imx/internal/parser/iptc"
+	"github.com/gomantics/imx/internal/parser/tiff/makernote"
 	"github.com/gomantics/imx/internal/parser/xmp"
 )
 
@@ -32,17 +33,19 @@ import (
 //   - MEF (Mamiya Raw Format) - Mamiya raw files
 //   - MOS (Leaf Raw) - Leaf raw files
 type Parser struct {
-	icc  *icc.Parser
-	iptc *iptc.Parser
-	xmp  *xmp.Parser
+	icc       *icc.Parser
+	iptc      *iptc.Parser
+	xmp       *xmp.Parser
+	makernote *makernote.Registry
 }
 
 // New creates a new TIFF parser
 func New() *Parser {
 	return &Parser{
-		icc:  icc.New(),
-		iptc: iptc.New(),
-		xmp:  xmp.New(),
+		icc:       icc.New(),
+		iptc:      iptc.New(),
+		xmp:       xmp.New(),
+		makernote: makernote.NewRegistry(),
 	}
 }
 
@@ -71,7 +74,7 @@ func (p *Parser) Parse(r io.ReaderAt) ([]parser.Directory, *parser.ParseError) {
 	var dirs []parser.Directory
 
 	// Embedded metadata directories (collected locally for thread safety)
-	var iccDirs, iptcDirs, xmpDirs []parser.Directory
+	var iccDirs, iptcDirs, xmpDirs, makernoteDirs []parser.Directory
 
 	// Read header to determine byte order
 	headerBuf := make([]byte, tiffHeaderSize)
@@ -106,7 +109,7 @@ func (p *Parser) Parse(r io.ReaderAt) ([]parser.Directory, *parser.ParseError) {
 	reader := imxbin.NewReader(r, order)
 
 	// Parse IFD0
-	ifd0Dir, ifd0Err, subIFDs, numEntries := p.parseIFD(reader, ifd0Offset, "IFD0", &iccDirs, &iptcDirs, &xmpDirs, parseErr)
+	ifd0Dir, ifd0Err, subIFDs, numEntries := p.parseIFD(reader, r, ifd0Offset, "IFD0", &iccDirs, &iptcDirs, &xmpDirs, &makernoteDirs, parseErr)
 	if ifd0Err != nil {
 		parseErr.Merge(ifd0Err)
 	}
@@ -116,7 +119,7 @@ func (p *Parser) Parse(r io.ReaderAt) ([]parser.Directory, *parser.ParseError) {
 
 	// Parse sub-IFDs (EXIF, GPS, Interoperability, SubIFDs for RAW previews)
 	for _, sub := range subIFDs {
-		subDir, subErr, _, _ := p.parseIFD(reader, sub.Offset, sub.Name, &iccDirs, &iptcDirs, &xmpDirs, parseErr)
+		subDir, subErr, _, _ := p.parseIFD(reader, r, sub.Offset, sub.Name, &iccDirs, &iptcDirs, &xmpDirs, &makernoteDirs, parseErr)
 		if subErr != nil {
 			parseErr.Merge(subErr)
 		}
@@ -130,7 +133,7 @@ func (p *Parser) Parse(r io.ReaderAt) ([]parser.Directory, *parser.ParseError) {
 	nextIFDOffsetPos := ifd0Offset + ifdEntryCountSize + int64(numEntries)*ifdEntrySize
 	nextIFDOffset, err := reader.ReadUint32(nextIFDOffsetPos)
 	if err == nil && nextIFDOffset != 0 {
-		ifd1Dir, ifd1Err, _, _ := p.parseIFD(reader, int64(nextIFDOffset), "IFD1", &iccDirs, &iptcDirs, &xmpDirs, parseErr)
+		ifd1Dir, ifd1Err, _, _ := p.parseIFD(reader, r, int64(nextIFDOffset), "IFD1", &iccDirs, &iptcDirs, &xmpDirs, &makernoteDirs, parseErr)
 		if ifd1Err != nil {
 			parseErr.Merge(ifd1Err)
 		}
@@ -143,6 +146,7 @@ func (p *Parser) Parse(r io.ReaderAt) ([]parser.Directory, *parser.ParseError) {
 	dirs = append(dirs, iccDirs...)
 	dirs = append(dirs, iptcDirs...)
 	dirs = append(dirs, xmpDirs...)
+	dirs = append(dirs, makernoteDirs...)
 
 	return dirs, parseErr.OrNil()
 }
