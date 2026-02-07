@@ -572,6 +572,14 @@ func (p *Parser) handleMakerNote(r *imxbin.Reader, fileReader io.ReaderAt, entry
 		return
 	}
 
+	// Always add raw MakerNote tag (for backward compatibility)
+	*dirTags = append(*dirTags, parser.Tag{
+		ID:       parser.TagID("ExifIFD:0x927C"),
+		Name:     "MakerNote",
+		Value:    data,
+		DataType: "UNDEFINED",
+	})
+
 	// Detect manufacturer and parse
 	// exifBase is 0 for standard TIFF files (TIFF header at file start)
 	// TODO: For JPEG files, this would need to be the APP1 EXIF header offset
