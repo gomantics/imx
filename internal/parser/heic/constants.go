@@ -31,9 +31,14 @@ const (
 )
 
 // Valid HEIC/HEIF major brands
-var validBrands = []string{
+var heicBrands = []string{
 	"heic", "heif", "heix", "hevc", "heim", "heis",
 	"mif1", "msf1", "heiv", "hevx",
+}
+
+// Valid AVIF major brands
+var avifBrands = []string{
+	"avif", "avis", "av01",
 }
 
 // Box header sizes
