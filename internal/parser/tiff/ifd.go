@@ -141,6 +141,14 @@ func (p *Parser) parseTag(r *imxbin.Reader, entry *IFDEntry, dirName string) (*p
 		value = decoded
 	}
 
+	// Decode UserComment (EXIF tag 0x9286)
+	// Format: 8-byte charset prefix + variable-length text
+	if entry.Tag == TagUserComment {
+		if data, ok := value.([]byte); ok {
+			value = decodeUserComment(data)
+		}
+	}
+
 	return &parser.Tag{
 		ID:       parser.TagID(fmt.Sprintf("%s:0x%04X", dirName, entry.Tag)),
 		Name:     tagName,
@@ -663,4 +671,164 @@ func getTagNameForDir(tag uint16, dirName string) string {
 	default:
 		return getTIFFTagName(tag) // Default to TIFF tags
 	}
+}
+
+// UserComment charset prefixes (8 bytes each)
+var (
+	userCommentASCII     = []byte("ASCII\x00\x00\x00")
+	userCommentUnicode   = []byte("UNICODE\x00")
+	userCommentJIS       = []byte("JIS\x00\x00\x00\x00\x00")
+	userCommentUndefined = []byte("\x00\x00\x00\x00\x00\x00\x00\x00")
+)
+
+// decodeUserComment decodes EXIF UserComment tag (0x9286).
+// Format: 8-byte charset prefix + variable-length text.
+//
+// Charset prefixes:
+//   - "ASCII\x00\x00\x00" (8 bytes) - ASCII text
+//   - "UNICODE\x00" (8 bytes) - UTF-16 text (big or little endian)
+//   - "JIS\x00\x00\x00\x00\x00" (8 bytes) - JIS encoding
+//   - "\x00\x00\x00\x00\x00\x00\x00\x00" (8 bytes) - undefined (often UTF-8)
+//
+// Returns decoded string or original bytes if decoding fails.
+func decodeUserComment(data []byte) interface{} {
+	const prefixLen = 8
+
+	// Need at least the charset prefix
+	if len(data) < prefixLen {
+		return data
+	}
+
+	prefix := data[:prefixLen]
+	content := data[prefixLen:]
+
+	// Empty content
+	if len(content) == 0 {
+		return ""
+	}
+
+	switch {
+	case bytes.Equal(prefix, userCommentASCII):
+		// Trim trailing nulls for ASCII
+		return string(bytes.TrimRight(content, "\x00"))
+
+	case bytes.Equal(prefix, userCommentUnicode):
+		// UTF-16 - don't trim nulls before decoding (nulls are part of UTF-16)
+		// decodeUTF16 handles null termination internally
+		return decodeUTF16(content)
+
+	case bytes.Equal(prefix, userCommentJIS):
+		// JIS encoding - return as-is for now (rarely used)
+		// Full JIS decoding would require additional dependencies
+		return string(bytes.TrimRight(content, "\x00"))
+
+	case bytes.Equal(prefix, userCommentUndefined):
+		// Undefined charset - often UTF-8 in practice
+		return string(bytes.TrimRight(content, "\x00"))
+
+	default:
+		// Unknown prefix - check if it looks like text without prefix
+		// Some cameras omit the charset prefix entirely
+		if isValidUTF8(data) {
+			return string(bytes.TrimRight(data, "\x00"))
+		}
+		return data
+	}
+}
+
+// decodeUTF16 decodes UTF-16 encoded data to a UTF-8 string.
+// Detects byte order from BOM if present, otherwise assumes little-endian.
+func decodeUTF16(data []byte) string {
+	if len(data) < 2 {
+		return ""
+	}
+
+	// Check for BOM
+	var littleEndian bool
+	start := 0
+	if data[0] == 0xFF && data[1] == 0xFE {
+		littleEndian = true
+		start = 2
+	} else if data[0] == 0xFE && data[1] == 0xFF {
+		littleEndian = false
+		start = 2
+	} else {
+		// No BOM - assume little-endian (most common on Windows)
+		littleEndian = true
+	}
+
+	// Decode UTF-16 to UTF-8
+	data = data[start:]
+	if len(data)%2 != 0 {
+		data = data[:len(data)-1] // Truncate odd byte
+	}
+
+	var result []rune
+	for i := 0; i < len(data); i += 2 {
+		var r uint16
+		if littleEndian {
+			r = uint16(data[i]) | uint16(data[i+1])<<8
+		} else {
+			r = uint16(data[i])<<8 | uint16(data[i+1])
+		}
+
+		// Handle surrogate pairs for characters outside BMP
+		if r >= 0xD800 && r <= 0xDBFF && i+2 < len(data) {
+			var r2 uint16
+			if littleEndian {
+				r2 = uint16(data[i+2]) | uint16(data[i+3])<<8
+			} else {
+				r2 = uint16(data[i+2])<<8 | uint16(data[i+3])
+			}
+			if r2 >= 0xDC00 && r2 <= 0xDFFF {
+				// Valid surrogate pair
+				codePoint := 0x10000 + (int(r-0xD800) << 10) + int(r2-0xDC00)
+				result = append(result, rune(codePoint))
+				i += 2
+				continue
+			}
+		}
+
+		if r == 0 {
+			break // Null terminator
+		}
+		result = append(result, rune(r))
+	}
+
+	return string(result)
+}
+
+// isValidUTF8 checks if data is valid UTF-8 text (printable or whitespace).
+func isValidUTF8(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+
+	// Trim trailing nulls first - they're common in fixed-size EXIF fields
+	trimmed := bytes.TrimRight(data, "\x00")
+	if len(trimmed) == 0 {
+		return false
+	}
+
+	// Quick check: count embedded nulls (after trimming trailing ones)
+	nullCount := 0
+	for _, b := range trimmed {
+		if b == 0 {
+			nullCount++
+		}
+	}
+	// If more than 20% embedded nulls, probably binary
+	if nullCount > len(trimmed)/5 {
+		return false
+	}
+
+	// Check if valid UTF-8
+	s := string(trimmed)
+	for _, r := range s {
+		// Allow printable characters and common whitespace
+		if r == '\uFFFD' { // Unicode replacement character = invalid UTF-8
+			return false
+		}
+	}
+	return true
 }
