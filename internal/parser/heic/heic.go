@@ -1,8 +1,10 @@
-// Package heic implements a parser for HEIC/HEIF image files.
+// Package heic implements a parser for HEIC/HEIF and AVIF image files.
 //
-// HEIC (High Efficiency Image Container) is based on the ISO Base Media File
-// Format (ISOBMFF). This parser extracts EXIF, XMP, and ICC metadata from
-// HEIC/HEIF files by parsing the box structure and building an item index.
+// HEIC (High Efficiency Image Container) and AVIF (AV1 Image File Format)
+// are both based on the ISO Base Media File Format (ISOBMFF). They share the
+// same container structure, differing only in the image codec used (HEVC vs AV1).
+// This parser extracts EXIF, XMP, and ICC metadata from both formats by parsing
+// the box structure and building an item index.
 package heic
 
 import (
@@ -18,7 +20,8 @@ import (
 // maxBoxScan is the maximum number of bytes to scan when searching for boxes.
 const maxBoxScan = 100 * 1024 * 1024 // 100MB
 
-// Parser parses HEIC/HEIF image files.
+// Parser parses HEIC/HEIF and AVIF image files.
+// Both formats use the ISO Base Media File Format (ISOBMFF) container.
 type Parser struct {
 	tiff *tiff.Parser
 	xmp  *xmp.Parser
@@ -35,11 +38,13 @@ func New() *Parser {
 }
 
 // Name returns the parser name.
+// This parser handles both HEIC/HEIF and AVIF formats.
 func (p *Parser) Name() string {
 	return "HEIC"
 }
 
-// Detect checks if the data is a HEIC/HEIF file.
+// Detect checks if the data is a HEIC/HEIF or AVIF file.
+// Both formats use the same ISOBMFF container structure.
 func (p *Parser) Detect(r io.ReaderAt) bool {
 	buf := make([]byte, 12)
 	if _, err := r.ReadAt(buf[:12], 0); err != nil {
@@ -51,9 +56,14 @@ func (p *Parser) Detect(r io.ReaderAt) bool {
 		return false
 	}
 
-	// Check major brand
+	// Check major brand (HEIC or AVIF)
 	brand := string(buf[8:12])
-	for _, valid := range validBrands {
+	for _, valid := range heicBrands {
+		if brand == valid {
+			return true
+		}
+	}
+	for _, valid := range avifBrands {
 		if brand == valid {
 			return true
 		}

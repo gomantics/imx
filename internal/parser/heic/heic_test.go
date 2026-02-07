@@ -73,12 +73,23 @@ func TestParser_Detect(t *testing.T) {
 
 func TestParser_Detect_AllBrands(t *testing.T) {
 	p := New()
-	for _, brand := range validBrands {
-		t.Run(brand, func(t *testing.T) {
+	// Test HEIC brands
+	for _, brand := range heicBrands {
+		t.Run("HEIC_"+brand, func(t *testing.T) {
 			data := []byte{0, 0, 0, 24, 'f', 't', 'y', 'p', brand[0], brand[1], brand[2], brand[3]}
 			r := bytes.NewReader(data)
 			if !p.Detect(r) {
-				t.Errorf("Detect() should recognize brand %s", brand)
+				t.Errorf("Detect() should recognize HEIC brand %s", brand)
+			}
+		})
+	}
+	// Test AVIF brands
+	for _, brand := range avifBrands {
+		t.Run("AVIF_"+brand, func(t *testing.T) {
+			data := []byte{0, 0, 0, 24, 'f', 't', 'y', 'p', brand[0], brand[1], brand[2], brand[3]}
+			r := bytes.NewReader(data)
+			if !p.Detect(r) {
+				t.Errorf("Detect() should recognize AVIF brand %s", brand)
 			}
 		})
 	}
