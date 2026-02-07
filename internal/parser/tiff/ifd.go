@@ -118,10 +118,21 @@ func (p *Parser) parseTag(r *imxbin.Reader, entry *IFDEntry, dirName string) (*p
 		return nil, err
 	}
 
-	// Special formatting for GPS Version ID
-	if entry.Tag == tagGPSVersionID && strings.ToLower(dirName) == "gps" {
+	// Special formatting for version tags
+	switch {
+	case entry.Tag == tagGPSVersionID && strings.ToLower(dirName) == "gps":
 		if bytes, ok := value.([]byte); ok && len(bytes) == 4 {
 			value = fmt.Sprintf("%d.%d.%d.%d", bytes[0], bytes[1], bytes[2], bytes[3])
+		}
+	case entry.Tag == tagExifVersion || entry.Tag == tagFlashpixVersion:
+		// ExifVersion/FlashpixVersion are stored as 4 ASCII bytes (e.g., "0230" for 2.30)
+		if bytes, ok := value.([]byte); ok && len(bytes) == 4 {
+			value = string(bytes)
+		}
+	case entry.Tag == tagInteropVersion && strings.ToLower(dirName) == "interoperability":
+		// InteroperabilityVersion is also stored as 4 ASCII bytes
+		if bytes, ok := value.([]byte); ok && len(bytes) == 4 {
+			value = string(bytes)
 		}
 	}
 

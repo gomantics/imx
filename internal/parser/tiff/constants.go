@@ -39,7 +39,10 @@ const (
 	bufferSizeUint64 = 8
 
 	// Special tag values
-	tagGPSVersionID = 0x0000 // GPS Version ID tag
+	tagGPSVersionID       = 0x0000 // GPS Version ID tag
+	tagExifVersion        = 0x9000 // EXIF Version tag
+	tagFlashpixVersion    = 0xA000 // Flashpix Version tag
+	tagInteropVersion     = 0x0002 // Interoperability Version tag
 
 	// Byte order markers
 	byteOrderLittleEndian = 'I'
