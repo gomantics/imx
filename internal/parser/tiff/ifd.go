@@ -3,6 +3,7 @@ package tiff
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"strings"
 
 	imxbin "github.com/gomantics/imx/internal/binary"
@@ -11,7 +12,7 @@ import (
 )
 
 // parseIFD parses an IFD at the given offset
-func (p *Parser) parseIFD(r *imxbin.Reader, offset int64, dirName string, iccDirs, iptcDirs, xmpDirs *[]parser.Directory, sharedParseErr *parser.ParseError) (*parser.Directory, *parser.ParseError, []SubIFD, uint16) {
+func (p *Parser) parseIFD(r *imxbin.Reader, fileReader io.ReaderAt, offset int64, dirName string, iccDirs, iptcDirs, xmpDirs, makernoteDirs *[]parser.Directory, sharedParseErr *parser.ParseError) (*parser.Directory, *parser.ParseError, []SubIFD, uint16) {
 	var parseErr *parser.ParseError
 	if sharedParseErr != nil {
 		// Use shared error accumulator for multi-IFD parsing
@@ -60,6 +61,8 @@ func (p *Parser) parseIFD(r *imxbin.Reader, offset int64, dirName string, iccDir
 			p.handleIPTC(r, entry, parseErr, iptcDirs)
 		case TagXMP:
 			p.handleXMP(r, entry, parseErr, xmpDirs)
+		case TagMakerNote:
+			p.handleMakerNote(r, fileReader, entry, &dir.Tags, parseErr, makernoteDirs)
 		default:
 			// Regular tag
 			tag, err := p.parseTag(r, entry, dirName)
@@ -513,6 +516,62 @@ func (p *Parser) handleXMP(r *imxbin.Reader, entry *IFDEntry, parseErr *parser.P
 			parseErr.Merge(xmpErr)
 		}
 		*xmpDirs = append(*xmpDirs, dirs...)
+	}
+}
+
+// handleMakerNote handles MakerNote tag (tag 0x927C)
+// MakerNote contains manufacturer-specific metadata in various formats.
+// When a manufacturer handler is registered and parses successfully, the
+// parsed tags are returned in a separate directory.
+// When no handler matches, the raw MakerNote data is returned as a tag.
+func (p *Parser) handleMakerNote(r *imxbin.Reader, fileReader io.ReaderAt, entry *IFDEntry, dirTags *[]parser.Tag, parseErr *parser.ParseError, makernoteDirs *[]parser.Directory) {
+	// Read MakerNote data
+	makerNoteOffset := int64(entry.ValueOffset)
+	data, err := r.ReadBytes(makerNoteOffset, int(entry.Count))
+	if err != nil {
+		parseErr.Add(fmt.Errorf("failed to read MakerNote data at offset %d: %w", makerNoteOffset, err))
+		return
+	}
+
+	// If no registry or no handler matches, return raw MakerNote as a tag
+	if p.makernote == nil {
+		*dirTags = append(*dirTags, parser.Tag{
+			ID:       parser.TagID("ExifIFD:0x927C"),
+			Name:     "MakerNote",
+			Value:    data,
+			DataType: "UNDEFINED",
+		})
+		return
+	}
+
+	handler, cfg := p.makernote.Detect(data)
+	if handler == nil {
+		// Unknown manufacturer - return raw data as tag
+		*dirTags = append(*dirTags, parser.Tag{
+			ID:       parser.TagID("ExifIFD:0x927C"),
+			Name:     "MakerNote",
+			Value:    data,
+			DataType: "UNDEFINED",
+		})
+		return
+	}
+
+	// Detect manufacturer and parse
+	// exifBase is 0 for standard TIFF files (TIFF header at file start)
+	// TODO: For JPEG files, this would need to be the APP1 EXIF header offset
+	exifBase := int64(0)
+
+	tags, mnErr := handler.Parse(fileReader, makerNoteOffset, exifBase, cfg)
+	if mnErr != nil {
+		parseErr.Merge(mnErr)
+	}
+
+	// Create directory for MakerNote tags if any were parsed
+	if len(tags) > 0 {
+		*makernoteDirs = append(*makernoteDirs, parser.Directory{
+			Name: handler.Manufacturer(),
+			Tags: tags,
+		})
 	}
 }
 

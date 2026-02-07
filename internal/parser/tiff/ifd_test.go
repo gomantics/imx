@@ -163,8 +163,9 @@ func TestParser_parseIFD(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader := imxbin.NewReader(bytes.NewReader(tt.data), order)
-			var iccDirs, iptcDirs, xmpDirs []parser.Directory
+			fileReader := bytes.NewReader(tt.data)
+			reader := imxbin.NewReader(fileReader, order)
+			var iccDirs, iptcDirs, xmpDirs, makernoteDirs []parser.Directory
 
 			// Test both with shared error and without
 			var parseErr *parser.ParseError
@@ -174,7 +175,7 @@ func TestParser_parseIFD(t *testing.T) {
 			} else {
 				parseErr = parser.NewParseError()
 			}
-			dir, _, subIFDs, numEntries := p.parseIFD(reader, 0, "IFD0", &iccDirs, &iptcDirs, &xmpDirs, parseErr)
+			dir, _, subIFDs, numEntries := p.parseIFD(reader, fileReader, 0, "IFD0", &iccDirs, &iptcDirs, &xmpDirs, &makernoteDirs, parseErr)
 
 			if (dir != nil) != tt.wantDir {
 				t.Errorf("dir = %v, wantDir %v", dir != nil, tt.wantDir)
