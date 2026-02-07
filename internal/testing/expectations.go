@@ -3,8 +3,8 @@ package testing
 // DirectoryExpectation defines expected directory with all its tags.
 type DirectoryExpectation struct {
 	Name          string           // Directory name (e.g., "IFD0", "ExifIFD")
-	ExactTagCount int              // MUST have exactly this many tags (catches missing/extra tags)
-	Tags          []TagExpectation // ALL tags in this directory
+	ExactTagCount int              // MUST have exactly this many tags (catches missing/extra tags). Use -1 to skip tag count validation.
+	Tags          []TagExpectation // ALL tags in this directory. Leave empty with ExactTagCount -1 to just check presence.
 }
 
 // TagExpectation defines tag validation requirements.

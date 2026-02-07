@@ -65,16 +65,18 @@ func AssertDirectories(dirs []parser.Directory, expected []DirectoryExpectation)
 			continue
 		}
 
-		// Check tag count
-		if len(gotDir.Tags) != wantDir.ExactTagCount {
+		// Check tag count (skip if ExactTagCount is -1)
+		if wantDir.ExactTagCount >= 0 && len(gotDir.Tags) != wantDir.ExactTagCount {
 			result.AddErrorf("Directory."+wantDir.Name,
 				"has %d tags, want exactly %d", len(gotDir.Tags), wantDir.ExactTagCount)
 		}
 
-		// Validate tags
-		tagResult := AssertTags(gotDir.Tags, wantDir.Tags)
-		for _, err := range tagResult.Errors {
-			result.AddError("Directory."+wantDir.Name+"."+err.Field, err.Message)
+		// Validate tags (skip if ExactTagCount is -1 and no tags specified - presence check only)
+		if !(wantDir.ExactTagCount == -1 && len(wantDir.Tags) == 0) {
+			tagResult := AssertTags(gotDir.Tags, wantDir.Tags)
+			for _, err := range tagResult.Errors {
+				result.AddError("Directory."+wantDir.Name+"."+err.Field, err.Message)
+			}
 		}
 	}
 

@@ -265,7 +265,7 @@ func TestIntegration_CR2(t *testing.T) {
 		},
 		{
 			Name:          "ExifIFD",
-			ExactTagCount: 27,
+			ExactTagCount: 26, // MakerNote is now parsed into Canon directory
 			Tags: []imxtest.TagExpectation{
 				// All tags with exact values where possible, binary data checked for presence only
 				{Name: "ExposureTime", Value: "1/100"},
@@ -282,7 +282,7 @@ func TestIntegration_CR2(t *testing.T) {
 				{Name: "MeteringMode", Value: "Multi-segment"},
 				{Name: "Flash", Value: "Off, Did not fire"},
 				{Name: "FocalLength", Value: "85/1"},
-				{Name: "MakerNote", Type: "[]byte"},   // Binary data - check presence only
+				// MakerNote is now parsed into Canon directory
 				{Name: "UserComment", Type: "[]byte"}, // Binary data - check presence only
 				{Name: "FlashpixVersion", Value: []byte{48, 49, 48, 48}}, // "0100" in hex
 				{Name: "ColorSpace", Value: "sRGB"},
@@ -304,6 +304,10 @@ func TestIntegration_CR2(t *testing.T) {
 				{Name: "JPEGInterchangeFormat", Value: uint32(411710)},
 				{Name: "JPEGInterchangeFormatLength", Value: uint32(13120)},
 			},
+		},
+		{
+			Name:          "Canon",
+			ExactTagCount: -1, // Presence check only - Canon MakerNote content varies by camera model
 		},
 	})
 	if result.Failed() {
