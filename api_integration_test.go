@@ -25,14 +25,14 @@ func TestIntegration_JPEG(t *testing.T) {
 				{Name: "CustomRendered", Value: "Portrait HDR"},
 				{Name: "DateTimeDigitized", Value: "2019:09:21 14:43:51"},
 				{Name: "DateTimeOriginal", Value: "2019:09:21 14:43:51"},
-				{Name: "ExifVersion", Value: []byte{48, 50, 50, 49}},
+				{Name: "ExifVersion", Value: "0221"},
 				{Name: "ExposureBiasValue", Value: "0/1"},
 				{Name: "ExposureMode", Value: "Auto"},
 				{Name: "ExposureProgram", Value: "Program AE"},
 				{Name: "ExposureTime", Value: "1/758"},
 				{Name: "FNumber", Value: "9/5"},
 				{Name: "Flash", Value: "Auto, Did not fire"},
-				{Name: "FlashpixVersion", Value: []byte{48, 49, 48, 48}},
+				{Name: "FlashpixVersion", Value: "0100"},
 				{Name: "FocalLength", Value: "17/4"},
 				{Name: "FocalLengthIn35mmFilm", Value: uint16(26)},
 				{Name: "ISOSpeedRatings", Value: uint16(32)},
@@ -272,7 +272,7 @@ func TestIntegration_CR2(t *testing.T) {
 				{Name: "FNumber", Value: "14/10"},
 				{Name: "ExposureProgram", Value: "Program AE"},
 				{Name: "ISOSpeedRatings", Value: uint16(640)},
-				{Name: "ExifVersion", Value: []byte{48, 50, 50, 49}}, // "0221" in hex
+				{Name: "ExifVersion", Value: "0221"},
 				{Name: "DateTimeOriginal", Value: "2004:11:13 23:02:21"},
 				{Name: "DateTimeDigitized", Value: "2004:11:13 23:02:21"},
 				{Name: "ComponentsConfiguration", Value: []byte{1, 2, 3, 0}}, // Y, Cb, Cr, -
@@ -284,7 +284,7 @@ func TestIntegration_CR2(t *testing.T) {
 				{Name: "FocalLength", Value: "85/1"},
 				{Name: "MakerNote", Type: "[]byte"},   // Binary data - check presence only
 				{Name: "UserComment", Type: "[]byte"}, // Binary data - check presence only
-				{Name: "FlashpixVersion", Value: []byte{48, 49, 48, 48}}, // "0100" in hex
+				{Name: "FlashpixVersion", Value: "0100"},
 				{Name: "ColorSpace", Value: "sRGB"},
 				{Name: "PixelXDimension", Value: uint16(4992)},
 				{Name: "PixelYDimension", Value: uint16(3328)},
