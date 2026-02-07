@@ -39,6 +39,7 @@ const (
 	TagIPTC            uint16 = 0x83BB
 	TagXMP             uint16 = 0x02BC // XMLPacket (decimal 700)
 	TagMakerNote       uint16 = 0x927C
+	TagUserComment     uint16 = 0x9286
 	TagSubIFDs         uint16 = 0x014A
 	TagJPEGInterchange uint16 = 0x0201
 	TagJPEGInterLength uint16 = 0x0202

@@ -283,7 +283,7 @@ func TestIntegration_CR2(t *testing.T) {
 				{Name: "Flash", Value: "Off, Did not fire"},
 				{Name: "FocalLength", Value: "85/1"},
 				// MakerNote is now parsed into Canon directory
-				{Name: "UserComment", Type: "[]byte"}, // Binary data - check presence only
+				{Name: "UserComment", Type: "string"}, // Decoded comment text (Bug #19 fix)
 				{Name: "FlashpixVersion", Value: "0100"},
 				{Name: "ColorSpace", Value: "sRGB"},
 				{Name: "PixelXDimension", Value: uint16(4992)},

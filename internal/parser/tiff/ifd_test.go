@@ -1421,3 +1421,203 @@ func TestGetTagNameForDir(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeUserComment(t *testing.T) {
+	tests := []struct {
+		name    string
+		data    []byte
+		want    interface{}
+		wantStr bool // true if want is expected to be a string
+	}{
+		{
+			name:    "ASCII encoding",
+			data:    append([]byte("ASCII\x00\x00\x00"), []byte("Hello World")...),
+			want:    "Hello World",
+			wantStr: true,
+		},
+		{
+			name:    "ASCII with trailing nulls",
+			data:    append([]byte("ASCII\x00\x00\x00"), []byte("Hello\x00\x00\x00")...),
+			want:    "Hello",
+			wantStr: true,
+		},
+		{
+			name:    "undefined encoding (UTF-8)",
+			data:    append([]byte("\x00\x00\x00\x00\x00\x00\x00\x00"), []byte("Test comment")...),
+			want:    "Test comment",
+			wantStr: true,
+		},
+		{
+			name:    "empty content after prefix",
+			data:    []byte("ASCII\x00\x00\x00"),
+			want:    "",
+			wantStr: true,
+		},
+		{
+			name:    "empty content with trailing nulls",
+			data:    append([]byte("ASCII\x00\x00\x00"), []byte("\x00\x00\x00")...),
+			want:    "",
+			wantStr: true,
+		},
+		{
+			name:    "too short - less than prefix",
+			data:    []byte("ASCII"),
+			want:    []byte("ASCII"),
+			wantStr: false,
+		},
+		{
+			name:    "JIS encoding",
+			data:    append([]byte("JIS\x00\x00\x00\x00\x00"), []byte("Test")...),
+			want:    "Test",
+			wantStr: true,
+		},
+		{
+			name:    "Unicode UTF-16LE with BOM",
+			data:    append([]byte("UNICODE\x00"), append([]byte{0xFF, 0xFE}, []byte{'H', 0, 'i', 0}...)...),
+			want:    "Hi",
+			wantStr: true,
+		},
+		{
+			name:    "Unicode UTF-16BE with BOM",
+			data:    append([]byte("UNICODE\x00"), append([]byte{0xFE, 0xFF}, []byte{0, 'H', 0, 'i'}...)...),
+			want:    "Hi",
+			wantStr: true,
+		},
+		{
+			name:    "Unicode UTF-16LE without BOM",
+			data:    append([]byte("UNICODE\x00"), []byte{'T', 0, 'e', 0, 's', 0, 't', 0}...),
+			want:    "Test",
+			wantStr: true,
+		},
+		{
+			name:    "no prefix - valid UTF-8 text",
+			data:    []byte("Plain text comment"),
+			want:    "Plain text comment",
+			wantStr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := decodeUserComment(tt.data)
+
+			if tt.wantStr {
+				gotStr, ok := got.(string)
+				if !ok {
+					t.Errorf("decodeUserComment() returned %T, want string", got)
+					return
+				}
+				wantStr := tt.want.(string)
+				if gotStr != wantStr {
+					t.Errorf("decodeUserComment() = %q, want %q", gotStr, wantStr)
+				}
+			} else {
+				gotBytes, ok := got.([]byte)
+				if !ok {
+					t.Errorf("decodeUserComment() returned %T, want []byte", got)
+					return
+				}
+				wantBytes := tt.want.([]byte)
+				if !bytes.Equal(gotBytes, wantBytes) {
+					t.Errorf("decodeUserComment() = %v, want %v", gotBytes, wantBytes)
+				}
+			}
+		})
+	}
+}
+
+func TestDecodeUTF16(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		want string
+	}{
+		{
+			name: "empty",
+			data: []byte{},
+			want: "",
+		},
+		{
+			name: "single byte",
+			data: []byte{0x41},
+			want: "",
+		},
+		{
+			name: "simple ASCII as UTF-16LE",
+			data: []byte{'A', 0, 'B', 0, 'C', 0},
+			want: "ABC",
+		},
+		{
+			name: "with LE BOM",
+			data: []byte{0xFF, 0xFE, 'H', 0, 'i', 0},
+			want: "Hi",
+		},
+		{
+			name: "with BE BOM",
+			data: []byte{0xFE, 0xFF, 0, 'H', 0, 'i'},
+			want: "Hi",
+		},
+		{
+			name: "null terminated",
+			data: []byte{'A', 0, 0, 0},
+			want: "A",
+		},
+		{
+			name: "odd length truncated",
+			data: []byte{'A', 0, 'B'},
+			want: "A",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := decodeUTF16(tt.data)
+			if got != tt.want {
+				t.Errorf("decodeUTF16() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsValidUTF8(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		want bool
+	}{
+		{
+			name: "empty",
+			data: []byte{},
+			want: false,
+		},
+		{
+			name: "valid ASCII",
+			data: []byte("Hello World"),
+			want: true,
+		},
+		{
+			name: "valid UTF-8",
+			data: []byte("Héllo Wörld"),
+			want: true,
+		},
+		{
+			name: "too many nulls",
+			data: []byte{0, 0, 0, 0, 'A'},
+			want: false,
+		},
+		{
+			name: "trailing nulls ok",
+			data: []byte("Test\x00\x00"),
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isValidUTF8(tt.data)
+			if got != tt.want {
+				t.Errorf("isValidUTF8() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
