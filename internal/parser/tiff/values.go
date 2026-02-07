@@ -5,6 +5,11 @@ import "fmt"
 // decodeEnumValue returns a human-readable string for enum tag values.
 // Returns empty string if the tag is not an enum or value is unknown.
 func decodeEnumValue(tag uint16, _ string, value any) string {
+	// Handle ComponentsConfiguration (0x9101) specially - it's a 4-byte array
+	if tag == 0x9101 {
+		return decodeComponentsConfiguration(value)
+	}
+
 	// Handle uint16 values (most common for enums)
 	var v uint16
 	switch val := value.(type) {
@@ -416,4 +421,61 @@ func decodeFlashValue(value uint16) string {
 		result += ", " + parts[i]
 	}
 	return result
+}
+
+// decodeComponentsConfiguration decodes the ComponentsConfiguration tag (0x9101).
+// The value is 4 bytes where each byte represents a component:
+//   - 0 = does not exist (displayed as "-")
+//   - 1 = Y (luminance)
+//   - 2 = Cb (blue chrominance)
+//   - 3 = Cr (red chrominance)
+//   - 4 = R (red)
+//   - 5 = G (green)
+//   - 6 = B (blue)
+func decodeComponentsConfiguration(value any) string {
+	var bytes []byte
+
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		// Handle hex string like "01020300"
+		if len(v) == 8 {
+			bytes = make([]byte, 4)
+			for i := 0; i < 4; i++ {
+				var b byte
+				fmt.Sscanf(v[i*2:i*2+2], "%02x", &b)
+				bytes[i] = b
+			}
+		} else {
+			return ""
+		}
+	default:
+		return ""
+	}
+
+	if len(bytes) < 4 {
+		return ""
+	}
+
+	componentNames := map[byte]string{
+		0: "-",
+		1: "Y",
+		2: "Cb",
+		3: "Cr",
+		4: "R",
+		5: "G",
+		6: "B",
+	}
+
+	parts := make([]string, 4)
+	for i := 0; i < 4; i++ {
+		if name, ok := componentNames[bytes[i]]; ok {
+			parts[i] = name
+		} else {
+			parts[i] = fmt.Sprintf("%d", bytes[i])
+		}
+	}
+
+	return parts[0] + ", " + parts[1] + ", " + parts[2] + ", " + parts[3]
 }

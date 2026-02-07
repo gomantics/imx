@@ -21,7 +21,7 @@ func TestIntegration_JPEG(t *testing.T) {
 				{Name: "ApertureValue", Value: "54823/32325"},
 				{Name: "BrightnessValue", Value: "40874/4739"},
 				{Name: "ColorSpace", Value: "Uncalibrated"},
-				{Name: "ComponentsConfiguration", Value: []byte{1, 2, 3, 0}},
+				{Name: "ComponentsConfiguration", Value: "Y, Cb, Cr, -"},
 				{Name: "CustomRendered", Value: "Portrait HDR"},
 				{Name: "DateTimeDigitized", Value: "2019:09:21 14:43:51"},
 				{Name: "DateTimeOriginal", Value: "2019:09:21 14:43:51"},
@@ -275,7 +275,7 @@ func TestIntegration_CR2(t *testing.T) {
 				{Name: "ExifVersion", Value: "0221"},
 				{Name: "DateTimeOriginal", Value: "2004:11:13 23:02:21"},
 				{Name: "DateTimeDigitized", Value: "2004:11:13 23:02:21"},
-				{Name: "ComponentsConfiguration", Value: []byte{1, 2, 3, 0}}, // Y, Cb, Cr, -
+				{Name: "ComponentsConfiguration", Value: "Y, Cb, Cr, -"}, // Y, Cb, Cr, -
 				{Name: "ShutterSpeedValue", Value: "434176/65536"},
 				{Name: "ApertureValue", Value: "65536/65536"},
 				{Name: "ExposureBiasValue", Value: "0/1"},

@@ -336,3 +336,66 @@ func TestEnumMappingsComplete(t *testing.T) {
 		t.Errorf("ResolutionUnit should have 3 values, got %d", len(tiffEnumValues[0x0128]))
 	}
 }
+
+func TestDecodeComponentsConfiguration(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    any
+		expected string
+	}{
+		{
+			name:     "YCbCr standard",
+			value:    []byte{1, 2, 3, 0},
+			expected: "Y, Cb, Cr, -",
+		},
+		{
+			name:     "RGB",
+			value:    []byte{4, 5, 6, 0},
+			expected: "R, G, B, -",
+		},
+		{
+			name:     "hex string YCbCr",
+			value:    "01020300",
+			expected: "Y, Cb, Cr, -",
+		},
+		{
+			name:     "hex string RGB",
+			value:    "04050600",
+			expected: "R, G, B, -",
+		},
+		{
+			name:     "empty bytes",
+			value:    []byte{0, 0, 0, 0},
+			expected: "-, -, -, -",
+		},
+		{
+			name:     "too short",
+			value:    []byte{1, 2},
+			expected: "",
+		},
+		{
+			name:     "invalid type",
+			value:    123,
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := decodeComponentsConfiguration(tt.value)
+			if result != tt.expected {
+				t.Errorf("decodeComponentsConfiguration(%v) = %q, want %q",
+					tt.value, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDecodeEnumValue_ComponentsConfiguration(t *testing.T) {
+	// Test that decodeEnumValue handles ComponentsConfiguration (0x9101)
+	result := decodeEnumValue(0x9101, "ExifIFD", []byte{1, 2, 3, 0})
+	expected := "Y, Cb, Cr, -"
+	if result != expected {
+		t.Errorf("decodeEnumValue for ComponentsConfiguration = %q, want %q", result, expected)
+	}
+}
