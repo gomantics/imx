@@ -60,6 +60,62 @@ func TestDecodeEnumValue(t *testing.T) {
 			value:    uint16(1),
 			expected: "Centered",
 		},
+		{
+			name:     "FillOrder Normal",
+			tag:      0x010A,
+			dirName:  "IFD0",
+			value:    uint16(1),
+			expected: "Normal",
+		},
+		{
+			name:     "FillOrder Reversed",
+			tag:      0x010A,
+			dirName:  "IFD0",
+			value:    uint16(2),
+			expected: "Reversed",
+		},
+		{
+			name:     "Predictor None",
+			tag:      0x013D,
+			dirName:  "IFD0",
+			value:    uint16(1),
+			expected: "None",
+		},
+		{
+			name:     "Predictor Horizontal differencing",
+			tag:      0x013D,
+			dirName:  "IFD0",
+			value:    uint16(2),
+			expected: "Horizontal differencing",
+		},
+		{
+			name:     "ExtraSamples Unspecified",
+			tag:      0x0152,
+			dirName:  "IFD0",
+			value:    uint16(0),
+			expected: "Unspecified",
+		},
+		{
+			name:     "ExtraSamples Associated Alpha",
+			tag:      0x0152,
+			dirName:  "IFD0",
+			value:    uint16(1),
+			expected: "Associated Alpha",
+		},
+		{
+			name:     "SampleFormat Unsigned integer",
+			tag:      0x0153,
+			dirName:  "IFD0",
+			value:    uint16(1),
+			expected: "Unsigned integer",
+		},
+		{
+			name:     "SampleFormat IEEE floating point",
+			tag:      0x0153,
+			dirName:  "IFD0",
+			value:    uint16(3),
+			expected: "IEEE floating point",
+		},
 
 		// EXIF tags
 		{
