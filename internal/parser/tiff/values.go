@@ -134,11 +134,39 @@ var tiffEnumValues = map[uint16]map[uint16]string{
 		2: "Planar",
 	},
 
+	// FillOrder (0x010A)
+	0x010A: {
+		1: "Normal",
+		2: "Reversed",
+	},
+
 	// ResolutionUnit (0x0128)
 	0x0128: {
 		1: "None",
 		2: "inches",
 		3: "centimeters",
+	},
+
+	// Predictor (0x013D)
+	0x013D: {
+		1: "None",
+		2: "Horizontal differencing",
+		3: "Floating point predictor",
+	},
+
+	// ExtraSamples (0x0152)
+	0x0152: {
+		0: "Unspecified",
+		1: "Associated Alpha",
+		2: "Unassociated Alpha",
+	},
+
+	// SampleFormat (0x0153)
+	0x0153: {
+		1: "Unsigned integer",
+		2: "Signed integer",
+		3: "IEEE floating point",
+		4: "Undefined",
 	},
 
 	// YCbCrPositioning (0x0213)
