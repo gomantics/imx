@@ -114,12 +114,12 @@ func (h *Handler) Parse(r io.ReaderAt, makerNoteOffset, exifBase int64, cfg *mak
 		return nil, parseErr
 	}
 
-	tags := make([]parser.Tag, 0, entryCount)
+	tags := make([]parser.Tag, 0, entryCount*2) // Extra capacity for decoded sub-tags
 
 	// Parse each IFD entry
 	entryOffset := ifdOffset + ifdEntryCountSize
 	for i := uint16(0); i < entryCount; i++ {
-		tag, err := h.parseEntry(reader, entryOffset, exifBase)
+		tag, subTags, err := h.parseEntry(reader, entryOffset, exifBase)
 		if err != nil {
 			// Continue parsing other entries
 			entryOffset += ifdEntrySize
@@ -127,6 +127,8 @@ func (h *Handler) Parse(r io.ReaderAt, makerNoteOffset, exifBase int64, cfg *mak
 		}
 		if tag != nil {
 			tags = append(tags, *tag)
+			// Add decoded sub-tags (for CameraSettings, ShotInfo, etc.)
+			tags = append(tags, subTags...)
 		}
 		entryOffset += ifdEntrySize
 	}
@@ -136,32 +138,33 @@ func (h *Handler) Parse(r io.ReaderAt, makerNoteOffset, exifBase int64, cfg *mak
 
 // parseEntry parses a single IFD entry.
 // For Canon, offsets are absolute (relative to EXIF TIFF header).
-func (h *Handler) parseEntry(r *imxbin.Reader, entryOffset, exifBase int64) (*parser.Tag, error) {
+// Returns the main tag plus any decoded sub-tags (for compound tags like CameraSettings).
+func (h *Handler) parseEntry(r *imxbin.Reader, entryOffset, exifBase int64) (*parser.Tag, []parser.Tag, error) {
 	// Read entry fields
 	tagID, err := r.ReadUint16(entryOffset)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	tagType, err := r.ReadUint16(entryOffset + 2)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	count, err := r.ReadUint32(entryOffset + 4)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	valueOffset, err := r.ReadUint32(entryOffset + 8)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Calculate data size
 	typeSize := getTypeSize(tagType)
 	if typeSize == 0 {
-		return nil, fmt.Errorf("unknown type: %d", tagType)
+		return nil, nil, fmt.Errorf("unknown type: %d", tagType)
 	}
 
 	totalSize := int64(count) * int64(typeSize)
@@ -178,15 +181,101 @@ func (h *Handler) parseEntry(r *imxbin.Reader, entryOffset, exifBase int64) (*pa
 	// Read and parse value
 	value, err := h.readValue(r, tagType, count, dataOffset, valueOffset)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &parser.Tag{
+	mainTag := &parser.Tag{
 		ID:       parser.TagID(fmt.Sprintf("Canon:0x%04X", tagID)),
 		Name:     h.TagName(tagID),
 		Value:    value,
 		DataType: getTypeName(tagType),
-	}, nil
+	}
+
+	// Decode compound tags into sub-tags
+	var subTags []parser.Tag
+	switch tagID {
+	case 0x0001: // CameraSettings
+		subTags = h.decodeCameraSettings(value)
+	case 0x0004: // ShotInfo
+		subTags = h.decodeShotInfo(value)
+	case 0x0010: // ModelID
+		if decoded := h.decodeModelIDTag(value); decoded != nil {
+			subTags = append(subTags, *decoded)
+		}
+	}
+
+	return mainTag, subTags, nil
+}
+
+// decodeCameraSettings extracts individual settings from CameraSettings array
+func (h *Handler) decodeCameraSettings(value any) []parser.Tag {
+	shorts, ok := value.([]uint16)
+	if !ok {
+		return nil
+	}
+
+	var tags []parser.Tag
+	for i, v := range shorts {
+		name, decoded := decodeCameraSettingsValue(i, v)
+		if name != "" && decoded != "" {
+			tags = append(tags, parser.Tag{
+				ID:       parser.TagID("Canon:CameraSettings:" + name),
+				Name:     name,
+				Value:    decoded,
+				DataType: "decoded",
+			})
+		}
+	}
+	return tags
+}
+
+// decodeShotInfo extracts individual settings from ShotInfo array
+func (h *Handler) decodeShotInfo(value any) []parser.Tag {
+	shorts, ok := value.([]uint16)
+	if !ok {
+		return nil
+	}
+
+	var tags []parser.Tag
+	for i, v := range shorts {
+		name, decoded := decodeShotInfoValue(i, v)
+		if name != "" && decoded != "" {
+			tags = append(tags, parser.Tag{
+				ID:       parser.TagID("Canon:ShotInfo:" + name),
+				Name:     name,
+				Value:    decoded,
+				DataType: "decoded",
+			})
+		}
+	}
+	return tags
+}
+
+// decodeModelIDTag decodes the ModelID to camera model name
+func (h *Handler) decodeModelIDTag(value any) *parser.Tag {
+	var modelID uint32
+	switch v := value.(type) {
+	case uint32:
+		modelID = v
+	case []uint32:
+		if len(v) > 0 {
+			modelID = v[0]
+		}
+	default:
+		return nil
+	}
+
+	decoded := decodeModelID(modelID)
+	if decoded == "" {
+		return nil
+	}
+
+	return &parser.Tag{
+		ID:       parser.TagID("Canon:ModelName"),
+		Name:     "ModelName",
+		Value:    decoded,
+		DataType: "decoded",
+	}
 }
 
 // readValue reads a tag value based on its type.
